@@ -9,14 +9,12 @@ import {
   Search, 
   MoreHorizontal, 
   Eye, 
-  UserX, 
   Phone, 
   MapPin,
   History,
   Filter,
   ArrowUpDown,
   Loader2,
-  UserCheck,
   UserPlus
 } from "lucide-react";
 import {
@@ -78,7 +76,6 @@ export default function CustomersPage() {
     addTransaction, 
     getCustomerBalance, 
     getCustomerTransactions,
-    updateCustomerStatus,
     transactions,
     loading 
   } = useLedger();
@@ -207,16 +204,6 @@ export default function CustomersPage() {
     setIsAddOpen(false);
     toast({ title: "Customer Added", description: `${newCust.name} has been added.` });
   }, [newCust, addCustomer, addTransaction, customers, toast]);
-
-  const [statusTarget, setStatusTarget] = useState<Customer | null>(null);
-
-  const handleStatusUpdate = () => {
-    if (!statusTarget) return;
-    const newStatus = statusTarget.status === 'active' || !statusTarget.status ? 'inactive' : 'active';
-    updateCustomerStatus(statusTarget.id, newStatus);
-    toast({ title: `Customer marked ${newStatus}` });
-    setStatusTarget(null);
-  };
 
   if (loading) return <div className="flex h-full w-full items-center justify-center p-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
 
@@ -388,15 +375,6 @@ export default function CustomersPage() {
                       <DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0 hover:bg-muted"><MoreHorizontal className="h-5 w-5" /></Button></DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="bg-card border-border w-[180px]">
                         <DropdownMenuItem asChild><Link href={`/customers/${customer.id}`} className="cursor-pointer flex items-center py-3"><Eye className="h-4 w-4 mr-2" /> View Details</Link></DropdownMenuItem>
-                        {isActive ? (
-                          <DropdownMenuItem className="text-accent cursor-pointer flex items-center py-3" onSelect={() => setStatusTarget(customer)}>
-                            <UserX className="h-4 w-4 mr-2" /> Deactivate
-                          </DropdownMenuItem>
-                        ) : (
-                          <DropdownMenuItem className="text-emerald-500 cursor-pointer flex items-center py-3" onSelect={() => setStatusTarget(customer)}>
-                            <UserCheck className="h-4 w-4 mr-2" /> Reactivate
-                          </DropdownMenuItem>
-                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -408,26 +386,6 @@ export default function CustomersPage() {
           </TableBody>
         </Table>
       </div>
-
-      <Dialog open={!!statusTarget} onOpenChange={() => setStatusTarget(null)}>
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-accent">
-              {(statusTarget?.status === 'active' || !statusTarget?.status) ? <UserX className="h-5 w-5" /> : <UserCheck className="h-5 w-5" />}
-              Confirm Status Change
-            </DialogTitle>
-            <DialogDescription>
-              {(statusTarget?.status === 'active' || !statusTarget?.status) 
-                ? `Deactivate ${statusTarget?.name}? They will be hidden from the default list.` 
-                : `Reactivate ${statusTarget?.name}? They will be visible again in the active list.`}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="mt-4 flex gap-2">
-            <Button variant="ghost" onClick={() => setStatusTarget(null)} className="flex-1">Cancel</Button>
-            <Button className="flex-1" onClick={handleStatusUpdate}>Confirm</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
