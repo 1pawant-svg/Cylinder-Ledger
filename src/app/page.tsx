@@ -68,7 +68,7 @@ const getOverdueBadge = (daysDiff: number) => {
 };
 
 export default function Dashboard() {
-  const { customers, activeCustomers, transactions, getCustomerBalance, loading } = useLedger();
+  const { customers, transactions, getCustomerBalance, loading } = useLedger();
   const [todayLabel, setTodayLabel] = useState("");
 
   useEffect(() => {
@@ -79,6 +79,11 @@ export default function Dashboard() {
   // 1. Core liability metrics
   const toReceiveTotal = useMemo(() => 
     customers.reduce((sum, c) => sum + Math.max(0, getCustomerBalance(c.id)), 0),
+    [customers, getCustomerBalance]
+  );
+
+  const toGiveTotal = useMemo(() => 
+    customers.reduce((sum, c) => sum + Math.max(0, -getCustomerBalance(c.id)), 0),
     [customers, getCustomerBalance]
   );
 
@@ -163,12 +168,12 @@ export default function Dashboard() {
           href="/customers?filter=TO_RECEIVE"
         />
         <StatCard 
-          title="Active Accounts" 
-          value={activeCustomers.length} 
-          icon={Users} 
-          description="Ongoing return cycles"
-          variant="default"
-          href="/customers?filter=ACTIVE"
+          title="To Give" 
+          value={`${toGiveTotal} To Give`} 
+          icon={ArrowDownLeft} 
+          description="Cylinders owed to customers"
+          variant="warning"
+          href="/customers?filter=TO_GIVE"
         />
         <StatCard 
           title="Total Transactions" 
@@ -297,7 +302,7 @@ export default function Dashboard() {
                 return (
                   <div key={item.id} className="flex items-center justify-between p-2 rounded-lg bg-destructive/5 border border-destructive/10 group hover:bg-destructive/10 transition-colors">
                     <div className="min-w-0">
-                      <Link href={`/customers/${customer.id}`} className="font-bold text-sm hover:text-destructive transition-colors block truncate">
+                      <Link href={`/customers/${customer?.id}`} className="font-bold text-sm hover:text-destructive transition-colors block truncate">
                         {customer?.name}
                       </Link>
                       <p className="text-[9px] text-destructive font-medium uppercase">{Math.abs(item.daysDiff)}d Overdue</p>
