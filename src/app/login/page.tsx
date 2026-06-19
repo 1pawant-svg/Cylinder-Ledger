@@ -5,8 +5,6 @@ import * as React from "react";
 import { useState } from "react";
 import { 
   signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  updateProfile,
   sendPasswordResetEmail
 } from "firebase/auth";
 import { useAuth, useFirestore } from "@/firebase";
@@ -25,11 +23,9 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   
-  const [isRegistering, setIsRegistering] = useState(false);
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,36 +33,26 @@ export default function LoginPage() {
 
     setLoading(true);
     try {
-      if (isRegistering) {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        await updateProfile(userCredential.user, { displayName: fullName });
-        
-        // Create Firestore profile
-        await createUserProfile(db, {
-          uid: userCredential.user.uid,
-          email: email,
-          fullName: fullName
-        });
-        
-        toast({ title: "Account Created", description: "Welcome to Cylindera!" });
-      } else {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        
-        // Ensure profile exists (for users created via console or missing profile)
-        await createUserProfile(db, {
-          uid: userCredential.user.uid,
-          email: userCredential.user.email,
-          fullName: userCredential.user.displayName || "User"
-        });
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      
+      // Ensure profile exists (for users created via console)
+      await createUserProfile(db, {
+        uid: userCredential.user.uid,
+        email: userCredential.user.email,
+        fullName: userCredential.user.displayName || "User"
+      });
 
-        toast({ title: "Logged In", description: "Welcome back!" });
-      }
+      toast({ title: "Logged In", description: "Welcome back to Cylindera!" });
       router.push("/");
     } catch (error: any) {
+      let message = "Could not sign you in. Please check your credentials.";
+      if (error.code === 'auth/user-not-found') message = "Account not found. Please contact your administrator.";
+      if (error.code === 'auth/wrong-password') message = "Incorrect password.";
+      
       toast({
         variant: "destructive",
         title: "Authentication Error",
-        description: error.message,
+        description: message,
       });
     } finally {
       setLoading(false);
@@ -104,28 +90,14 @@ export default function LoginPage() {
       <Card className="w-full max-w-md border-none shadow-2xl bg-card relative z-10">
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-3xl font-headline font-bold">
-            {isRegistering ? "Create an account" : "Welcome back"}
+            Welcome back
           </CardTitle>
           <CardDescription>
-            {isRegistering 
-              ? "Enter your details to register" 
-              : "Enter your credentials to access your ledger"}
+            Enter your credentials to access your ledger
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
-            {isRegistering && (
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
-                <Input 
-                  id="fullName" 
-                  placeholder="Ram Bahadur" 
-                  required 
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                />
-              </div>
-            )}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input 
@@ -140,11 +112,9 @@ export default function LoginPage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                {!isRegistering && (
-                  <Button variant="link" type="button" className="px-0 h-auto text-xs" onClick={handleForgotPassword}>
-                    Forgot password?
-                  </Button>
-                )}
+                <Button variant="link" type="button" className="px-0 h-auto text-xs" onClick={handleForgotPassword}>
+                  Forgot password?
+                </Button>
               </div>
               <Input 
                 id="password" 
@@ -158,18 +128,13 @@ export default function LoginPage() {
           <CardFooter className="flex flex-col space-y-4">
             <Button className="w-full h-12 font-bold" type="submit" disabled={loading}>
               {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              {isRegistering ? "Register" : "Login"}
+              Login
             </Button>
             
             <div className="w-full text-center">
-               <Button 
-                variant="link" 
-                type="button"
-                className="text-muted-foreground text-xs"
-                onClick={() => setIsRegistering(!isRegistering)}
-              >
-                {isRegistering ? "Already have an account? Login" : "Don't have an account? Create one"}
-              </Button>
+               <p className="text-muted-foreground text-[10px] uppercase tracking-widest font-bold">
+                 Managed LPG Ledger System
+               </p>
             </div>
           </CardFooter>
         </form>
