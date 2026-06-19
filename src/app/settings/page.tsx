@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -180,7 +179,9 @@ export default function SettingsPage() {
           <CardTitle className="font-headline text-2xl font-bold flex items-center gap-2 text-primary">
             <Building2 className="h-6 w-6" /> Business Identity
           </CardTitle>
-          <CardDescription>This information will appear on generated customer statements and reports.</CardDescription>
+          <CardDescription>
+            This information appears on WhatsApp statements, generated PDF reports, and determines your shop's identity in the system.
+          </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -248,7 +249,7 @@ export default function SettingsPage() {
         </CardContent>
         <CardFooter className="bg-muted/10 border-t border-border p-6 flex justify-between items-center">
           <p className="text-xs text-muted-foreground italic max-w-[60%]">
-            Last updated config affects all new PDF statements.
+            Last updated config affects all new WhatsApp statements and PDF reports.
           </p>
           <Button 
             onClick={handleSave} 
