@@ -110,38 +110,38 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const addCustomer = useCallback((customer: Omit<Customer, 'id' | 'createdAt' | 'status'>): string => {
     if (!db) return '';
-    return fsAddCustomer(db, customer, user?.uid, userProfile?.displayName || user?.email || undefined);
+    return fsAddCustomer(db, customer, user?.uid, userProfile?.fullName || user?.email || undefined);
   }, [db, user, userProfile]);
 
   const updateCustomer = useCallback((id: string, updated: Partial<Customer>) => {
     if (!db) return;
     const { id: _, createdAt: __, ...rest } = updated;
-    fsUpdateCustomer(db, id, rest as any, user?.uid, userProfile?.displayName || user?.email || undefined);
+    fsUpdateCustomer(db, id, rest as any, user?.uid, userProfile?.fullName || user?.email || undefined);
   }, [db, user, userProfile]);
 
   const updateCustomerStatus = useCallback((id: string, status: CustomerStatus) => {
     if (!db) return;
-    fsUpdateCustomerStatus(db, id, status, user?.uid, userProfile?.displayName || user?.email || undefined);
+    fsUpdateCustomerStatus(db, id, status, user?.uid, userProfile?.fullName || user?.email || undefined);
   }, [db, user, userProfile]);
 
   const deleteCustomer = useCallback((id: string) => {
     if (!db) return;
-    fsDeleteCustomer(db, id, user?.uid, userProfile?.displayName || user?.email || undefined);
+    fsDeleteCustomer(db, id, user?.uid, userProfile?.fullName || user?.email || undefined);
   }, [db, user, userProfile]);
 
   const addTransaction = useCallback((txn: Omit<Transaction, 'id' | 'createdAt' | 'status'>) => {
     if (!db) return;
-    fsAddTransaction(db, txn, user?.uid, userProfile?.displayName || user?.email || undefined);
+    fsAddTransaction(db, txn, user?.uid, userProfile?.fullName || user?.email || undefined);
   }, [db, user, userProfile]);
 
   const updateTransaction = useCallback((id: string, data: Partial<Transaction>) => {
     if (!db || !user || !userProfile) return;
-    fsUpdateTransaction(db, id, data as any, user.uid, userProfile.displayName || user.email || "User");
+    fsUpdateTransaction(db, id, data as any, user.uid, userProfile.fullName || user.email || "User");
   }, [db, user, userProfile]);
 
   const deleteTransaction = useCallback((id: string, reason?: string) => {
     if (!db || !user || !userProfile) return;
-    fsDeleteTransaction(db, id, user.uid, userProfile.displayName || user.email || "Admin", reason);
+    fsDeleteTransaction(db, id, user.uid, userProfile.fullName || user.email || "User", reason);
   }, [db, user, userProfile]);
 
   const getCustomerTransactions = useCallback((customerId: string) => {

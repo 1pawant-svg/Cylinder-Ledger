@@ -1,3 +1,4 @@
+
 "use client";
 
 import { 
@@ -28,13 +29,13 @@ import { signOut } from "firebase/auth";
 import { useEffect, useState } from "react";
 import { getUserProfile } from "@/lib/services/user-service";
 import { UserProfile } from "@/lib/types";
-import { Badge } from "./ui/badge";
 
 const items = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard, roles: ['admin', 'staff'] },
-  { title: "Customers", url: "/customers", icon: Users, roles: ['admin', 'staff'] },
-  { title: "Transactions", url: "/transactions", icon: ArrowLeftRight, roles: ['admin', 'staff'] },
-  { title: "Reports", url: "/reports", icon: FileText, roles: ['admin', 'staff'] },
+  { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Customers", url: "/customers", icon: Users },
+  { title: "Transactions", url: "/transactions", icon: ArrowLeftRight },
+  { title: "Reports", url: "/reports", icon: FileText },
+  { title: "Settings", url: "/settings", icon: Settings },
 ];
 
 export function AppSidebar() {
@@ -61,8 +62,6 @@ export function AppSidebar() {
     router.push("/login");
   };
 
-  const visibleItems = items.filter(item => !item.roles || (profile && item.roles.includes(profile.role)));
-
   return (
     <Sidebar variant="sidebar" collapsible="icon">
       <SidebarHeader className="py-6 border-b border-sidebar-border/50">
@@ -80,7 +79,7 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupLabel className="px-4 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50 mb-2">Main Menu</SidebarGroupLabel>
           <SidebarMenu>
-            {visibleItems.map((item) => (
+            {items.map((item) => (
               <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton 
                   asChild 
@@ -105,24 +104,12 @@ export function AppSidebar() {
               <UserIcon className="h-4 w-4" />
             </div>
             <div className="flex flex-col overflow-hidden">
-              <span className="text-sm font-bold truncate">{profile.displayName}</span>
-              <Badge variant="outline" className="text-[8px] h-4 w-fit px-1 uppercase font-bold">
-                {profile.role}
-              </Badge>
+              <span className="text-sm font-bold truncate">{profile.fullName}</span>
+              <span className="text-[10px] text-muted-foreground truncate">{profile.email}</span>
             </div>
           </div>
         )}
         <SidebarMenu>
-          {profile?.role === 'admin' && (
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild tooltip="Settings" className="px-4 py-6">
-                <Link href="/settings">
-                  <Settings className="h-5 w-5" />
-                  <span className="font-medium text-base ml-2">Settings</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          )}
           <SidebarMenuItem>
             <SidebarMenuButton onClick={handleLogout} tooltip="Logout" className="px-4 py-6 text-destructive hover:text-destructive">
               <LogOut className="h-5 w-5" />

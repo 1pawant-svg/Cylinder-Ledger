@@ -22,6 +22,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         try {
           const up = await getUserProfile(db, user.uid);
           setProfile(up);
+          // If profile doesn't exist but user is authed, it will be handled by create on login
         } catch (e) {
           console.error("Failed to load user profile:", e);
           setProfile(null);
@@ -38,20 +39,14 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   }, [user, db, authLoading]);
 
   useEffect(() => {
-    if (authLoading || profileLoading) return;
+    if (authLoading || (user && profileLoading)) return;
 
     if (!user && pathname !== "/login") {
       router.push("/login");
     } else if (user && pathname === "/login") {
       router.push("/");
     }
-
-    // Role-based restriction: Staff cannot access Settings (Reports are allowed for staff per requirements)
-    const adminOnlyRoutes = ["/settings"];
-    if (user && profile && profile.role === "staff" && adminOnlyRoutes.some(route => pathname.startsWith(route))) {
-      router.push("/");
-    }
-  }, [user, profile, authLoading, profileLoading, pathname, router]);
+  }, [user, authLoading, profileLoading, pathname, router]);
 
   if (authLoading || (user && profileLoading)) {
     return (

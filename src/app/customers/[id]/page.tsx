@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -132,8 +133,6 @@ export default function CustomerProfile(props: {
     }
   }, [user, db]);
 
-  const isAdmin = profile?.role === 'admin';
-
   // Pre-calculate transactions with running balance
   const transactionsWithBalance = useMemo(() => {
     let running = balance;
@@ -235,7 +234,7 @@ export default function CustomerProfile(props: {
   };
 
   const handleDeleteTxn = async () => {
-    if (!deleteTarget || !isAdmin) return;
+    if (!deleteTarget) return;
     if (!deleteReason) {
       toast({ variant: "destructive", title: "Reason Required", description: "Please provide a reason for deletion." });
       return;
@@ -267,7 +266,7 @@ export default function CustomerProfile(props: {
   };
 
   const handleToggleStatus = () => {
-    if (!customer || !isAdmin) return;
+    if (!customer) return;
     const newStatus = isInactive ? 'active' : 'inactive';
     updateCustomerStatus(customer.id, newStatus);
     toast({ title: `Customer marked ${newStatus}` });
@@ -301,17 +300,15 @@ export default function CustomerProfile(props: {
           <Button size="sm" className="bg-primary text-primary-foreground gap-2 font-bold h-10 md:h-12 flex-1 md:flex-none" onClick={() => setIsEditSheetOpen(true)}>
             <Edit2 className="h-4 w-4" /> Edit
           </Button>
-          {isAdmin && (
-            <Button 
-              size="sm" 
-              variant="outline" 
-              className={cn("gap-2 font-bold h-10 md:h-12 flex-1 md:flex-none", isInactive ? "text-emerald-500 border-emerald-500/50 hover:bg-emerald-500/10" : "text-accent border-accent/50 hover:bg-accent/10")} 
-              onClick={handleToggleStatus}
-            >
-              {isInactive ? <UserCheck className="h-4 w-4" /> : <UserX className="h-4 w-4" />}
-              {isInactive ? "Reactivate" : "Deactivate"}
-            </Button>
-          )}
+          <Button 
+            size="sm" 
+            variant="outline" 
+            className={cn("gap-2 font-bold h-10 md:h-12 flex-1 md:flex-none", isInactive ? "text-emerald-500 border-emerald-500/50 hover:bg-emerald-500/10" : "text-accent border-accent/50 hover:bg-accent/10")} 
+            onClick={handleToggleStatus}
+          >
+            {isInactive ? <UserCheck className="h-4 w-4" /> : <UserX className="h-4 w-4" />}
+            {isInactive ? "Reactivate" : "Deactivate"}
+          </Button>
         </div>
       </div>
 
@@ -345,7 +342,6 @@ export default function CustomerProfile(props: {
                 <TableBody>
                   {transactionsWithBalance.map((txn) => {
                     const impact = getTransactionImpact(txn.type);
-                    const canDelete = isAdmin;
                     
                     return (
                       <TableRow key={txn.id} className="border-border/50 group">
@@ -385,15 +381,9 @@ export default function CustomerProfile(props: {
                                   <Edit2 className="h-3 w-3" /> Edit Entry
                                 </Link>
                               </DropdownMenuItem>
-                              {canDelete ? (
-                                <DropdownMenuItem className="text-destructive font-bold gap-2 py-3 cursor-pointer" onClick={() => setDeleteTarget(txn)}>
-                                  <Trash2 className="h-3 w-3" /> Soft Delete
-                                </DropdownMenuItem>
-                              ) : (
-                                <DropdownMenuItem className="text-muted-foreground text-[10px] gap-2 py-3" disabled>
-                                  <AlertCircle className="h-3 w-3" /> Admin Only
-                                </DropdownMenuItem>
-                              )}
+                              <DropdownMenuItem className="text-destructive font-bold gap-2 py-3 cursor-pointer" onClick={() => setDeleteTarget(txn)}>
+                                <Trash2 className="h-3 w-3" /> Soft Delete
+                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
@@ -431,11 +421,9 @@ export default function CustomerProfile(props: {
                 <CardTitle className="text-xs">This customer is currently inactive. Reactivate to log new transactions.</CardTitle>
               </CardHeader>
               <CardContent className="px-4 md:px-6">
-                {isAdmin && (
-                  <Button variant="outline" className="w-full text-emerald-500 border-emerald-500/50" onClick={handleToggleStatus}>
-                    Reactivate Account
-                  </Button>
-                )}
+                <Button variant="outline" className="w-full text-emerald-500 border-emerald-500/50" onClick={handleToggleStatus}>
+                  Reactivate Account
+                </Button>
               </CardContent>
             </Card>
           )}

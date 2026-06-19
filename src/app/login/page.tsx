@@ -6,7 +6,8 @@ import { useState } from "react";
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
-  updateProfile 
+  updateProfile,
+  sendPasswordResetEmail
 } from "firebase/auth";
 import { useAuth, useFirestore } from "@/firebase";
 import { useRouter } from "next/navigation";
@@ -28,7 +29,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
+  const [fullName, setFullName] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,19 +39,26 @@ export default function LoginPage() {
     try {
       if (isRegistering) {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        await updateProfile(userCredential.user, { displayName: name });
+        await updateProfile(userCredential.user, { displayName: fullName });
         
         // Create Firestore profile
         await createUserProfile(db, {
           uid: userCredential.user.uid,
           email: email,
-          displayName: name,
-          role: 'staff' // Default role for new signups
+          fullName: fullName
         });
         
         toast({ title: "Account Created", description: "Welcome to Cylindera!" });
       } else {
-        await signInWithEmailAndPassword(auth, email, password);
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        
+        // Ensure profile exists (for users created via console or missing profile)
+        await createUserProfile(db, {
+          uid: userCredential.user.uid,
+          email: userCredential.user.email,
+          fullName: userCredential.user.displayName || "User"
+        });
+
         toast({ title: "Logged In", description: "Welcome back!" });
       }
       router.push("/");
@@ -62,6 +70,21 @@ export default function LoginPage() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      toast({ variant: "destructive", title: "Email Required", description: "Please enter your email address to reset password." });
+      return;
+    }
+    if (!auth) return;
+
+    try {
+      await sendPasswordResetEmail(auth, email);
+      toast({ title: "Reset Email Sent", description: "Please check your inbox." });
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Error", description: error.message });
     }
   };
 
@@ -85,7 +108,7 @@ export default function LoginPage() {
           </CardTitle>
           <CardDescription>
             {isRegistering 
-              ? "Enter your details to register as staff" 
+              ? "Enter your details to register" 
               : "Enter your credentials to access your ledger"}
           </CardDescription>
         </CardHeader>
@@ -93,13 +116,13 @@ export default function LoginPage() {
           <CardContent className="space-y-4">
             {isRegistering && (
               <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
+                <Label htmlFor="fullName">Full Name</Label>
                 <Input 
-                  id="name" 
+                  id="fullName" 
                   placeholder="Ram Bahadur" 
                   required 
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
                 />
               </div>
             )}
@@ -115,7 +138,14 @@ export default function LoginPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+                {!isRegistering && (
+                  <Button variant="link" type="button" className="px-0 h-auto text-xs" onClick={handleForgotPassword}>
+                    Forgot password?
+                  </Button>
+                )}
+              </div>
               <Input 
                 id="password" 
                 type="password" 

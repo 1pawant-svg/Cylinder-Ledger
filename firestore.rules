@@ -7,69 +7,35 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function getUserData() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
-    }
-
-    function userExists() {
-      return exists(/databases/$(database)/documents/users/$(request.auth.uid));
-    }
-
-    // Role helpers - optimized to minimize get/exists calls
-    function hasRole(role) {
-      return isAuthenticated() && userExists() && getUserData().role == role;
-    }
-
-    function isAdmin() {
-      return hasRole('admin');
-    }
-
-    function isStaff() {
-      return hasRole('staff');
-    }
-
-    function isAtLeastStaff() {
-      return isAuthenticated() && userExists() && getUserData().role in ['admin', 'staff'];
-    }
-
     // User profiles
     match /users/{userId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.auth.uid == userId;
-      allow update: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
-      allow delete: if isAdmin();
+      allow write: if isAuthenticated() && request.auth.uid == userId;
     }
 
     // Customers
     match /customers/{customerId} {
-      allow read: if isAuthenticated();
-      allow create, update: if isAtLeastStaff();
-      allow delete: if isAdmin();
+      allow read, write: if isAuthenticated();
     }
 
     // Transactions
     match /transactions/{transactionId} {
-      allow read: if isAuthenticated();
-      allow create: if isAtLeastStaff();
-      allow update, delete: if isAdmin();
+      allow read, write: if isAuthenticated();
     }
 
     // Inventory
     match /inventory/{docId} {
-      allow read: if isAuthenticated();
-      allow write: if isAtLeastStaff();
+      allow read, write: if isAuthenticated();
     }
 
     // Settings
     match /settings/config {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
+      allow read, write: if isAuthenticated();
     }
 
     // Audit Logs
     match /audit_logs/{logId} {
-      allow read: if isAdmin();
-      allow create: if isAuthenticated();
+      allow read, create: if isAuthenticated();
       allow update, delete: if false;
     }
 

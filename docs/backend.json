@@ -10,7 +10,7 @@
         "phone": { "type": "string" },
         "address": { "type": "string" },
         "notes": { "type": "string" },
-        "status": { "type": "string", "enum": ["active", "inactive", "archived"], "description": "Current status of the customer." },
+        "status": { "type": "string", "enum": ["active", "inactive"], "description": "Current status of the customer." },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["name", "phone", "status", "createdAt"]
@@ -23,7 +23,7 @@
         "customerId": { "type": "string" },
         "date": { "type": "string", "format": "date-time" },
         "dueDate": { "type": "string", "format": "date-time", "description": "Expected return date for the cylinder." },
-        "type": { "type": "string", "enum": ["IN", "OUT"] },
+        "type": { "type": "string", "enum": ["IN", "OUT", "OUT_FULL", "IN_EMPTY", "LEAKAGE", "LOST", "ADJUSTMENT"] },
         "quantity": { "type": "number" },
         "remark": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
@@ -47,8 +47,7 @@
       "type": "object",
       "properties": {
         "email": { "type": "string", "format": "email" },
-        "displayName": { "type": "string" },
-        "role": { "type": "string", "enum": ["admin", "staff"] }
+        "fullName": { "type": "string" }
       },
       "required": ["email"]
     },
@@ -98,7 +97,7 @@
     },
     "/users/{userId}": {
       "schema": "UserProfile",
-      "description": "User specific data and roles."
+      "description": "User specific data."
     },
     "/settings/config": {
       "schema": "Setting",

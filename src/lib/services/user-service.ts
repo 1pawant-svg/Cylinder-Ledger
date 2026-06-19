@@ -1,3 +1,4 @@
+
 import { 
   Firestore, 
   doc, 
@@ -24,7 +25,7 @@ export async function createUserProfile(db: Firestore, profile: Omit<UserProfile
   } catch (error) {
     errorEmitter.emit('permission-error', new FirestorePermissionError({
       path: docRef.path,
-      operation: 'create',
+      operation: 'write',
       requestResourceData: data,
     }));
   }

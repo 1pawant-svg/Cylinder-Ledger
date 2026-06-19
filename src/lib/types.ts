@@ -1,7 +1,7 @@
+
 import { Timestamp } from 'firebase/firestore';
 
 export type TransactionType = 'IN' | 'OUT' | 'OUT_FULL' | 'IN_EMPTY' | 'LEAKAGE' | 'LOST' | 'ADJUSTMENT';
-export type UserRole = 'admin' | 'staff';
 export type CustomerStatus = 'active' | 'inactive';
 
 export interface Customer {
@@ -48,8 +48,7 @@ export interface Inventory {
 export interface UserProfile {
   uid: string;
   email: string | null;
-  displayName: string | null;
-  role: UserRole;
+  fullName: string | null;
   createdAt: Timestamp | string;
 }
 

@@ -84,7 +84,7 @@ export default function SettingsPage() {
       
       logAction(db, {
         userId: user.uid,
-        userName: profile.displayName || "Admin",
+        userName: profile.fullName || "User",
         action: "UPDATE_SETTINGS",
         entityType: "SETTING",
         entityId: "config",
@@ -110,7 +110,7 @@ export default function SettingsPage() {
     if (!db || !user || !profile) return;
     setBackingUp(true);
     try {
-      const data = await exportBackup(db, user.uid, profile.displayName || 'Admin');
+      const data = await exportBackup(db, user.uid, profile.fullName || 'User');
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -146,7 +146,7 @@ export default function SettingsPage() {
           throw new Error("Invalid backup format.");
         }
 
-        await restoreBackup(db, backupData, user.uid, profile.displayName || 'Admin');
+        await restoreBackup(db, backupData, user.uid, profile.fullName || 'User');
         toast({ title: "Restore Successful", description: "Database has been synchronized with the backup." });
         setTimeout(() => window.location.reload(), 1500);
       } catch (error: any) {
@@ -265,7 +265,7 @@ export default function SettingsPage() {
           <CardTitle className="font-headline text-2xl font-bold flex items-center gap-2 text-accent">
             <Database className="h-6 w-6" /> Data Management
           </CardTitle>
-          <CardDescription>Export backups or restore data from a local JSON file. (Admin Only)</CardDescription>
+          <CardDescription>Export backups or restore data from a local JSON file.</CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="space-y-4 p-4 rounded-xl bg-muted/20 border border-border/50">
