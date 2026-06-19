@@ -132,14 +132,7 @@ export default function CustomerProfile(props: {
     }
   }, [user, db]);
 
-  // Pre-calculate transactions with running balance
   const transactionsWithBalance = useMemo(() => {
-    let running = balance;
-    // We reverse the list to calculate correctly if transactions were sorted desc
-    // However getCustomerTransactions returns sorted desc. 
-    // To show running balance correctly at each step, we calculate from historical point.
-    // Simpler: iterate reversed, start at 0 (or opening), and add up.
-    
     const chronological = [...transactions].reverse();
     let currentBalance = 0;
     const withRunning = chronological.map(txn => {
@@ -148,23 +141,19 @@ export default function CustomerProfile(props: {
     });
     
     return withRunning.reverse();
-  }, [transactions, balance]);
+  }, [transactions]);
 
-  // Share Dialog State
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [shareType, setShareType] = useState<'balance' | 'statement'>('balance');
 
-  // Quick Log State
   const [quickLogOpen, setQuickLogOpen] = useState(false);
   const [quickLogType, setQuickLogType] = useState<TransactionType>('OUT_FULL');
   const [quickQty, setQuickQty] = useState("1");
   const [quickRemark, setQuickRemark] = useState("");
 
-  // Delete State
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
   const [deleteReason, setDeleteReason] = useState("");
 
-  // Edit State
   const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
   const [editFormData, setEditFormData] = useState({ 
     name: '', 
@@ -279,6 +268,17 @@ export default function CustomerProfile(props: {
 
   const handleToggleStatus = () => {
     if (!customer) return;
+    
+    // Logic: Make deactivate only working when the balance is settled (balance is 0)
+    if (!isInactive && balance !== 0) {
+      toast({ 
+        variant: "destructive", 
+        title: "Cannot Deactivate", 
+        description: `This account has an outstanding balance of ${Math.abs(balance)} PCS. Please settle the account first.` 
+      });
+      return;
+    }
+
     const newStatus = isInactive ? 'active' : 'inactive';
     updateCustomerStatus(customer.id, newStatus);
     toast({ title: `Customer marked ${newStatus}` });
@@ -315,7 +315,10 @@ export default function CustomerProfile(props: {
           <Button 
             size="sm" 
             variant="outline" 
-            className={cn("gap-2 font-bold h-10 md:h-12 flex-1 md:flex-none", isInactive ? "text-emerald-500 border-emerald-500/50 hover:bg-emerald-500/10" : "text-accent border-accent/50 hover:bg-accent/10")} 
+            className={cn(
+              "gap-2 font-bold h-10 md:h-12 flex-1 md:flex-none", 
+              isInactive ? "text-emerald-500 border-emerald-500/50 hover:bg-emerald-500/10" : "text-accent border-accent/50 hover:bg-accent/10"
+            )} 
             onClick={handleToggleStatus}
           >
             {isInactive ? <UserCheck className="h-4 w-4" /> : <UserX className="h-4 w-4" />}
@@ -430,7 +433,7 @@ export default function CustomerProfile(props: {
             <Card className="border-none shadow-xl bg-muted/20 border-l-4 border-l-accent">
               <CardHeader className="px-4 md:px-6">
                 <CardTitle className="font-headline text-base font-bold text-accent">Account Inactive</CardTitle>
-                <CardTitle className="text-xs">This customer is currently inactive. Reactivate to log new transactions.</CardTitle>
+                <CardDescription className="text-xs">This customer is currently inactive. Reactivate to log new transactions.</CardDescription>
               </CardHeader>
               <CardContent className="px-4 md:px-6">
                 <Button variant="outline" className="w-full text-emerald-500 border-emerald-500/50" onClick={handleToggleStatus}>
