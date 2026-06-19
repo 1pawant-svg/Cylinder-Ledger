@@ -155,9 +155,9 @@ export default function ReportsPage() {
         <Card className="border-none shadow-xl bg-card border-t-4 border-t-primary">
           <CardHeader>
             <CardTitle className="font-headline text-xl font-bold flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-primary" /> Top Debtors (Top 10)
+              <TrendingUp className="h-5 w-5 text-primary" /> Top Debtors (To Receive)
             </CardTitle>
-            <CardDescription className="print:hidden">Highest outstanding cylinder counts</CardDescription>
+            <CardDescription className="print:hidden">Highest outstanding To Receive counts</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {rankings.filter(r => r.balance > 0).slice(0, 10).map((r, i) => (
@@ -167,7 +167,7 @@ export default function ReportsPage() {
                     <span className="text-[10px] font-bold text-primary w-4">#{i+1}</span>
                     <span className="font-bold text-xs truncate max-w-[150px] group-hover:text-primary">{r.name}</span>
                   </div>
-                  <span className="font-headline font-bold text-sm text-primary">{r.balance} PCS</span>
+                  <span className="font-headline font-bold text-sm text-primary">{r.balance} To Receive</span>
                 </div>
               </Link>
             ))}

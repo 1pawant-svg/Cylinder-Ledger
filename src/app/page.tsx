@@ -74,8 +74,6 @@ export default function Dashboard() {
   useEffect(() => {
     const todayAD = getCurrentADDate();
     const todayBS = adToBs(todayAD);
-    console.log("[DASHBOARD_DEBUG] Current AD Date:", todayAD);
-    console.log("[DASHBOARD_DEBUG] Current BS Date:", todayBS);
     setTodayLabel(formatFullDate(todayAD));
   }, []);
 
@@ -92,7 +90,7 @@ export default function Dashboard() {
     const collections = transactions
       .filter(t => t.status !== 'deleted' && t.dueDate && getTransactionImpact(t.type) === 1)
       .map(t => {
-        // Handle both string and Timestamp due dates
+        // Handle both string and Date due dates
         const dueDateStr = typeof t.dueDate === 'string' ? t.dueDate : new Date(toMillis(t.dueDate)).toISOString().split('T')[0];
         
         return {
@@ -159,7 +157,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <StatCard 
           title="Market Stock" 
-          value={`${toReceiveTotal} PCS`} 
+          value={`${toReceiveTotal} To Receive`} 
           icon={Package} 
           description="Total outstanding cylinders"
           variant="primary"
@@ -203,7 +201,7 @@ export default function Dashboard() {
                 </div>
                 <div className="text-right">
                   <p className="text-xl font-headline font-bold text-orange-500">{collectionData.dueToday.length}</p>
-                  <p className="text-[10px] text-muted-foreground uppercase font-bold">{collectionData.dueToday.reduce((s, c) => s + c.balance, 0)} PCS Total</p>
+                  <p className="text-[10px] text-muted-foreground uppercase font-bold">{collectionData.dueToday.reduce((s, c) => s + c.balance, 0)} To Receive</p>
                 </div>
               </div>
             </CardHeader>
@@ -219,7 +217,7 @@ export default function Dashboard() {
                       <p className="text-[9px] text-muted-foreground">{customer?.phone}</p>
                     </div>
                     <div className="text-right flex items-center gap-2">
-                      <span className="text-xs font-bold text-orange-500">{item.balance} PCS</span>
+                      <span className="text-xs font-bold text-orange-500">{item.balance} To Receive</span>
                       {getOverdueBadge(item.daysDiff)}
                     </div>
                   </div>
@@ -248,7 +246,7 @@ export default function Dashboard() {
                 </div>
                 <div className="text-right">
                   <p className="text-xl font-headline font-bold text-yellow-500">{collectionData.dueThisWeek.length}</p>
-                  <p className="text-[10px] text-muted-foreground uppercase font-bold">{collectionData.dueThisWeek.reduce((s, c) => s + c.balance, 0)} PCS Total</p>
+                  <p className="text-[10px] text-muted-foreground uppercase font-bold">{collectionData.dueThisWeek.reduce((s, c) => s + c.balance, 0)} To Receive</p>
                 </div>
               </div>
             </CardHeader>
@@ -263,7 +261,7 @@ export default function Dashboard() {
                       </Link>
                       <p className="text-[9px] text-muted-foreground">Due in {item.daysDiff} days</p>
                     </div>
-                    <span className="text-xs font-bold text-yellow-500 whitespace-nowrap">{item.balance} PCS</span>
+                    <span className="text-xs font-bold text-yellow-500 whitespace-nowrap">{item.balance} To Receive</span>
                   </div>
                 );
               })}
@@ -290,7 +288,7 @@ export default function Dashboard() {
                 </div>
                 <div className="text-right">
                   <p className="text-xl font-headline font-bold text-destructive">{collectionData.overdue.length}</p>
-                  <p className="text-[10px] text-muted-foreground uppercase font-bold">{collectionData.overdue.reduce((s, c) => s + c.balance, 0)} PCS Total</p>
+                  <p className="text-[10px] text-muted-foreground uppercase font-bold">{collectionData.overdue.reduce((s, c) => s + c.balance, 0)} To Receive</p>
                 </div>
               </div>
             </CardHeader>
@@ -300,13 +298,13 @@ export default function Dashboard() {
                 return (
                   <div key={item.id} className="flex items-center justify-between p-2 rounded-lg bg-destructive/5 border border-destructive/10 group hover:bg-destructive/10 transition-colors">
                     <div className="min-w-0">
-                      <Link href={`/customers/${customer.id}`} className="font-bold text-sm hover:text-destructive transition-colors block truncate">
-                        {customer.name}
+                      <Link href={`/customers/${customer?.id}`} className="font-bold text-sm hover:text-destructive transition-colors block truncate">
+                        {customer?.name}
                       </Link>
                       <p className="text-[9px] text-destructive font-medium uppercase">{Math.abs(item.daysDiff)}d Overdue</p>
                     </div>
                     <div className="text-right flex items-center gap-2">
-                      <span className="text-xs font-bold text-destructive">{item.balance} PCS</span>
+                      <span className="text-xs font-bold text-destructive">{item.balance} To Receive</span>
                       {getOverdueBadge(item.daysDiff)}
                     </div>
                   </div>
@@ -395,7 +393,7 @@ export default function Dashboard() {
                         <div className="flex justify-between items-start">
                           <div className="overflow-hidden">
                             <Link href={`/customers/${customer.id}`} className="font-bold text-sm hover:text-primary transition-colors block truncate">{customer.name}</Link>
-                            <p className="text-[10px] text-muted-foreground mt-0.5">Balance: <span className="font-bold text-primary">{txn.balance} PCS</span></p>
+                            <p className="text-[10px] text-muted-foreground mt-0.5">Owed: <span className="font-bold text-primary">{txn.balance} To Receive</span></p>
                           </div>
                           {getOverdueBadge(txn.daysDiff)}
                         </div>

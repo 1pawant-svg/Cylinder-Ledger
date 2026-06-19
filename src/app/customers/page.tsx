@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -259,15 +258,15 @@ export default function CustomersPage() {
                 <div className="pt-2">
                   <div className="flex items-center gap-2 mb-4">
                     <History className="h-4 w-4 text-primary" />
-                    <h3 className="font-bold text-sm uppercase tracking-wider">Initial Balance</h3>
+                    <h3 className="font-bold text-sm uppercase tracking-wider">Initial Account Status</h3>
                   </div>
                   <div className="grid grid-cols-2 gap-4 p-4 rounded-xl bg-muted/20 border border-border/50">
                     <div className="space-y-2">
-                      <Label className="text-primary uppercase text-[9px] tracking-[0.2em] font-bold">Owed By Cust (PCS)</Label>
+                      <Label className="text-primary uppercase text-[9px] tracking-[0.2em] font-bold">To Receive (PCS)</Label>
                       <Input type="number" value={newCust.openingToReceive} onChange={e => setNewCust({...newCust, openingToReceive: e.target.value})} placeholder="0" className="bg-background font-headline font-bold h-10" />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-accent uppercase text-[9px] tracking-[0.2em] font-bold">Owed To Cust (PCS)</Label>
+                      <Label className="text-accent uppercase text-[9px] tracking-[0.2em] font-bold">To Give (PCS)</Label>
                       <Input type="number" value={newCust.openingToGive} onChange={e => setNewCust({...newCust, openingToGive: e.target.value})} placeholder="0" className="bg-background font-headline font-bold h-10" />
                     </div>
                   </div>
@@ -326,7 +325,7 @@ export default function CustomersPage() {
             <TableRow className="border-border/50 hover:bg-transparent">
               <TableHead className="py-4 font-bold text-muted-foreground uppercase tracking-widest text-[9px] md:text-[10px] pl-4 md:pl-6">Profile</TableHead>
               <TableHead className="py-4 font-bold text-muted-foreground uppercase tracking-widest text-[9px] md:text-[10px] hidden sm:table-cell">Contact</TableHead>
-              <TableHead className="py-4 font-bold text-muted-foreground uppercase tracking-widest text-[9px] md:text-[10px]">Net Balance</TableHead>
+              <TableHead className="py-4 font-bold text-muted-foreground uppercase tracking-widest text-[9px] md:text-[10px]">Net Status</TableHead>
               <TableHead className="py-4 font-bold text-muted-foreground uppercase tracking-widest text-[9px] md:text-[10px]">Collection</TableHead>
               <TableHead className="py-4 font-bold text-muted-foreground uppercase tracking-widest text-[9px] md:text-[10px] text-right pr-4 md:pr-6">Actions</TableHead>
             </TableRow>
@@ -367,8 +366,9 @@ export default function CustomersPage() {
                   <TableCell className="hidden sm:table-cell"><div className="flex items-center gap-2 text-xs md:text-sm text-foreground"><Phone className="h-3.5 w-3.5 text-muted-foreground" /> {customer.phone}</div></TableCell>
                   <TableCell>
                     <div className="flex flex-col">
-                      <span className={cn("font-headline font-bold text-sm md:text-lg", balance > 0 ? "text-primary" : balance < 0 ? "text-accent" : "text-emerald-500")}>{balance === 0 ? "Settled" : `${Math.abs(balance)} PCS`}</span>
-                      {balance !== 0 && <span className="text-[8px] md:text-[9px] uppercase font-bold tracking-widest text-muted-foreground opacity-70">{balance > 0 ? "Pending" : "Excess"}</span>}
+                      <span className={cn("font-headline font-bold text-sm md:text-lg", balance > 0 ? "text-primary" : balance < 0 ? "text-accent" : "text-emerald-500")}>
+                        {balance === 0 ? "Settled" : balance > 0 ? `${balance} To Receive` : `${Math.abs(balance)} To Give`}
+                      </span>
                     </div>
                   </TableCell>
                   <TableCell>

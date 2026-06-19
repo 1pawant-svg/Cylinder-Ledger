@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -189,12 +188,12 @@ export default function CustomerProfile(props: {
     
     if (shareType === 'balance') {
       const statusText = balance > 0 
-        ? `🔴 *Outstanding: ${balance} PCS*` 
+        ? `🔴 *To Receive: ${balance} PCS*` 
         : balance < 0 
-          ? `🟢 *Advantage: ${Math.abs(balance)} PCS*` 
+          ? `🟢 *To Give: ${Math.abs(balance)} PCS*` 
           : `✅ *Account Settled*`;
           
-      return `${header}\n📊 *Current Balance:* ${statusText}\n\n📍 Address: ${customer.address}\n📞 Contact: ${customer.phone}\n\n_Thank you for your business!_`;
+      return `${header}\n📊 *Account Summary:* ${statusText}\n\n📍 Address: ${customer.address}\n📞 Contact: ${customer.phone}\n\n_Thank you for your business!_`;
     } else {
       let ledgerText = `📝 *Recent Activity (Last 5):*\n`;
       transactions.slice(0, 5).forEach(t => {
@@ -202,7 +201,12 @@ export default function CustomerProfile(props: {
         ledgerText += `• ${t.bsDate}: ${type} [${t.quantity} PCS]\n`;
       });
       
-      const balanceText = `\n💰 *Total Outstanding: ${balance} PCS*`;
+      const balanceText = balance > 0 
+        ? `\n💰 *Total To Receive: ${balance} PCS*` 
+        : balance < 0 
+          ? `\n💰 *Total To Give: ${Math.abs(balance)} PCS*`
+          : `\n💰 *Status: Settled*`;
+
       return `${header}\n${ledgerText}${balanceText}\n\n📍 Address: ${customer.address}\n\n_Generated via Cylindera Pro_`;
     }
   };
@@ -323,7 +327,7 @@ export default function CustomerProfile(props: {
               <div className="text-right">
                 <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mb-1">Current Balance</p>
                 <Badge className={cn("font-bold px-2 py-0.5 md:px-3 md:py-1 text-[10px] md:text-xs", balance > 0 ? "bg-primary text-primary-foreground" : balance < 0 ? "bg-accent text-accent-foreground" : "bg-emerald-500 text-white")}>
-                  {balance === 0 ? "SETTLED" : balance > 0 ? `${balance} PCS OUT` : `${Math.abs(balance)} PCS ADV`}
+                  {balance === 0 ? "SETTLED" : balance > 0 ? `${balance} To Receive` : `${Math.abs(balance)} To Give`}
                 </Badge>
               </div>
             </CardHeader>
@@ -359,7 +363,7 @@ export default function CustomerProfile(props: {
                         </TableCell>
                         <TableCell className="font-bold text-xs">
                            <span className={cn(txn.runningBalance > 0 ? "text-primary" : txn.runningBalance < 0 ? "text-accent" : "text-emerald-500")}>
-                              {txn.runningBalance} PCS
+                              {txn.runningBalance === 0 ? "Settled" : txn.runningBalance > 0 ? `${txn.runningBalance} To Receive` : `${Math.abs(txn.runningBalance)} To Give`}
                            </span>
                         </TableCell>
                         <TableCell className="hidden sm:table-cell">
@@ -495,7 +499,7 @@ export default function CustomerProfile(props: {
                 onClick={() => setShareType('balance')}
               >
                 <Package className={cn("mx-auto h-6 w-6", shareType === 'balance' ? "text-primary" : "text-muted-foreground")} />
-                <h4 className="font-bold text-sm">Balance Only</h4>
+                <h4 className="font-bold text-sm">Summary Only</h4>
               </div>
               <div 
                 className={cn(
