@@ -1,3 +1,4 @@
+
 import { 
   Firestore, 
   collection, 
@@ -27,9 +28,6 @@ export async function addTransaction(db: Firestore, data: Omit<Transaction, 'id'
   };
 
   const payload = cleanFirestoreData(rawPayload);
-
-  console.log("[DEV] Transaction Before Cleanup:", rawPayload);
-  console.log("[DEV] Transaction After Cleanup (Saving):", payload);
 
   try {
     await runTransaction(db, async (transaction) => {
@@ -71,12 +69,14 @@ export async function addTransaction(db: Firestore, data: Omit<Transaction, 'id'
       });
     }
   } catch (error: any) {
-    if (error.code === 'permission-denied' || error.message?.includes('permission')) {
+    if (error.code === 'permission-denied') {
       errorEmitter.emit('permission-error', new FirestorePermissionError({
         path: 'transactions/atomic',
         operation: 'create',
         requestResourceData: payload,
       } satisfies SecurityRuleContext));
+    } else {
+      console.error("Atomic transaction failed:", error);
     }
     throw error;
   }
@@ -93,9 +93,6 @@ export function updateTransaction(db: Firestore, id: string, data: Partial<Omit<
 
   const updateData = cleanFirestoreData(rawUpdateData);
 
-  console.log("[DEV] Transaction Update Before Cleanup:", rawUpdateData);
-  console.log("[DEV] Transaction Update After Cleanup:", updateData);
-
   updateDoc(docRef, updateData).then(() => {
     logAction(db, {
       userId,
@@ -105,12 +102,16 @@ export function updateTransaction(db: Firestore, id: string, data: Partial<Omit<
       entityId: id,
       details: `Updated transaction ${id}`,
     });
-  }).catch(async (error) => {
-    errorEmitter.emit('permission-error', new FirestorePermissionError({
-      path: docRef.path,
-      operation: 'update',
-      requestResourceData: updateData,
-    } satisfies SecurityRuleContext));
+  }).catch(async (error: any) => {
+    if (error.code === 'permission-denied') {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: docRef.path,
+        operation: 'update',
+        requestResourceData: updateData,
+      } satisfies SecurityRuleContext));
+    } else {
+      console.error("Update transaction error:", error);
+    }
   });
 }
 
@@ -135,12 +136,16 @@ export function deleteTransaction(db: Firestore, id: string, userId: string, use
       entityId: id,
       details: `Soft deleted transaction ${id}.`,
     });
-  }).catch(async (error) => {
-    errorEmitter.emit('permission-error', new FirestorePermissionError({
-      path: docRef.path,
-      operation: 'update',
-      requestResourceData: deleteData,
-    } satisfies SecurityRuleContext));
+  }).catch(async (error: any) => {
+    if (error.code === 'permission-denied') {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: docRef.path,
+        operation: 'update',
+        requestResourceData: deleteData,
+      } satisfies SecurityRuleContext));
+    } else {
+      console.error("Delete transaction error:", error);
+    }
   });
 }
 
