@@ -1,0 +1,112 @@
+
+{
+  "entities": {
+    "Customer": {
+      "title": "Customer",
+      "description": "Represents an LPG customer profile.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "address": { "type": "string" },
+        "notes": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "inactive", "archived"], "description": "Current status of the customer." },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "phone", "status", "createdAt"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Represents a cylinder movement (issue or return).",
+      "type": "object",
+      "properties": {
+        "customerId": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "dueDate": { "type": "string", "format": "date-time", "description": "Expected return date for the cylinder." },
+        "type": { "type": "string", "enum": ["IN", "OUT"] },
+        "quantity": { "type": "number" },
+        "remark": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["customerId", "date", "type", "quantity", "createdAt"]
+    },
+    "Inventory": {
+      "title": "Inventory",
+      "description": "Current stock levels for the business.",
+      "type": "object",
+      "properties": {
+        "filledStock": { "type": "number" },
+        "emptyStock": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["filledStock", "emptyStock", "updatedAt"]
+    },
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Basic user information for authentication.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "staff"] }
+      },
+      "required": ["email"]
+    },
+    "Setting": {
+      "title": "Setting",
+      "description": "Global application and business settings.",
+      "type": "object",
+      "properties": {
+        "businessName": { "type": "string" },
+        "address": { "type": "string" },
+        "phone": { "type": "string" },
+        "panNumber": { "type": "string" },
+        "vatPercentage": { "type": "number" }
+      }
+    },
+    "AuditLog": {
+      "title": "Audit Log",
+      "description": "A log of system events and user actions.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "action": { "type": "string" },
+        "entityType": { "type": "string" },
+        "entityId": { "type": "string" },
+        "details": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "action", "timestamp"]
+    }
+  },
+  "auth": {
+    "providers": ["password", "google"]
+  },
+  "firestore": {
+    "/customers/{customerId}": {
+      "schema": "Customer",
+      "description": "Customer profile records."
+    },
+    "/transactions/{transactionId}": {
+      "schema": "Transaction",
+      "description": "Cylinder transaction records."
+    },
+    "/inventory/current": {
+      "schema": "Inventory",
+      "description": "Real-time inventory snapshot."
+    },
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User specific data and roles."
+    },
+    "/settings/config": {
+      "schema": "Setting",
+      "description": "General business settings."
+    },
+    "/audit_logs/{logId}": {
+      "schema": "AuditLog",
+      "description": "System activity logs."
+    }
+  }
+}

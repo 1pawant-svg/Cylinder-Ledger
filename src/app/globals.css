@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 45 15% 9%;
+    --foreground: 45 10% 98%;
+    --card: 45 15% 11%;
+    --card-foreground: 45 10% 98%;
+    --popover: 45 15% 10%;
+    --popover-foreground: 45 10% 98%;
+    --primary: 42 78% 55%;
+    --primary-foreground: 45 15% 10%;
+    --secondary: 45 10% 20%;
+    --secondary-foreground: 45 10% 98%;
+    --muted: 45 10% 18%;
+    --muted-foreground: 45 10% 70%;
+    --accent: 8 75% 53%;
+    --accent-foreground: 45 10% 98%;
+    --destructive: 8 75% 53%;
+    --destructive-foreground: 45 10% 98%;
+    --border: 45 10% 22%;
+    --input: 45 10% 22%;
+    --ring: 42 78% 55%;
+    --chart-1: 42 78% 55%;
+    --chart-2: 8 75% 53%;
+    --chart-3: 199 89% 48%;
+    --chart-4: 162 59% 41%;
+    --chart-5: 271 70% 60%;
+    --radius: 0.75rem;
+    --sidebar-background: 45 15% 8%;
+    --sidebar-foreground: 45 10% 85%;
+    --sidebar-primary: 42 78% 55%;
+    --sidebar-primary-foreground: 45 15% 10%;
+    --sidebar-accent: 45 10% 15%;
+    --sidebar-accent-foreground: 42 78% 55%;
+    --sidebar-border: 45 10% 18%;
+    --sidebar-ring: 42 78% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+.font-headline {
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.font-body {
+  font-family: 'Inter', sans-serif;
+}
