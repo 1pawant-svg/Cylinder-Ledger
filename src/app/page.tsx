@@ -73,7 +73,6 @@ export default function Dashboard() {
 
   useEffect(() => {
     const todayAD = getCurrentADDate();
-    const todayBS = adToBs(todayAD);
     setTodayLabel(formatFullDate(todayAD));
   }, []);
 
@@ -298,7 +297,7 @@ export default function Dashboard() {
                 return (
                   <div key={item.id} className="flex items-center justify-between p-2 rounded-lg bg-destructive/5 border border-destructive/10 group hover:bg-destructive/10 transition-colors">
                     <div className="min-w-0">
-                      <Link href={`/customers/${customer?.id}`} className="font-bold text-sm hover:text-destructive transition-colors block truncate">
+                      <Link href={`/customers/${customer.id}`} className="font-bold text-sm hover:text-destructive transition-colors block truncate">
                         {customer?.name}
                       </Link>
                       <p className="text-[9px] text-destructive font-medium uppercase">{Math.abs(item.daysDiff)}d Overdue</p>

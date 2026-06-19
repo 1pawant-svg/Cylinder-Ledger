@@ -135,11 +135,19 @@ export default function CustomerProfile(props: {
   // Pre-calculate transactions with running balance
   const transactionsWithBalance = useMemo(() => {
     let running = balance;
-    return transactions.map(txn => {
-      const current = running;
-      running -= (txn.quantity * getTransactionImpact(txn.type));
-      return { ...txn, runningBalance: current };
+    // We reverse the list to calculate correctly if transactions were sorted desc
+    // However getCustomerTransactions returns sorted desc. 
+    // To show running balance correctly at each step, we calculate from historical point.
+    // Simpler: iterate reversed, start at 0 (or opening), and add up.
+    
+    const chronological = [...transactions].reverse();
+    let currentBalance = 0;
+    const withRunning = chronological.map(txn => {
+      currentBalance += (txn.quantity * getTransactionImpact(txn.type));
+      return { ...txn, runningBalance: currentBalance };
     });
+    
+    return withRunning.reverse();
   }, [transactions, balance]);
 
   // Share Dialog State
