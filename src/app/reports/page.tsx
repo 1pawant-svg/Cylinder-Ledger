@@ -150,8 +150,8 @@ export default function ReportsPage() {
         </div>
       </header>
 
-      {/* Stats Summary - Visible in Print */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 print:grid-cols-3 print:gap-4">
+      {/* Stats Summary - Stacked on Mobile */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8 print:grid-cols-3 print:gap-4">
         <Card className="border-none shadow-xl bg-card border-t-4 border-t-primary min-w-0">
           <CardHeader className="p-4 md:p-6">
             <CardTitle className="font-headline text-lg md:text-xl font-bold flex items-center gap-2">
@@ -277,12 +277,12 @@ export default function ReportsPage() {
           <Table>
             <TableHeader className="bg-muted/30">
               <TableRow className="border-border/50">
-                <TableHead className="py-4 font-bold text-[9px] md:text-[10px] uppercase tracking-widest pl-4 md:pl-6">ID</TableHead>
-                <TableHead className="py-4 font-bold text-[9px] md:text-[10px] uppercase tracking-widest">BS Date</TableHead>
-                <TableHead className="py-4 font-bold text-[9px] md:text-[10px] uppercase tracking-widest">Customer</TableHead>
-                <TableHead className="py-4 font-bold text-[9px] md:text-[10px] uppercase tracking-widest">Event Type</TableHead>
-                <TableHead className="py-4 font-bold text-[9px] md:text-[10px] uppercase tracking-widest">Qty</TableHead>
-                <TableHead className="py-4 font-bold text-[9px] md:text-[10px] uppercase tracking-widest">Staff</TableHead>
+                <TableHead className="py-4 font-bold text-[9px] md:text-[10px] uppercase tracking-widest pl-4 md:pl-6 hidden sm:table-cell">ID</TableHead>
+                <TableHead className="py-4 font-bold text-[9px] md:text-[10px] uppercase tracking-widest px-2 md:px-4">BS Date</TableHead>
+                <TableHead className="py-4 font-bold text-[9px] md:text-[10px] uppercase tracking-widest px-2 md:px-4">Customer</TableHead>
+                <TableHead className="py-4 font-bold text-[9px] md:text-[10px] uppercase tracking-widest px-2 md:px-4">Type</TableHead>
+                <TableHead className="py-4 font-bold text-[9px] md:text-[10px] uppercase tracking-widest px-2 md:px-4">Qty</TableHead>
+                <TableHead className="py-4 font-bold text-[9px] md:text-[10px] uppercase tracking-widest px-2 md:px-4 hidden sm:table-cell">Staff</TableHead>
                 <TableHead className="py-4 font-bold text-[9px] md:text-[10px] uppercase tracking-widest text-right pr-4 md:pr-6 print:hidden">Link</TableHead>
               </TableRow>
             </TableHeader>
@@ -293,21 +293,21 @@ export default function ReportsPage() {
                 const impact = getTransactionImpact(txn.type);
                 return (
                   <TableRow key={txn.id} className={cn("border-border/50 transition-colors", isInactive && "bg-muted/5 opacity-80")}>
-                    <TableCell className="pl-4 md:pl-6 font-mono text-[9px] md:text-[10px] text-muted-foreground uppercase">#{txn.id.slice(-4)}</TableCell>
-                    <TableCell className="font-bold text-[10px] md:text-xs whitespace-nowrap">{txn.bsDate}</TableCell>
-                    <TableCell className="font-medium text-[10px] md:text-xs min-w-[100px] max-w-[150px]">
+                    <TableCell className="pl-4 md:pl-6 font-mono text-[9px] md:text-[10px] text-muted-foreground uppercase hidden sm:table-cell">#{txn.id.slice(-4)}</TableCell>
+                    <TableCell className="px-2 md:px-4 font-bold text-[10px] md:text-xs whitespace-nowrap">{txn.bsDate}</TableCell>
+                    <TableCell className="px-2 md:px-4 font-medium text-[10px] md:text-xs min-w-[80px] md:min-w-[120px] max-w-[150px]">
                       <div className="flex flex-col min-w-0">
                         <span className="truncate">{customer?.name || 'Deleted'}</span>
                         {isInactive && <span className="text-[7px] text-accent font-bold uppercase tracking-tighter">Inactive</span>}
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <Badge variant={impact === 1 ? 'default' : 'secondary'} className="text-[7px] md:text-[8px] font-bold uppercase tracking-widest px-1 md:px-2 py-0">
+                    <TableCell className="px-2 md:px-4">
+                      <Badge variant={impact === 1 ? 'default' : 'secondary'} className="text-[7px] md:text-[8px] font-bold uppercase tracking-widest px-1 py-0">
                         {getTransactionLabel(txn.type)}
                       </Badge>
                     </TableCell>
-                    <TableCell className="font-headline font-bold text-xs">{txn.quantity} PCS</TableCell>
-                    <TableCell className="text-[9px] md:text-[10px] font-medium min-w-[80px]">
+                    <TableCell className="px-2 md:px-4 font-headline font-bold text-xs">{txn.quantity} PCS</TableCell>
+                    <TableCell className="px-2 md:px-4 text-[9px] md:text-[10px] font-medium min-w-[80px] hidden sm:table-cell">
                       <div className="flex items-center gap-1">
                         <User className="h-2.5 w-2.5 shrink-0" /> <span className="truncate">{txn.createdByName || 'Staff'}</span>
                       </div>
