@@ -134,11 +134,11 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="p-4 md:p-8 space-y-6 md:space-y-8 animate-in slide-in-from-top-4 duration-500 print:p-0 print:space-y-4 pb-24 md:pb-8">
+    <div className="p-4 md:p-8 space-y-6 md:space-y-8 animate-in slide-in-from-top-4 duration-500 print:p-0 print:space-y-4 pb-24 md:pb-8 w-full max-w-full overflow-x-hidden">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-border pb-6 print:hidden">
         <div>
-          <h1 className="font-headline text-3xl md:text-4xl font-bold text-primary">Advanced Analytics</h1>
-          <p className="text-muted-foreground mt-1 font-medium text-xs md:text-sm">Production and operational performance module</p>
+          <h1 className="font-headline text-2xl md:text-4xl font-bold text-primary">Advanced Analytics</h1>
+          <p className="text-muted-foreground mt-1 font-medium text-[10px] md:text-sm">Production and operational performance module</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full md:w-auto">
           <Button variant="outline" className="gap-2 font-bold h-11 md:h-12 flex-1 sm:flex-none" onClick={handlePrint}>
@@ -152,7 +152,7 @@ export default function ReportsPage() {
 
       {/* Stats Summary - Visible in Print */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 print:grid-cols-3 print:gap-4">
-        <Card className="border-none shadow-xl bg-card border-t-4 border-t-primary">
+        <Card className="border-none shadow-xl bg-card border-t-4 border-t-primary min-w-0">
           <CardHeader className="p-4 md:p-6">
             <CardTitle className="font-headline text-lg md:text-xl font-bold flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-primary" /> Top Debtors
@@ -162,19 +162,19 @@ export default function ReportsPage() {
           <CardContent className="space-y-3 p-4 md:p-6 pt-0">
             {rankings.filter(r => r.balance > 0).slice(0, 10).map((r, i) => (
               <Link key={r.id} href={`/customers/${r.id}`}>
-                <div className="flex items-center justify-between p-2 rounded-lg bg-muted/20 hover:bg-muted/40 transition-all cursor-pointer group">
-                  <div className="flex items-center gap-3 overflow-hidden">
+                <div className="flex items-center justify-between p-2 rounded-lg bg-muted/20 hover:bg-muted/40 transition-all cursor-pointer group gap-2">
+                  <div className="flex items-center gap-2 min-w-0 overflow-hidden">
                     <span className="text-[10px] font-bold text-primary w-4 shrink-0">#{i+1}</span>
                     <span className="font-bold text-xs truncate group-hover:text-primary">{r.name}</span>
                   </div>
-                  <span className="font-headline font-bold text-xs text-primary shrink-0 whitespace-nowrap">{r.balance} To Receive</span>
+                  <span className="font-headline font-bold text-[10px] md:text-xs text-primary shrink-0 whitespace-nowrap">{r.balance} To Receive</span>
                 </div>
               </Link>
             ))}
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-xl bg-card border-t-4 border-t-emerald-500">
+        <Card className="border-none shadow-xl bg-card border-t-4 border-t-emerald-500 min-w-0">
           <CardHeader className="p-4 md:p-6">
             <CardTitle className="font-headline text-lg md:text-xl font-bold flex items-center gap-2">
               <Activity className="h-5 w-5 text-emerald-500" /> Staff Performance
@@ -184,8 +184,11 @@ export default function ReportsPage() {
           <CardContent className="space-y-4 p-4 md:p-6 pt-0">
             {staffActivity.map((staff, i) => (
               <div key={i} className="space-y-1 p-3 rounded-lg bg-emerald-500/5">
-                <div className="flex justify-between items-center mb-1">
-                  <span className="font-bold text-sm flex items-center gap-2 overflow-hidden"><User className="h-3 w-3 shrink-0" /> <span className="truncate">{staff.name}</span></span>
+                <div className="flex justify-between items-center mb-1 gap-2">
+                  <span className="font-bold text-sm flex items-center gap-2 min-w-0 overflow-hidden">
+                    <User className="h-3 w-3 shrink-0" /> 
+                    <span className="truncate">{staff.name}</span>
+                  </span>
                   <Badge variant="outline" className="text-[9px] font-bold shrink-0">{staff.count} TXNS</Badge>
                 </div>
                 <div className="flex justify-between text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
@@ -198,7 +201,7 @@ export default function ReportsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-xl bg-card border-t-4 border-t-accent">
+        <Card className="border-none shadow-xl bg-card border-t-4 border-t-accent min-w-0">
           <CardHeader className="p-4 md:p-6">
             <CardTitle className="font-headline text-lg md:text-xl font-bold flex items-center gap-2">
               <Package className="h-5 w-5 text-accent" /> Operation Volume
@@ -237,7 +240,7 @@ export default function ReportsPage() {
         </Card>
       </div>
 
-      <Card className="border-none shadow-xl bg-card print:shadow-none overflow-hidden">
+      <Card className="border-none shadow-xl bg-card print:shadow-none overflow-hidden w-full">
         <CardHeader className="border-b border-border/50 p-4 md:p-6 print:pb-2">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div>
@@ -270,7 +273,7 @@ export default function ReportsPage() {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="p-0 overflow-x-auto">
+        <CardContent className="p-0">
           <Table>
             <TableHeader className="bg-muted/30">
               <TableRow className="border-border/50">
@@ -293,7 +296,7 @@ export default function ReportsPage() {
                     <TableCell className="pl-4 md:pl-6 font-mono text-[9px] md:text-[10px] text-muted-foreground uppercase">#{txn.id.slice(-4)}</TableCell>
                     <TableCell className="font-bold text-[10px] md:text-xs whitespace-nowrap">{txn.bsDate}</TableCell>
                     <TableCell className="font-medium text-[10px] md:text-xs min-w-[100px] max-w-[150px]">
-                      <div className="flex flex-col">
+                      <div className="flex flex-col min-w-0">
                         <span className="truncate">{customer?.name || 'Deleted'}</span>
                         {isInactive && <span className="text-[7px] text-accent font-bold uppercase tracking-tighter">Inactive</span>}
                       </div>
@@ -304,9 +307,9 @@ export default function ReportsPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="font-headline font-bold text-xs">{txn.quantity} PCS</TableCell>
-                    <TableCell className="text-[9px] md:text-[10px] font-medium whitespace-nowrap">
+                    <TableCell className="text-[9px] md:text-[10px] font-medium min-w-[80px]">
                       <div className="flex items-center gap-1">
-                        <User className="h-2 w-2 shrink-0" /> {txn.createdByName || 'Staff'}
+                        <User className="h-2.5 w-2.5 shrink-0" /> <span className="truncate">{txn.createdByName || 'Staff'}</span>
                       </div>
                     </TableCell>
                     <TableCell className="text-right pr-4 md:pr-6 print:hidden">
