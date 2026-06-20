@@ -25,9 +25,9 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover" />
       </head>
-      <body className="font-body antialiased pb-20 md:pb-0">
+      <body className="font-body antialiased pb-24 md:pb-0 min-h-screen bg-background">
         <FirebaseClientProvider>
           <FirebaseErrorListener />
           <AuthGuard>
@@ -35,8 +35,10 @@ export default function RootLayout({
               <SidebarProvider>
                 <div className="flex min-h-screen w-full">
                   <AppSidebar />
-                  <SidebarInset className="flex-1 bg-background">
-                    {children}
+                  <SidebarInset className="flex-1 bg-background relative">
+                    <main className="flex-1 w-full">
+                      {children}
+                    </main>
                   </SidebarInset>
                 </div>
               </SidebarProvider>
