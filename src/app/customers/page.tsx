@@ -15,7 +15,8 @@ import {
   Filter,
   ArrowUpDown,
   Loader2,
-  UserPlus
+  UserPlus,
+  Calendar
 } from "lucide-react";
 import {
   Table,
@@ -55,7 +56,7 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { getCurrentADDate, toMillis, getDifferenceInDays, adToBs } from "@/lib/date-utils";
+import { getCurrentADDate, toMillis, getDifferenceInDays, adToBs, bsToAd, BS_MONTHS, getBSYears } from "@/lib/date-utils";
 import { Customer, TransactionType } from "@/lib/types";
 
 type StatusFilter = 'ALL' | 'ACTIVE' | 'INACTIVE' | 'TO_RECEIVE' | 'TO_GIVE' | 'SETTLED' | 'OVERDUE';
@@ -96,6 +97,16 @@ export default function CustomersPage() {
     if (shouldAdd === 'true') setIsAddOpen(true);
   }, [searchParams]);
 
+  const getTodayBSParts = () => {
+    const todayAD = getCurrentADDate();
+    const bsDateStr = adToBs(todayAD);
+    const parts = bsDateStr.split('-');
+    if (parts.length === 3) {
+      return { year: parts[0], month: parts[1], day: parts[2] };
+    }
+    return { year: '2081', month: '01', day: '01' };
+  };
+
   const [newCust, setNewCust] = useState({ 
     name: '', 
     address: '', 
@@ -104,6 +115,8 @@ export default function CustomersPage() {
     openingToReceive: '',
     openingToGive: ''
   });
+
+  const [openingDateBS, setOpeningDateBS] = useState(getTodayBSParts);
 
   const processedCustomers = useMemo(() => {
     const today = getCurrentADDate();
@@ -188,24 +201,30 @@ export default function CustomersPage() {
 
     if (!customerId) return;
 
-    const todayAD = getCurrentADDate();
-    const todayBS = adToBs(todayAD);
+    const openingAD = bsToAd(openingDateBS.year, openingDateBS.month, openingDateBS.day);
+    const openingBSStr = `${openingDateBS.year}-${openingDateBS.month}-${openingDateBS.day}`;
+    
     const toReceive = parseInt(newCust.openingToReceive) || 0;
     const toGive = parseInt(newCust.openingToGive) || 0;
 
     if (toReceive > 0) {
-      addTransaction({ customerId, date: todayAD, bsDate: todayBS, type: 'OUT_FULL', quantity: toReceive, remark: 'Opening Balance' });
+      addTransaction({ customerId, date: openingAD, bsDate: openingBSStr, type: 'OUT_FULL', quantity: toReceive, remark: 'Opening Balance' });
     }
     if (toGive > 0) {
-      addTransaction({ customerId, date: todayAD, bsDate: todayBS, type: 'IN_EMPTY', quantity: toGive, remark: 'Opening Balance' });
+      addTransaction({ customerId, date: openingAD, bsDate: openingBSStr, type: 'IN_EMPTY', quantity: toGive, remark: 'Opening Balance' });
     }
 
     setNewCust({ name: '', address: '', phone: '', notes: '', openingToReceive: '', openingToGive: '' });
+    setOpeningDateBS(getTodayBSParts());
     setIsAddOpen(false);
     toast({ title: "Customer Added", description: `${newCust.name} has been added.` });
-  }, [newCust, addCustomer, addTransaction, customers, toast]);
+  }, [newCust, openingDateBS, addCustomer, addTransaction, customers, toast]);
 
   if (loading) return <div className="flex h-full w-full items-center justify-center p-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+
+  const years = getBSYears();
+  const daysList = Array.from({ length: 32 }, (_, i) => (i + 1).toString().padStart(2, '0'));
+  const hasOpeningBalance = (parseInt(newCust.openingToReceive) || 0) > 0 || (parseInt(newCust.openingToGive) || 0) > 0;
 
   return (
     <div className="p-4 md:p-8 space-y-6 md:space-y-8 animate-in slide-in-from-bottom-4 duration-500 pb-24">
@@ -257,6 +276,28 @@ export default function CustomersPage() {
                       <Input type="number" value={newCust.openingToGive} onChange={e => setNewCust({...newCust, openingToGive: e.target.value})} placeholder="0" className="bg-background font-headline font-bold h-10" />
                     </div>
                   </div>
+
+                  {hasOpeningBalance && (
+                    <div className="mt-4 p-4 rounded-xl bg-primary/5 border border-primary/20 space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <Label className="flex items-center gap-2 text-primary uppercase text-[10px] tracking-widest font-bold">
+                        <Calendar className="h-3 w-3" /> Opening Balance Date (BS)
+                      </Label>
+                      <div className="grid grid-cols-3 gap-2">
+                        <Select value={openingDateBS.year} onValueChange={(v) => setOpeningDateBS({...openingDateBS, year: v})}>
+                          <SelectTrigger className="h-10 bg-background border-border text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>{years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
+                        </Select>
+                        <Select value={openingDateBS.month} onValueChange={(v) => setOpeningDateBS({...openingDateBS, month: v})}>
+                          <SelectTrigger className="h-10 bg-background border-border text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>{BS_MONTHS.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
+                        </Select>
+                        <Select value={openingDateBS.day} onValueChange={(v) => setOpeningDateBS({...openingDateBS, day: v})}>
+                          <SelectTrigger className="h-10 bg-background border-border text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>{daysList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label className="text-muted-foreground uppercase text-[10px] tracking-widest font-bold">Internal Notes</Label>
