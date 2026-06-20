@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -20,7 +19,9 @@ import {
   Edit2,
   Loader2,
   RotateCcw,
-  ArrowLeft
+  ArrowLeft,
+  Save,
+  X
 } from "lucide-react";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -82,13 +83,10 @@ export default function TransactionsPage(props: {
     return { year: '2081', month: '01', day: '01' };
   };
 
-  // State for primary BS date selection
   const [bsParts, setBsParts] = useState(getTodayBSParts);
-  
-  // State for Due Date BS selection
   const [dueBsParts, setDueBsParts] = useState(getTodayBSParts);
-
   const [hasDueDate, setHasDueDate] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
     customerId: '',
@@ -101,27 +99,7 @@ export default function TransactionsPage(props: {
     remark: '',
   });
 
-  // Reset form when entering "New Transaction" mode or switching parameters
-  useEffect(() => {
-    if (!transactionId) {
-      const todayAD = getCurrentADDate();
-      setFormData({
-        customerId: urlCustomerId || '',
-        date: todayAD,
-        dueDate: todayAD,
-        type: 'OUT_FULL',
-        quantity: 1,
-        returnQuantity: 0,
-        simultaneousOutQuantity: 0,
-        remark: '',
-      });
-      setBsParts(getTodayBSParts());
-      setDueBsParts(getTodayBSParts());
-      setHasDueDate(false);
-    }
-  }, [transactionId, urlCustomerId]);
-
-  // Synchronization for EDIT MODE only
+  // Sync state with pre-filled transaction data in EDIT MODE
   useEffect(() => {
     if (transactionId && existingTxn) {
       const adDate = typeof existingTxn.date === 'string' 
@@ -150,15 +128,24 @@ export default function TransactionsPage(props: {
           setDueBsParts({ year: dParts[0], month: dParts[1], day: dParts[2] });
         }
       }
+    } else if (!transactionId) {
+      // Reset form when not in edit mode
+      const todayAD = getCurrentADDate();
+      setFormData({
+        customerId: urlCustomerId || '',
+        date: todayAD,
+        dueDate: todayAD,
+        type: 'OUT_FULL',
+        quantity: 1,
+        returnQuantity: 0,
+        simultaneousOutQuantity: 0,
+        remark: '',
+      });
+      setBsParts(getTodayBSParts());
+      setDueBsParts(getTodayBSParts());
+      setHasDueDate(false);
     }
-  }, [transactionId, existingTxn]);
-
-  // Sync due date parts when the primary transaction date changes (for new transactions)
-  useEffect(() => {
-    if (!transactionId && !hasDueDate) {
-      setDueBsParts(bsParts);
-    }
-  }, [bsParts, hasDueDate, transactionId]);
+  }, [transactionId, existingTxn, urlCustomerId]);
 
   const handleBSChange = (field: 'year' | 'month' | 'day', value: string) => {
     const newBS = { ...bsParts, [field]: value };
@@ -184,8 +171,6 @@ export default function TransactionsPage(props: {
     address: '', 
     phone: '', 
     notes: '',
-    openingToReceive: '',
-    openingToGive: ''
   });
 
   const handleAddCustomer = () => {
@@ -197,19 +182,21 @@ export default function TransactionsPage(props: {
       name: newCust.name,
       address: newCust.address,
       phone: newCust.phone,
-      notes: newCust.notes
+      notes: newCust.notes,
+      status: 'active'
     });
     setFormData(prev => ({ ...prev, customerId }));
     setIsAddCustomerOpen(false);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.customerId) {
-      toast({ variant: "destructive", title: "Missing Customer" });
+      toast({ variant: "destructive", title: "Missing Customer", description: "Please select or add a customer." });
       return;
     }
     
+    setSubmitting(true);
     const transactionDate = formData.date || getCurrentADDate();
     const bsDateStr = `${bsParts.year}-${bsParts.month}-${bsParts.day}`;
 
@@ -223,43 +210,46 @@ export default function TransactionsPage(props: {
       remark: formData.remark
     };
 
-    if (transactionId) {
-      updateTransaction(transactionId, payload);
-      toast({ title: "Entry Updated" });
-      // Return to customer profile after editing
-      router.push(`/customers/${formData.customerId}`);
-    } else {
-      addTransaction(payload);
-      
-      const isPositiveImpact = formData.type === 'OUT_FULL' || formData.type === 'OUT';
-      if (isPositiveImpact && formData.returnQuantity > 0) {
-        addTransaction({
-          customerId: formData.customerId,
-          date: transactionDate,
-          bsDate: bsDateStr,
-          type: 'IN_EMPTY',
-          quantity: formData.returnQuantity,
-          remark: `Empty return logged during delivery.`,
-          status: 'active'
-        });
-      }
+    try {
+      if (transactionId) {
+        await updateTransaction(transactionId, payload);
+        toast({ title: "Entry Updated", description: "Ledger has been updated with changes." });
+        router.push(`/customers/${formData.customerId}`);
+      } else {
+        await addTransaction(payload);
+        
+        const isPositiveImpact = formData.type === 'OUT_FULL' || formData.type === 'OUT';
+        if (isPositiveImpact && formData.returnQuantity > 0) {
+          await addTransaction({
+            customerId: formData.customerId,
+            date: transactionDate,
+            bsDate: bsDateStr,
+            type: 'IN_EMPTY',
+            quantity: formData.returnQuantity,
+            remark: `Empty return logged during delivery.`,
+            status: 'active'
+          });
+        }
 
-      if (formData.type === 'LEAKAGE' && formData.simultaneousOutQuantity > 0) {
-        addTransaction({
-          customerId: formData.customerId,
-          date: transactionDate,
-          bsDate: bsDateStr,
-          type: 'OUT_FULL',
-          quantity: formData.simultaneousOutQuantity,
-          remark: `Replacement issued for leakage.`,
-          status: 'active'
-        });
-      }
+        if (formData.type === 'LEAKAGE' && formData.simultaneousOutQuantity > 0) {
+          await addTransaction({
+            customerId: formData.customerId,
+            date: transactionDate,
+            bsDate: bsDateStr,
+            type: 'OUT_FULL',
+            quantity: formData.simultaneousOutQuantity,
+            remark: `Replacement issued for leakage.`,
+            status: 'active'
+          });
+        }
 
-      toast({ title: "Transaction Logged" });
-      
-      // Navigate to customer profile to see result
-      router.push(`/customers/${formData.customerId}`);
+        toast({ title: "Transaction Logged", description: "Cylinder movement recorded successfully." });
+        router.push(`/customers/${formData.customerId}`);
+      }
+    } catch (err) {
+      toast({ variant: "destructive", title: "Action Failed", description: "There was an error saving the transaction." });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -278,18 +268,25 @@ export default function TransactionsPage(props: {
 
   return (
     <div className="p-4 md:p-8 space-y-6 md:space-y-8 animate-in slide-in-from-right-4 duration-500 pb-24">
-      <header className="flex items-center gap-4 border-b border-border pb-6">
-        <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full">
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div>
-          <h1 className="font-headline text-2xl md:text-4xl font-bold text-foreground">
-            {transactionId ? "Edit Transaction" : "New Transaction"}
-          </h1>
-          <p className="text-muted-foreground mt-1 text-xs md:text-sm font-medium">
-            Log cylinder movements using accurate algorithmic Nepali calendar conversion
-          </p>
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-6">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full">
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div>
+            <h1 className="font-headline text-2xl md:text-4xl font-bold text-foreground">
+              {transactionId ? "Edit Ledger Entry" : "New Transaction"}
+            </h1>
+            <p className="text-muted-foreground mt-1 text-xs md:text-sm font-medium">
+              {transactionId ? "Modify existing cylinder movement record" : "Log cylinder movements using accurate algorithmic Nepali calendar"}
+            </p>
+          </div>
         </div>
+        {transactionId && (
+          <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 px-4 py-2 text-xs font-bold self-start md:self-center">
+            MODIFICATION MODE
+          </Badge>
+        )}
       </header>
 
       <div className="max-w-3xl mx-auto">
@@ -302,14 +299,9 @@ export default function TransactionsPage(props: {
                     {transactionId ? <Edit2 className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
                   </div>
                   <h3 className="font-bold uppercase tracking-widest text-xs">
-                    {transactionId ? "Audit Modification Mode" : "Direct Entry Mode"}
+                    {transactionId ? `Audit ID: ${transactionId.slice(-6).toUpperCase()}` : "Direct Entry Mode"}
                   </h3>
                 </div>
-                {transactionId && (
-                  <Badge variant="outline" className="text-[10px] font-bold border-primary/20 text-primary">
-                    ID: {transactionId.slice(-6).toUpperCase()}
-                  </Badge>
-                )}
               </div>
             </CardHeader>
             <CardContent className="p-6 md:p-8 space-y-8">
@@ -319,6 +311,7 @@ export default function TransactionsPage(props: {
                     <User className="h-3 w-3" /> Select Customer
                   </Label>
                   <Select 
+                    disabled={!!transactionId} // Cannot change customer on an existing transaction for audit integrity
                     value={formData.customerId} 
                     onValueChange={(v) => v === "ADD_NEW" ? setIsAddCustomerOpen(true) : setFormData({...formData, customerId: v})}
                   >
@@ -326,8 +319,8 @@ export default function TransactionsPage(props: {
                       <SelectValue placeholder="Search customer..." />
                     </SelectTrigger>
                     <SelectContent className="bg-card border-border max-h-[300px]">
-                      <SelectItem value="ADD_NEW" className="text-primary font-bold"><Plus className="h-4 w-4 mr-2" /> Add New Customer</SelectItem>
-                      <SelectSeparator />
+                      {!transactionId && <SelectItem value="ADD_NEW" className="text-primary font-bold"><Plus className="h-4 w-4 mr-2" /> Add New Customer</SelectItem>}
+                      {!transactionId && <SelectSeparator />}
                       {customers.map(c => (
                         <SelectItem key={c.id} value={c.id}>
                           {c.name} ({c.phone})
@@ -421,12 +414,28 @@ export default function TransactionsPage(props: {
                 </div>
               </div>
 
-              <div className="pt-4 flex gap-4">
-                <Button variant="ghost" type="button" onClick={() => router.back()} className="flex-1 h-16 font-bold uppercase tracking-widest border border-border">
-                  Cancel
+              <div className="pt-4 flex flex-col sm:flex-row gap-4">
+                <Button 
+                  variant="ghost" 
+                  type="button" 
+                  onClick={() => router.back()} 
+                  className="flex-1 h-16 font-bold uppercase tracking-widest border border-border"
+                >
+                  <X className="h-4 w-4 mr-2" /> Cancel
                 </Button>
-                <Button type="submit" className="flex-[2] h-16 bg-primary text-primary-foreground font-headline text-xl font-bold shadow-lg shadow-primary/20">
-                  {transactionId ? "Update Entry" : "Save Transaction"}
+                <Button 
+                  type="submit" 
+                  disabled={submitting}
+                  className="flex-[2] h-16 bg-primary text-primary-foreground font-headline text-xl font-bold shadow-lg shadow-primary/20"
+                >
+                  {submitting ? (
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  ) : (
+                    <>
+                      {transactionId ? <Save className="h-5 w-5 mr-2" /> : <Plus className="h-6 w-6 mr-2" />}
+                      {transactionId ? "Save Changes" : "Save Transaction"}
+                    </>
+                  )}
                 </Button>
               </div>
             </CardContent>

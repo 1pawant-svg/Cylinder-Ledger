@@ -1,4 +1,3 @@
-
 import { 
   Firestore, 
   collection, 
@@ -82,7 +81,7 @@ export async function addTransaction(db: Firestore, data: Omit<Transaction, 'id'
   }
 }
 
-export function updateTransaction(db: Firestore, id: string, data: Partial<Omit<Transaction, 'id' | 'createdAt' | 'status'>>, userId: string, userName: string) {
+export async function updateTransaction(db: Firestore, id: string, data: Partial<Omit<Transaction, 'id' | 'createdAt' | 'status'>>, userId: string, userName: string) {
   const docRef = doc(db, 'transactions', id);
   const rawUpdateData = {
     ...data,
@@ -93,16 +92,54 @@ export function updateTransaction(db: Firestore, id: string, data: Partial<Omit<
 
   const updateData = cleanFirestoreData(rawUpdateData);
 
-  updateDoc(docRef, updateData).then(() => {
+  try {
+    await runTransaction(db, async (transaction) => {
+      const txnSnap = await transaction.get(docRef);
+      if (!txnSnap.exists()) throw new Error("Transaction not found");
+      
+      const oldTxn = txnSnap.data() as Transaction;
+      const inventoryRef = getInventoryRef(db);
+      const invSnap = await transaction.get(inventoryRef);
+      
+      let currentInv: Inventory = invSnap.exists() 
+        ? invSnap.data() as Inventory 
+        : { filledStock: 0, emptyStock: 0, updatedAt: new Date().toISOString() };
+
+      // 1. Undo old impact
+      const oldImpact = getInventoryImpact(oldTxn.type, oldTxn.quantity);
+      // 2. Apply new impact (using new data merged with old if not provided)
+      const newType = data.type || oldTxn.type;
+      const newQty = data.quantity !== undefined ? data.quantity : oldTxn.quantity;
+      const newImpact = getInventoryImpact(newType, newQty);
+
+      // Final deltas
+      const filledDelta = newImpact.filledDelta - oldImpact.filledDelta;
+      const emptyDelta = newImpact.emptyDelta - oldImpact.emptyDelta;
+
+      transaction.update(docRef, updateData);
+
+      const invUpdatePayload = cleanFirestoreData({
+        filledStock: (currentInv.filledStock || 0) + filledDelta,
+        emptyStock: (currentInv.emptyStock || 0) + emptyDelta,
+        updatedAt: serverTimestamp()
+      });
+
+      if (!invSnap.exists()) {
+        transaction.set(inventoryRef, invUpdatePayload);
+      } else {
+        transaction.update(inventoryRef, invUpdatePayload);
+      }
+    });
+
     logAction(db, {
       userId,
       userName,
       action: 'UPDATE_TRANSACTION',
       entityType: 'TRANSACTION',
       entityId: id,
-      details: `Updated transaction ${id}`,
+      details: `Updated transaction ${id}. Adjusted inventory impact.`,
     });
-  }).catch(async (error: any) => {
+  } catch (error: any) {
     if (error.code === 'permission-denied') {
       errorEmitter.emit('permission-error', new FirestorePermissionError({
         path: docRef.path,
@@ -112,7 +149,8 @@ export function updateTransaction(db: Firestore, id: string, data: Partial<Omit<
     } else {
       console.error("Update transaction error:", error);
     }
-  });
+    throw error;
+  }
 }
 
 export function deleteTransaction(db: Firestore, id: string, userId: string, userName: string, reason: string = "Deleted by admin") {
