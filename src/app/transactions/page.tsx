@@ -19,7 +19,8 @@ import {
   Settings2,
   Edit2,
   Loader2,
-  RotateCcw
+  RotateCcw,
+  ArrowLeft
 } from "lucide-react";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -49,17 +50,21 @@ import { useToast } from "@/hooks/use-toast";
 import { TransactionType, Transaction } from "@/lib/types";
 import { useDoc, useFirestore } from "@/firebase";
 import { doc } from "firebase/firestore";
+import { useRouter } from "next/navigation";
 
 export default function TransactionsPage(props: { 
   params: Promise<any>; 
   searchParams: Promise<any> 
 }) {
   const searchParams = React.use(props.searchParams);
+  const router = useRouter();
   const db = useFirestore();
   const { customers, addCustomer, addTransaction, updateTransaction } = useLedger();
   const { toast } = useToast();
   
   const transactionId = searchParams?.transactionId as string;
+  const urlCustomerId = searchParams?.customerId as string;
+
   const transactionRef = useMemo(() => 
     (db && transactionId) ? doc(db, 'transactions', transactionId) : null, 
   [db, transactionId]);
@@ -80,25 +85,41 @@ export default function TransactionsPage(props: {
   // State for primary BS date selection
   const [bsParts, setBsParts] = useState(getTodayBSParts);
   
-  // State for Due Date BS selection - Initialized to today to match transaction date
+  // State for Due Date BS selection
   const [dueBsParts, setDueBsParts] = useState(getTodayBSParts);
 
   const [hasDueDate, setHasDueDate] = useState(false);
 
-  const [formData, setFormData] = useState(() => {
-    const todayAD = getCurrentADDate();
-
-    return {
-      customerId: (searchParams?.customerId as string) || '',
-      date: todayAD, 
-      dueDate: todayAD, 
-      type: 'OUT_FULL' as TransactionType,
-      quantity: 1,
-      returnQuantity: 0, 
-      simultaneousOutQuantity: 0,
-      remark: '',
-    };
+  const [formData, setFormData] = useState({
+    customerId: '',
+    date: getCurrentADDate(), 
+    dueDate: getCurrentADDate(), 
+    type: 'OUT_FULL' as TransactionType,
+    quantity: 1,
+    returnQuantity: 0, 
+    simultaneousOutQuantity: 0,
+    remark: '',
   });
+
+  // Reset form when entering "New Transaction" mode or switching parameters
+  useEffect(() => {
+    if (!transactionId) {
+      const todayAD = getCurrentADDate();
+      setFormData({
+        customerId: urlCustomerId || '',
+        date: todayAD,
+        dueDate: todayAD,
+        type: 'OUT_FULL',
+        quantity: 1,
+        returnQuantity: 0,
+        simultaneousOutQuantity: 0,
+        remark: '',
+      });
+      setBsParts(getTodayBSParts());
+      setDueBsParts(getTodayBSParts());
+      setHasDueDate(false);
+    }
+  }, [transactionId, urlCustomerId]);
 
   // Synchronization for EDIT MODE only
   useEffect(() => {
@@ -112,16 +133,15 @@ export default function TransactionsPage(props: {
         setBsParts({ year: parts[0], month: parts[1], day: parts[2] });
       }
       
-      setFormData({
+      setFormData(prev => ({
+        ...prev,
         customerId: existingTxn.customerId,
         date: adDate,
         dueDate: existingTxn.dueDate || adDate, 
         type: existingTxn.type,
         quantity: existingTxn.quantity,
-        returnQuantity: 0,
-        simultaneousOutQuantity: 0,
         remark: existingTxn.remark || '',
-      });
+      }));
       setHasDueDate(!!existingTxn.dueDate);
 
       if (existingTxn.dueDate) {
@@ -206,6 +226,8 @@ export default function TransactionsPage(props: {
     if (transactionId) {
       updateTransaction(transactionId, payload);
       toast({ title: "Entry Updated" });
+      // Return to customer profile after editing
+      router.push(`/customers/${formData.customerId}`);
     } else {
       addTransaction(payload);
       
@@ -236,20 +258,18 @@ export default function TransactionsPage(props: {
 
       toast({ title: "Transaction Logged" });
       
-      setFormData(prev => ({
-        ...prev,
-        customerId: '',
-        quantity: 1,
-        returnQuantity: 0,
-        simultaneousOutQuantity: 0,
-        remark: '',
-      }));
-      setHasDueDate(false);
+      // Navigate to customer profile to see result
+      router.push(`/customers/${formData.customerId}`);
     }
   };
 
   if (transactionId && txnLoading) {
-    return <div className="flex h-full items-center justify-center p-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+    return (
+      <div className="flex flex-col h-[70vh] items-center justify-center p-20 gap-4">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        <p className="font-headline font-bold text-muted-foreground">Loading Transaction Data...</p>
+      </div>
+    );
   }
 
   const years = getBSYears();
@@ -258,18 +278,40 @@ export default function TransactionsPage(props: {
 
   return (
     <div className="p-4 md:p-8 space-y-6 md:space-y-8 animate-in slide-in-from-right-4 duration-500 pb-24">
-      <header className="border-b border-border pb-6">
-        <h1 className="font-headline text-3xl md:text-4xl font-bold text-foreground">
-          {transactionId ? "Edit Transaction" : "New Transaction"}
-        </h1>
-        <p className="text-muted-foreground mt-1 font-medium">
-          Log cylinder movements using accurate algorithmic Nepali calendar conversion
-        </p>
+      <header className="flex items-center gap-4 border-b border-border pb-6">
+        <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full">
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <div>
+          <h1 className="font-headline text-2xl md:text-4xl font-bold text-foreground">
+            {transactionId ? "Edit Transaction" : "New Transaction"}
+          </h1>
+          <p className="text-muted-foreground mt-1 text-xs md:text-sm font-medium">
+            Log cylinder movements using accurate algorithmic Nepali calendar conversion
+          </p>
+        </div>
       </header>
 
       <div className="max-w-3xl mx-auto">
         <form onSubmit={handleSubmit}>
           <Card className="border-none shadow-2xl bg-card overflow-hidden">
+            <CardHeader className={cn("p-6 pb-2 border-b border-border/50", transactionId ? "bg-primary/5" : "bg-muted/30")}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className={cn("p-2 rounded-lg", transactionId ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground")}>
+                    {transactionId ? <Edit2 className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
+                  </div>
+                  <h3 className="font-bold uppercase tracking-widest text-xs">
+                    {transactionId ? "Audit Modification Mode" : "Direct Entry Mode"}
+                  </h3>
+                </div>
+                {transactionId && (
+                  <Badge variant="outline" className="text-[10px] font-bold border-primary/20 text-primary">
+                    ID: {transactionId.slice(-6).toUpperCase()}
+                  </Badge>
+                )}
+              </div>
+            </CardHeader>
             <CardContent className="p-6 md:p-8 space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                 <div className="space-y-2">
@@ -283,10 +325,14 @@ export default function TransactionsPage(props: {
                     <SelectTrigger className="h-12 bg-background border-border">
                       <SelectValue placeholder="Search customer..." />
                     </SelectTrigger>
-                    <SelectContent className="bg-card border-border">
+                    <SelectContent className="bg-card border-border max-h-[300px]">
                       <SelectItem value="ADD_NEW" className="text-primary font-bold"><Plus className="h-4 w-4 mr-2" /> Add New Customer</SelectItem>
                       <SelectSeparator />
-                      {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name} ({c.phone})</SelectItem>)}
+                      {customers.map(c => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name} ({c.phone})
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -297,16 +343,16 @@ export default function TransactionsPage(props: {
                   </Label>
                   <div className="grid grid-cols-3 gap-2">
                     <Select value={bsParts.year} onValueChange={(v) => handleBSChange('year', v)}>
-                      <SelectTrigger className="h-12 bg-background border-border"><SelectValue /></SelectTrigger>
-                      <SelectContent>{years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
+                      <SelectTrigger className="h-12 bg-background border-border text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent className="max-h-[200px]">{years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
                     </Select>
                     <Select value={bsParts.month} onValueChange={(v) => handleBSChange('month', v)}>
-                      <SelectTrigger className="h-12 bg-background border-border"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="h-12 bg-background border-border text-xs"><SelectValue /></SelectTrigger>
                       <SelectContent>{BS_MONTHS.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
                     </Select>
                     <Select value={bsParts.day} onValueChange={(v) => handleBSChange('day', v)}>
-                      <SelectTrigger className="h-12 bg-background border-border"><SelectValue /></SelectTrigger>
-                      <SelectContent>{daysList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+                      <SelectTrigger className="h-12 bg-background border-border text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent className="max-h-[200px]">{daysList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                 </div>
@@ -314,10 +360,10 @@ export default function TransactionsPage(props: {
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2 text-muted-foreground uppercase text-[10px] tracking-widest font-bold mb-1">Event Type</Label>
                   <Select value={formData.type} onValueChange={(v: TransactionType) => setFormData({...formData, type: v})}>
-                    <SelectTrigger className="h-12 bg-background border-border font-bold"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-12 bg-background border-border font-bold text-sm"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="OUT_FULL">Cylinder Out (Full)</SelectItem>
-                      <SelectItem value="IN_EMPTY">Cylinder In (Empty)</SelectItem>
+                      <SelectItem value="OUT_FULL">To Receive (Full Issue)</SelectItem>
+                      <SelectItem value="IN_EMPTY">To Give (Empty Return)</SelectItem>
                       <SelectItem value="LEAKAGE">Leakage Return</SelectItem>
                       <SelectItem value="LOST">Cylinder Lost</SelectItem>
                       <SelectItem value="ADJUSTMENT">Balance Adjustment</SelectItem>
@@ -332,7 +378,7 @@ export default function TransactionsPage(props: {
 
                 {isPositiveImpact && !transactionId && (
                   <div className="space-y-2 md:col-span-2 p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
-                    <Label className="text-emerald-500 uppercase text-[10px] tracking-widest font-bold">Empty Return (PCS)</Label>
+                    <Label className="text-emerald-500 uppercase text-[10px] tracking-widest font-bold">Return Owed (PCS)</Label>
                     <Input type="number" min="0" className="h-12 bg-background text-emerald-500 font-bold" value={formData.returnQuantity} onChange={e => setFormData({...formData, returnQuantity: parseInt(e.target.value) || 0})} />
                   </div>
                 )}
@@ -351,18 +397,18 @@ export default function TransactionsPage(props: {
                       <Switch checked={hasDueDate} onCheckedChange={setHasDueDate} />
                     </div>
                     {hasDueDate && (
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-3 gap-2 animate-in slide-in-from-top-2 duration-300">
                         <Select value={dueBsParts.year} onValueChange={(v) => handleDueBSChange('year', v)}>
-                          <SelectTrigger className="h-10 bg-background"><SelectValue /></SelectTrigger>
-                          <SelectContent>{years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
+                          <SelectTrigger className="h-10 bg-background text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent className="max-h-[200px]">{years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
                         </Select>
                         <Select value={dueBsParts.month} onValueChange={(v) => handleDueBSChange('month', v)}>
-                          <SelectTrigger className="h-10 bg-background"><SelectValue /></SelectTrigger>
+                          <SelectTrigger className="h-10 bg-background text-xs"><SelectValue /></SelectTrigger>
                           <SelectContent>{BS_MONTHS.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
                         </Select>
                         <Select value={dueBsParts.day} onValueChange={(v) => handleDueBSChange('day', v)}>
-                          <SelectTrigger className="h-10 bg-background"><SelectValue /></SelectTrigger>
-                          <SelectContent>{daysList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+                          <SelectTrigger className="h-10 bg-background text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent className="max-h-[200px]">{daysList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
                         </Select>
                       </div>
                     )}
@@ -371,12 +417,15 @@ export default function TransactionsPage(props: {
 
                 <div className="space-y-2 md:col-span-2">
                   <Label className="text-muted-foreground uppercase text-[10px] tracking-widest font-bold">Remarks</Label>
-                  <Textarea className="bg-background resize-none" value={formData.remark} onChange={e => setFormData({...formData, remark: e.target.value})} />
+                  <Textarea className="bg-background resize-none min-h-[100px]" value={formData.remark} onChange={e => setFormData({...formData, remark: e.target.value})} placeholder="Internal notes about this movement..." />
                 </div>
               </div>
 
-              <div className="pt-4">
-                <Button type="submit" className="w-full h-16 bg-primary text-primary-foreground font-headline text-xl font-bold">
+              <div className="pt-4 flex gap-4">
+                <Button variant="ghost" type="button" onClick={() => router.back()} className="flex-1 h-16 font-bold uppercase tracking-widest border border-border">
+                  Cancel
+                </Button>
+                <Button type="submit" className="flex-[2] h-16 bg-primary text-primary-foreground font-headline text-xl font-bold shadow-lg shadow-primary/20">
                   {transactionId ? "Update Entry" : "Save Transaction"}
                 </Button>
               </div>
@@ -386,13 +435,23 @@ export default function TransactionsPage(props: {
       </div>
 
       <Dialog open={isAddCustomerOpen} onOpenChange={setIsAddCustomerOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>New Customer</DialogTitle></DialogHeader>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle className="font-headline font-bold text-xl">Quick Customer Add</DialogTitle>
+          </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="space-y-2"><Label>Name</Label><Input value={newCust.name} onChange={e => setNewCust({...newCust, name: e.target.value})} /></div>
-            <div className="space-y-2"><Label>Phone</Label><Input value={newCust.phone} onChange={e => setNewCust({...newCust, phone: e.target.value})} /></div>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Name</Label>
+              <Input value={newCust.name} onChange={e => setNewCust({...newCust, name: e.target.value})} placeholder="Ram Bahadur" className="h-12" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Phone</Label>
+              <Input value={newCust.phone} onChange={e => setNewCust({...newCust, phone: e.target.value.replace(/\D/g, '').slice(0, 10)})} placeholder="98XXXXXXXX" className="h-12" maxLength={10} />
+            </div>
           </div>
-          <DialogFooter><Button onClick={handleAddCustomer}>Save & Select</Button></DialogFooter>
+          <DialogFooter>
+            <Button onClick={handleAddCustomer} className="w-full bg-primary font-bold h-12">Save & Select</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
