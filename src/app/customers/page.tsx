@@ -227,17 +227,17 @@ export default function CustomersPage() {
   const hasOpeningBalance = (parseInt(newCust.openingToReceive) || 0) > 0 || (parseInt(newCust.openingToGive) || 0) > 0;
 
   return (
-    <div className="p-4 md:p-8 space-y-6 md:space-y-8 animate-in slide-in-from-bottom-4 duration-500 pb-24">
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-border pb-6">
+    <div className="p-4 md:p-8 space-y-6 md:space-y-8 animate-in slide-in-from-bottom-4 duration-500 pb-24 max-w-full overflow-x-hidden">
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-border pb-4 md:pb-6">
         <div>
-          <h1 className="font-headline text-3xl md:text-4xl font-bold text-primary">Customer Ledger</h1>
-          <p className="text-muted-foreground text-xs md:text-sm mt-1 font-medium">Manage accounts and return cycles</p>
+          <h1 className="font-headline text-2xl md:text-4xl font-bold text-primary">Customer Ledger</h1>
+          <p className="text-muted-foreground text-[10px] md:text-sm mt-1 font-medium">Manage accounts and return cycles</p>
         </div>
         <div className="flex gap-2">
           <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-primary text-primary-foreground font-bold h-11 px-6 rounded-lg shadow-lg shadow-primary/20 flex items-center gap-2 hover:scale-105 transition-all">
-                <Plus className="h-5 w-5" /> New Profile
+              <Button className="bg-primary text-primary-foreground font-bold h-10 md:h-11 px-4 md:px-6 rounded-lg shadow-lg shadow-primary/20 flex items-center gap-2 hover:scale-105 transition-all text-xs md:text-sm">
+                <Plus className="h-4 w-4 md:h-5 md:w-5" /> New Profile
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[500px] bg-card border-border overflow-y-auto max-h-[90vh] p-4 md:p-6">
@@ -312,15 +312,15 @@ export default function CustomersPage() {
         </div>
       </header>
 
-      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
-        <div className="relative flex-1 w-full">
+      <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center">
+        <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-          <Input placeholder="Search name or phone..." className="pl-10 h-12 bg-card border-border shadow-sm focus-visible:ring-primary" value={search} onChange={e => setSearch(e.target.value)} />
+          <Input placeholder="Search name or phone..." className="pl-10 h-11 md:h-12 bg-card border-border shadow-sm focus-visible:ring-primary text-sm" value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         <div className="grid grid-cols-2 gap-2 w-full md:w-auto">
           <Select value={statusFilter} onValueChange={(v: StatusFilter) => setStatusFilter(v)}>
-            <SelectTrigger className="h-12 w-full md:w-[150px] bg-card border-border text-xs">
-              <div className="flex items-center gap-2"><Filter className="h-4 w-4" /><SelectValue placeholder="Status" /></div>
+            <SelectTrigger className="h-11 md:h-12 w-full md:w-[150px] bg-card border-border text-xs">
+              <div className="flex items-center gap-2"><Filter className="h-3 w-3" /><SelectValue placeholder="Status" /></div>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="ACTIVE">Active Only</SelectItem>
@@ -333,8 +333,8 @@ export default function CustomersPage() {
             </SelectContent>
           </Select>
           <Select value={sortBy} onValueChange={(v: SortOption) => setSortBy(v)}>
-            <SelectTrigger className="h-12 w-full md:w-[160px] bg-card border-border text-xs">
-              <div className="flex items-center gap-2"><ArrowUpDown className="h-4 w-4" /><SelectValue placeholder="Sort" /></div>
+            <SelectTrigger className="h-11 md:h-12 w-full md:w-[160px] bg-card border-border text-xs">
+              <div className="flex items-center gap-2"><ArrowUpDown className="h-3 w-3" /><SelectValue placeholder="Sort" /></div>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="NAME_ASC">Name (A-Z)</SelectItem>
@@ -347,85 +347,90 @@ export default function CustomersPage() {
         </div>
       </div>
 
-      <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-xl overflow-x-auto">
-        <Table>
-          <TableHeader className="bg-muted/30">
-            <TableRow className="border-border/50 hover:bg-transparent">
-              <TableHead className="py-4 font-bold text-muted-foreground uppercase tracking-widest text-[9px] md:text-[10px] pl-4 md:pl-6">Profile</TableHead>
-              <TableHead className="py-4 font-bold text-muted-foreground uppercase tracking-widest text-[9px] md:text-[10px] hidden sm:table-cell">Contact</TableHead>
-              <TableHead className="py-4 font-bold text-muted-foreground uppercase tracking-widest text-[9px] md:text-[10px]">Net Status</TableHead>
-              <TableHead className="py-4 font-bold text-muted-foreground uppercase tracking-widest text-[9px] md:text-[10px]">Collection</TableHead>
-              <TableHead className="py-4 font-bold text-muted-foreground uppercase tracking-widest text-[9px] md:text-[10px] text-right pr-4 md:pr-6">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {processedCustomers.length > 0 ? processedCustomers.map((customer) => {
-              const balance = getCustomerBalance(customer.id);
-              const txns = getCustomerTransactions(customer.id);
-              const today = getCurrentADDate();
-              const latestDueTxn = txns.find(t => t.dueDate && getTransactionImpact(t.type) === 1);
-              const daysDiff = latestDueTxn && balance > 0 ? getDifferenceInDays(today, latestDueTxn.dueDate!) : null;
-              
-              const isActive = customer.status === 'active' || !customer.status;
-              
-              const getDueBadge = () => {
-                if (balance <= 0 || daysDiff === null) return null;
-                if (daysDiff < 0) return <Badge variant="destructive" className="text-[7px] font-black uppercase">Overdue</Badge>;
-                if (daysDiff === 0) return <Badge className="bg-orange-500 text-white text-[7px] font-black uppercase">Today</Badge>;
-                if (daysDiff <= 7) return <Badge className="bg-yellow-500 text-black text-[7px] font-black uppercase">Soon</Badge>;
-                return <Badge className="bg-emerald-500 text-white text-[7px] font-black uppercase">Track</Badge>;
-              };
+      <div className="bg-card border border-border rounded-xl overflow-hidden shadow-xl">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader className="bg-muted/30">
+              <TableRow className="border-border/50 hover:bg-transparent">
+                <TableHead className="py-3 md:py-4 font-bold text-muted-foreground uppercase tracking-widest text-[9px] md:text-[10px] pl-4 md:pl-6">Profile</TableHead>
+                <TableHead className="py-3 md:py-4 font-bold text-muted-foreground uppercase tracking-widest text-[9px] md:text-[10px] hidden sm:table-cell">Contact</TableHead>
+                <TableHead className="py-3 md:py-4 font-bold text-muted-foreground uppercase tracking-widest text-[9px] md:text-[10px] px-2">Net Status</TableHead>
+                <TableHead className="py-3 md:py-4 font-bold text-muted-foreground uppercase tracking-widest text-[9px] md:text-[10px] hidden sm:table-cell">Collection</TableHead>
+                <TableHead className="py-3 md:py-4 font-bold text-muted-foreground uppercase tracking-widest text-[9px] md:text-[10px] text-right pr-4 md:pr-6">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {processedCustomers.length > 0 ? processedCustomers.map((customer) => {
+                const balance = getCustomerBalance(customer.id);
+                const txns = getCustomerTransactions(customer.id);
+                const today = getCurrentADDate();
+                const latestDueTxn = txns.find(t => t.dueDate && getTransactionImpact(t.type) === 1);
+                const daysDiff = latestDueTxn && balance > 0 ? getDifferenceInDays(today, latestDueTxn.dueDate!) : null;
+                
+                const isActive = customer.status === 'active' || !customer.status;
+                
+                const getDueBadge = () => {
+                  if (balance <= 0 || daysDiff === null) return null;
+                  if (daysDiff < 0) return <Badge variant="destructive" className="text-[7px] font-black uppercase">Overdue</Badge>;
+                  if (daysDiff === 0) return <Badge className="bg-orange-500 text-white text-[7px] font-black uppercase">Today</Badge>;
+                  if (daysDiff <= 7) return <Badge className="bg-yellow-500 text-black text-[7px] font-black uppercase">Soon</Badge>;
+                  return null;
+                };
 
-              return (
-                <TableRow key={customer.id} className={cn("border-border/50 hover:bg-muted/10 transition-colors", !isActive && "opacity-60 bg-muted/5")}>
-                  <TableCell className="py-3 md:py-4 pl-4 md:pl-6">
-                    <div className="flex items-center gap-3 md:gap-4">
-                      <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center font-bold shrink-0", isActive ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground")}>{customer.name.charAt(0)}</div>
-                      <div className="min-w-0">
-                        <Link href={`/customers/${customer.id}`} className="font-bold text-sm text-foreground hover:text-primary transition-colors block truncate">
-                          {customer.name}
-                        </Link>
-                        <div className="flex items-center gap-1 text-[9px] md:text-[10px] text-muted-foreground truncate"><MapPin className="h-2.5 w-2.5" /> {customer.address}</div>
-                        {!isActive && <Badge variant="secondary" className="mt-1 text-[7px] h-3 px-1 leading-none font-black uppercase">Inactive</Badge>}
-                        {isActive && getDueBadge()}
+                return (
+                  <TableRow key={customer.id} className={cn("border-border/50 hover:bg-muted/10 transition-colors", !isActive && "opacity-60 bg-muted/5")}>
+                    <TableCell className="py-3 md:py-4 pl-4 md:pl-6 max-w-[150px] md:max-w-none">
+                      <div className="flex items-center gap-2 md:gap-4">
+                        <div className={cn("h-8 w-8 md:h-10 md:w-10 rounded-lg flex items-center justify-center font-bold shrink-0 text-xs md:text-sm", isActive ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground")}>{customer.name.charAt(0)}</div>
+                        <div className="min-w-0">
+                          <Link href={`/customers/${customer.id}`} className="font-bold text-xs md:text-sm text-foreground hover:text-primary transition-colors block truncate">
+                            {customer.name}
+                          </Link>
+                          <div className="flex items-center gap-1 text-[8px] md:text-[10px] text-muted-foreground truncate"><MapPin className="h-2 w-2 md:h-2.5 md:w-2.5" /> {customer.address}</div>
+                          <div className="flex gap-1 mt-1">
+                            {!isActive && <Badge variant="secondary" className="text-[6px] md:text-[7px] h-3 px-1 leading-none font-black uppercase">Inactive</Badge>}
+                            {isActive && getDueBadge()}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="hidden sm:table-cell"><div className="flex items-center gap-2 text-xs md:text-sm text-foreground"><Phone className="h-3.5 w-3.5 text-muted-foreground" /> {customer.phone}</div></TableCell>
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span className={cn("font-headline font-bold text-sm md:text-lg", balance > 0 ? "text-primary" : balance < 0 ? "text-accent" : "text-emerald-500")}>
-                        {balance === 0 ? "Settled" : balance > 0 ? `${balance} To Receive` : `${Math.abs(balance)} To Give`}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {latestDueTxn && balance > 0 ? (
-                      <div className="flex flex-col">
-                        <span className="text-[10px] font-bold">{adToBs(latestDueTxn.dueDate!)}</span>
-                        <span className={cn("text-[8px] font-medium uppercase", daysDiff! < 0 ? "text-destructive" : daysDiff! === 0 ? "text-amber-500" : "text-muted-foreground")}>
-                          {daysDiff! < 0 ? `${Math.abs(daysDiff!)}d Over` : daysDiff! === 0 ? "Due Today" : `${daysDiff!}d Left`}
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell"><div className="flex items-center gap-2 text-xs md:text-sm text-foreground"><Phone className="h-3.5 w-3.5 text-muted-foreground" /> {customer.phone}</div></TableCell>
+                    <TableCell className="px-2">
+                      <div className="flex flex-col min-w-[70px]">
+                        <span className={cn("font-headline font-bold text-[11px] md:text-sm", balance > 0 ? "text-primary" : balance < 0 ? "text-accent" : "text-emerald-500")}>
+                          {balance === 0 ? "Settled" : balance > 0 ? `${balance} To Receive` : `${Math.abs(balance)} To Give`}
                         </span>
                       </div>
-                    ) : (
-                      <span className="text-[10px] text-muted-foreground italic">N/A</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right pr-4 md:pr-6">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0 hover:bg-muted"><MoreHorizontal className="h-5 w-5" /></Button></DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-card border-border w-[180px]">
-                        <DropdownMenuItem asChild><Link href={`/customers/${customer.id}`} className="cursor-pointer flex items-center py-3"><Eye className="h-4 w-4 mr-2" /> View Details</Link></DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              );
-            }) : (
-              <TableRow><TableCell colSpan={5} className="h-32 text-center text-muted-foreground italic">No customers found.</TableCell></TableRow>
-            )}
-          </TableBody>
-        </Table>
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell">
+                      {latestDueTxn && balance > 0 ? (
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-bold">{adToBs(latestDueTxn.dueDate!)}</span>
+                          <span className={cn("text-[8px] font-medium uppercase", daysDiff! < 0 ? "text-destructive" : daysDiff! === 0 ? "text-amber-500" : "text-muted-foreground")}>
+                            {daysDiff! < 0 ? `${Math.abs(daysDiff!)}d Over` : daysDiff! === 0 ? "Due Today" : `${daysDiff!}d Left`}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground italic">N/A</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right pr-4 md:pr-6">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0 hover:bg-muted"><MoreHorizontal className="h-4 w-4 md:h-5 md:w-5" /></Button></DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-card border-border w-[160px]">
+                          <DropdownMenuItem asChild><Link href={`/customers/${customer.id}`} className="cursor-pointer flex items-center py-2.5 text-xs"><Eye className="h-3.5 w-3.5 mr-2" /> View Profile</Link></DropdownMenuItem>
+                          <DropdownMenuItem asChild><Link href={`/transactions?customerId=${customer.id}`} className="cursor-pointer flex items-center py-2.5 text-xs text-primary"><Plus className="h-3.5 w-3.5 mr-2" /> New Entry</Link></DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                );
+              }) : (
+                <TableRow><TableCell colSpan={5} className="h-32 text-center text-muted-foreground italic text-xs">No customers found.</TableCell></TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
     </div>
   );
