@@ -25,7 +25,11 @@ import {
   ClipboardList,
   AlertTriangle,
   UserX,
-  UserCheck
+  UserCheck,
+  Save,
+  X,
+  Banknote,
+  User
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -63,8 +67,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { getCurrentADDate, adToBs, toMillis } from "@/lib/date-utils";
+import { getCurrentADDate, adToBs, bsToAd, toMillis } from "@/lib/date-utils";
 import { useToast } from "@/hooks/use-toast";
 import { useUser, useFirestore } from "@/firebase";
 import { getUserProfile } from "@/lib/services/user-service";
@@ -116,7 +127,8 @@ export default function CustomerProfile(props: {
     addTransaction, 
     deleteTransaction,
     updateCustomer, 
-    updateCustomerStatus 
+    updateCustomerStatus,
+    updateTransaction
   } = useLedger();
   
   const customer = customers.find(c => c.id === id);
@@ -125,6 +137,11 @@ export default function CustomerProfile(props: {
   const isInactive = customer?.status === 'inactive';
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
+
+  // Inline Editing State
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editFields, setEditFields] = useState<any>({});
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (user && db) {
@@ -269,7 +286,6 @@ export default function CustomerProfile(props: {
   const handleToggleStatus = () => {
     if (!customer) return;
     
-    // Logic: Make deactivate only working when the balance is settled (balance is 0)
     if (!isInactive && balance !== 0) {
       toast({ 
         variant: "destructive", 
@@ -282,6 +298,48 @@ export default function CustomerProfile(props: {
     const newStatus = isInactive ? 'active' : 'inactive';
     updateCustomerStatus(customer.id, newStatus);
     toast({ title: `Customer marked ${newStatus}` });
+  };
+
+  // Inline Editing Handlers
+  const startInlineEdit = (txn: Transaction) => {
+    setEditingId(txn.id);
+    setEditFields({
+      bsDate: txn.bsDate,
+      type: txn.type,
+      quantity: txn.quantity,
+      amount: txn.amount || 0,
+      remark: txn.remark || '',
+      customerId: txn.customerId
+    });
+  };
+
+  const cancelInlineEdit = () => {
+    setEditingId(null);
+    setEditFields({});
+  };
+
+  const saveInlineEdit = async () => {
+    if (!editingId) return;
+    setIsSaving(true);
+    try {
+      const bsParts = editFields.bsDate.split('-');
+      if (bsParts.length !== 3) throw new Error("Invalid BS Date format (YYYY-MM-DD)");
+      
+      const adDate = bsToAd(bsParts[0], bsParts[1], bsParts[2]);
+      
+      await updateTransaction(editingId, {
+        ...editFields,
+        date: adDate
+      });
+      
+      setEditingId(null);
+      setEditFields({});
+      toast({ title: "Entry updated inline" });
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Update Failed", description: err.message });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (!customer) return <div className="p-20 text-center">Customer not found</div>;
@@ -349,15 +407,73 @@ export default function CustomerProfile(props: {
                     <TableHead className="py-4 font-bold text-[9px] md:text-[10px] uppercase tracking-widest pl-4 md:pl-6">Date (BS)</TableHead>
                     <TableHead className="py-4 font-bold text-[9px] md:text-[10px] uppercase tracking-widest">Type</TableHead>
                     <TableHead className="py-4 font-bold text-[9px] md:text-[10px] uppercase tracking-widest">Qty</TableHead>
+                    <TableHead className="py-4 font-bold text-[9px] md:text-[10px] uppercase tracking-widest">Amount</TableHead>
                     <TableHead className="py-4 font-bold text-[9px] md:text-[10px] uppercase tracking-widest">Balance</TableHead>
-                    <TableHead className="py-4 font-bold text-[9px] md:text-[10px] uppercase tracking-widest hidden sm:table-cell">Agent</TableHead>
                     <TableHead className="py-4 font-bold text-[9px] md:text-[10px] uppercase tracking-widest text-right pr-4 md:pr-6">Manage</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {transactionsWithBalance.map((txn) => {
+                    const isEditing = editingId === txn.id;
                     const impact = getTransactionImpact(txn.type);
                     
+                    if (isEditing) {
+                      return (
+                        <TableRow key={txn.id} className="bg-primary/5">
+                          <TableCell className="pl-4 md:pl-6">
+                            <Input 
+                              value={editFields.bsDate} 
+                              onChange={e => setEditFields({...editFields, bsDate: e.target.value})} 
+                              className="h-8 text-xs font-mono" 
+                              placeholder="YYYY-MM-DD"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Select 
+                              value={editFields.type} 
+                              onValueChange={(v: TransactionType) => setEditFields({...editFields, type: v})}
+                            >
+                              <SelectTrigger className="h-8 text-[10px]">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="OUT_FULL">OUT</SelectItem>
+                                <SelectItem value="IN_EMPTY">IN</SelectItem>
+                                <SelectItem value="LEAKAGE">LEAK</SelectItem>
+                                <SelectItem value="LOST">LOST</SelectItem>
+                                <SelectItem value="ADJUSTMENT">ADJ</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell>
+                            <Input 
+                              type="number" 
+                              value={editFields.quantity} 
+                              onChange={e => setEditFields({...editFields, quantity: parseInt(e.target.value) || 0})} 
+                              className="h-8 text-xs w-16" 
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input 
+                              type="number" 
+                              value={editFields.amount} 
+                              onChange={e => setEditFields({...editFields, amount: parseFloat(e.target.value) || 0})} 
+                              className="h-8 text-xs w-20" 
+                            />
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">Calc...</TableCell>
+                          <TableCell className="text-right pr-4 md:pr-6 space-x-1">
+                            <Button size="icon" variant="default" className="h-8 w-8 bg-emerald-500 hover:bg-emerald-600" onClick={saveInlineEdit} disabled={isSaving}>
+                              <Save className="h-4 w-4" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={cancelInlineEdit} disabled={isSaving}>
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    }
+
                     return (
                       <TableRow key={txn.id} className="border-border/50 group">
                         <TableCell className="font-medium text-[10px] md:text-xs pl-4 md:pl-6">
@@ -372,16 +488,13 @@ export default function CustomerProfile(props: {
                         <TableCell className={cn("font-bold text-xs md:text-sm", impact > 0 ? "text-primary" : "text-emerald-500")}>
                           {impact > 0 ? `+${txn.quantity}` : `-${txn.quantity}`}
                         </TableCell>
+                        <TableCell className="text-[10px] md:text-xs font-mono text-muted-foreground">
+                          {txn.amount ? `Rs. ${txn.amount}` : '-'}
+                        </TableCell>
                         <TableCell className="font-bold text-xs">
                            <span className={cn(txn.runningBalance > 0 ? "text-primary" : txn.runningBalance < 0 ? "text-accent" : "text-emerald-500")}>
                               {txn.runningBalance === 0 ? "Settled" : txn.runningBalance > 0 ? `${txn.runningBalance} To Receive` : `${Math.abs(txn.runningBalance)} To Give`}
                            </span>
-                        </TableCell>
-                        <TableCell className="hidden sm:table-cell">
-                           <div className="flex flex-col">
-                             <span className="text-[10px] md:text-xs font-bold">{txn.createdByName || "Staff"}</span>
-                             <span className="text-[8px] text-muted-foreground uppercase">{txn.createdAt ? new Date(toMillis(txn.createdAt)).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}</span>
-                           </div>
                         </TableCell>
                         <TableCell className="text-right pr-4 md:pr-6">
                           <DropdownMenu>
@@ -391,10 +504,8 @@ export default function CustomerProfile(props: {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="bg-card w-48">
-                              <DropdownMenuItem asChild className="cursor-pointer gap-2 py-3">
-                                <Link href={`/transactions?transactionId=${txn.id}`}>
-                                  <Edit2 className="h-3 w-3" /> Edit Entry
-                                </Link>
+                              <DropdownMenuItem className="cursor-pointer gap-2 py-3" onClick={() => startInlineEdit(txn)}>
+                                <Edit2 className="h-3 w-3" /> Edit Inline
                               </DropdownMenuItem>
                               <DropdownMenuItem className="text-destructive font-bold gap-2 py-3 cursor-pointer" onClick={() => setDeleteTarget(txn)}>
                                 <Trash2 className="h-3 w-3" /> Soft Delete

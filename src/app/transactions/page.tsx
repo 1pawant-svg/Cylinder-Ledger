@@ -1,26 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useLedger } from "@/lib/ledger-context";
 import { 
-  ArrowUpRight, 
-  ArrowDownLeft, 
   Calendar, 
   User, 
   Plus,
-  History,
-  StickyNote,
-  Bell,
-  AlertCircle,
-  Package,
-  XCircle,
-  Settings2,
-  Edit2,
   Loader2,
-  RotateCcw,
   ArrowLeft,
-  Save,
   X,
   Banknote
 } from "lucide-react";
@@ -46,30 +34,19 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { adToBs, bsToAd, BS_MONTHS, getBSYears, getCurrentADDate, toMillis } from "@/lib/date-utils";
+import { adToBs, bsToAd, BS_MONTHS, getBSYears, getCurrentADDate } from "@/lib/date-utils";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { TransactionType, Transaction } from "@/lib/types";
-import { useDoc, useFirestore, useUser } from "@/firebase";
-import { doc } from "firebase/firestore";
+import { TransactionType } from "@/lib/types";
 import { useRouter, useSearchParams } from "next/navigation";
 
 export default function TransactionsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const db = useFirestore();
-  const { user } = useUser();
-  const { customers, addCustomer, addTransaction, deleteTransaction } = useLedger();
+  const { customers, addCustomer, addTransaction } = useLedger();
   const { toast } = useToast();
   
-  const transactionId = searchParams?.get('transactionId');
   const urlCustomerId = searchParams?.get('customerId');
-
-  const transactionRef = useMemo(() => 
-    (db && transactionId) ? doc(db, 'transactions', transactionId) : null, 
-  [db, transactionId]);
-  
-  const { data: existingTxn, loading: txnLoading } = useDoc<Transaction>(transactionRef);
 
   const getTodayBSParts = () => {
     const todayAD = getCurrentADDate();
@@ -86,91 +63,17 @@ export default function TransactionsPage() {
   };
 
   const [bsParts, setBsParts] = useState(getTodayBSParts);
-  const [dueBsParts, setDueBsParts] = useState(getTodayBSParts);
-  const [hasDueDate, setHasDueDate] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
-    customerId: '',
+    customerId: urlCustomerId || '',
     date: getCurrentADDate(), 
-    dueDate: getCurrentADDate(), 
     type: 'OUT_FULL' as TransactionType,
     quantity: 1,
     amount: 0,
     returnQuantity: 0, 
-    simultaneousOutQuantity: 0,
     remark: '',
   });
-
-  // Handle data pre-filling for Duplicate & Replace workflow
-  useEffect(() => {
-    if (transactionId && existingTxn && !txnLoading) {
-      // 1. AD Date parsing
-      const adDate = typeof existingTxn.date === 'string' 
-        ? existingTxn.date 
-        : new Date(toMillis(existingTxn.date)).toISOString().split('T')[0];
-      
-      // 2. BS Date parsing with strict 2-digit padding
-      const parts = existingTxn.bsDate.split(/[-/]/);
-      if (parts.length === 3) {
-        setBsParts({ 
-          year: parts[0], 
-          month: parts[1].padStart(2, '0'), 
-          day: parts[2].padStart(2, '0') 
-        });
-      }
-      
-      // 3. Robust Type Mapping (handle legacy IN/OUT)
-      let displayType: TransactionType = 'OUT_FULL';
-      const rawType = String(existingTxn.type).toUpperCase();
-      if (rawType === 'IN' || rawType === 'IN_EMPTY') displayType = 'IN_EMPTY';
-      else if (rawType === 'OUT' || rawType === 'OUT_FULL') displayType = 'OUT_FULL';
-      else if (rawType === 'LEAKAGE') displayType = 'LEAKAGE';
-      else if (rawType === 'LOST') displayType = 'LOST';
-      else if (rawType === 'ADJUSTMENT') displayType = 'ADJUSTMENT';
-
-      setFormData(prev => ({
-        ...prev,
-        customerId: existingTxn.customerId,
-        date: adDate,
-        dueDate: existingTxn.dueDate || adDate, 
-        type: displayType,
-        quantity: existingTxn.quantity || 0,
-        amount: existingTxn.amount || 0,
-        remark: existingTxn.remark || '',
-      }));
-
-      // 4. Due Date logic
-      setHasDueDate(!!existingTxn.dueDate);
-      if (existingTxn.dueDate) {
-        const dParts = adToBs(existingTxn.dueDate).split(/[-/]/);
-        if (dParts.length === 3) {
-          setDueBsParts({ 
-            year: dParts[0], 
-            month: dParts[1].padStart(2, '0'), 
-            day: dParts[2].padStart(2, '0') 
-          });
-        }
-      }
-    } else if (!transactionId) {
-      // Reset form to defaults if not in edit mode
-      const todayAD = getCurrentADDate();
-      setFormData({
-        customerId: urlCustomerId || '',
-        date: todayAD,
-        dueDate: todayAD,
-        type: 'OUT_FULL',
-        quantity: 1,
-        amount: 0,
-        returnQuantity: 0,
-        simultaneousOutQuantity: 0,
-        remark: '',
-      });
-      setBsParts(getTodayBSParts());
-      setDueBsParts(getTodayBSParts());
-      setHasDueDate(false);
-    }
-  }, [transactionId, existingTxn, txnLoading, urlCustomerId]);
 
   const handleBSChange = (field: 'year' | 'month' | 'day', value: string) => {
     const newBS = { ...bsParts, [field]: value };
@@ -178,15 +81,6 @@ export default function TransactionsPage() {
     if (newBS.year && newBS.month && newBS.day) {
       const adDate = bsToAd(newBS.year, newBS.month, newBS.day);
       setFormData(prev => ({ ...prev, date: adDate }));
-    }
-  };
-
-  const handleDueBSChange = (field: 'year' | 'month' | 'day', value: string) => {
-    const newBS = { ...dueBsParts, [field]: value };
-    setDueBsParts(newBS);
-    if (newBS.year && newBS.month && newBS.day) {
-      const adDate = bsToAd(newBS.year, newBS.month, newBS.day);
-      setFormData(prev => ({ ...prev, dueDate: adDate }));
     }
   };
 
@@ -229,7 +123,6 @@ export default function TransactionsPage() {
       customerId: formData.customerId,
       date: transactionDate,
       bsDate: bsDateStr,
-      dueDate: hasDueDate ? (formData.dueDate || undefined) : undefined,
       type: formData.type,
       quantity: formData.quantity,
       amount: formData.amount,
@@ -237,49 +130,28 @@ export default function TransactionsPage() {
     };
 
     try {
-      if (transactionId) {
-        // DUPLICATE & REPLACE WORKFLOW
-        // 1. Create the new transaction
-        await addTransaction(payload);
-        // 2. Soft-delete the old transaction (service handles inventory reversal)
-        await deleteTransaction(transactionId, "Updated via Duplicate & Replace workflow");
-        
-        toast({ title: "Entry Updated", description: "The record has been replaced with updated information." });
-        router.push(`/customers/${formData.customerId}`);
-      } else {
-        await addTransaction(payload);
-        
-        const isPositiveImpact = formData.type === 'OUT_FULL' || formData.type === 'OUT';
-        if (isPositiveImpact && formData.returnQuantity > 0) {
-          await addTransaction({
-            customerId: formData.customerId,
-            date: transactionDate,
-            bsDate: bsDateStr,
-            type: 'IN_EMPTY',
-            quantity: formData.returnQuantity,
-            remark: `Empty return logged during delivery.`,
-            status: 'active'
-          });
-        }
-
-        toast({ title: "Transaction Logged", description: "Cylinder movement recorded successfully." });
-        router.push(`/customers/${formData.customerId}`);
+      await addTransaction(payload);
+      
+      const isPositiveImpact = formData.type === 'OUT_FULL' || formData.type === 'OUT';
+      if (isPositiveImpact && formData.returnQuantity > 0) {
+        await addTransaction({
+          customerId: formData.customerId,
+          date: transactionDate,
+          bsDate: bsDateStr,
+          type: 'IN_EMPTY',
+          quantity: formData.returnQuantity,
+          remark: `Empty return logged during delivery.`,
+        });
       }
+
+      toast({ title: "Transaction Logged", description: "Cylinder movement recorded successfully." });
+      router.push(`/customers/${formData.customerId}`);
     } catch (err) {
       toast({ variant: "destructive", title: "Action Failed", description: "There was an error saving the transaction." });
     } finally {
       setSubmitting(false);
     }
   };
-
-  if (transactionId && txnLoading) {
-    return (
-      <div className="flex flex-col h-[70vh] items-center justify-center p-20 gap-4">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        <p className="font-headline font-bold text-muted-foreground">Fetching ledger document...</p>
-      </div>
-    );
-  }
 
   const years = getBSYears();
   const daysList = Array.from({ length: 32 }, (_, i) => (i + 1).toString().padStart(2, '0'));
@@ -293,34 +165,21 @@ export default function TransactionsPage() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="font-headline text-2xl md:text-4xl font-bold text-foreground">
-              {transactionId ? "Edit Transaction" : "New Transaction"}
-            </h1>
-            <p className="text-muted-foreground mt-1 text-xs md:text-sm font-medium">
-              {transactionId ? "Replace entry with updated data" : "Log cylinder movements using accurate algorithmic Nepali calendar"}
-            </p>
+            <h1 className="font-headline text-2xl md:text-4xl font-bold text-foreground">New Transaction</h1>
+            <p className="text-muted-foreground mt-1 text-xs md:text-sm font-medium">Log cylinder movements using accurate algorithmic Nepali calendar</p>
           </div>
         </div>
-        {transactionId && (
-          <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 px-4 py-2 text-xs font-bold self-start md:self-center">
-            REPLACING: {transactionId.slice(-6).toUpperCase()}
-          </Badge>
-        )}
       </header>
 
       <div className="max-w-3xl mx-auto">
         <form onSubmit={handleSubmit}>
           <Card className="border-none shadow-2xl bg-card overflow-hidden">
-            <CardHeader className={cn("p-6 pb-2 border-b border-border/50", transactionId ? "bg-primary/5" : "bg-muted/30")}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className={cn("p-2 rounded-lg", transactionId ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground")}>
-                    {transactionId ? <Edit2 className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
-                  </div>
-                  <h3 className="font-bold uppercase tracking-widest text-xs">
-                    {transactionId ? "Duplicate & Replace Mode" : "Direct Entry Mode"}
-                  </h3>
+            <CardHeader className="p-6 pb-2 border-b border-border/50 bg-muted/30">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-lg bg-muted text-muted-foreground">
+                  <Plus className="h-5 w-5" />
                 </div>
+                <h3 className="font-bold uppercase tracking-widest text-xs">Direct Entry Mode</h3>
               </div>
             </CardHeader>
             <CardContent className="p-6 md:p-8 space-y-8">
@@ -330,7 +189,6 @@ export default function TransactionsPage() {
                     <User className="h-3 w-3" /> Customer
                   </Label>
                   <Select 
-                    disabled={!!transactionId} 
                     value={formData.customerId} 
                     onValueChange={(v) => v === "ADD_NEW" ? setIsAddCustomerOpen(true) : setFormData({...formData, customerId: v})}
                   >
@@ -338,8 +196,8 @@ export default function TransactionsPage() {
                       <SelectValue placeholder="Select customer..." />
                     </SelectTrigger>
                     <SelectContent className="bg-card border-border max-h-[300px]">
-                      {!transactionId && <SelectItem value="ADD_NEW" className="text-primary font-bold"><Plus className="h-4 w-4 mr-2" /> Add New Customer</SelectItem>}
-                      {!transactionId && <SelectSeparator />}
+                      <SelectItem value="ADD_NEW" className="text-primary font-bold"><Plus className="h-4 w-4 mr-2" /> Add New Customer</SelectItem>
+                      <SelectSeparator />
                       {customers.map(c => (
                         <SelectItem key={c.id} value={c.id}>
                           {c.name} ({c.phone})
@@ -397,35 +255,10 @@ export default function TransactionsPage() {
 
                 <div className="space-y-2 hidden md:block" />
 
-                {isPositiveImpact && !transactionId && (
+                {isPositiveImpact && (
                   <div className="space-y-2 md:col-span-2 p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
                     <Label className="text-emerald-500 uppercase text-[10px] tracking-widest font-bold">Return Owed (PCS)</Label>
                     <Input type="number" min="0" className="h-12 bg-background text-emerald-500 font-bold" value={formData.returnQuantity} onChange={e => setFormData({...formData, returnQuantity: parseInt(e.target.value) || 0})} />
-                  </div>
-                )}
-
-                {isPositiveImpact && (
-                  <div className="md:col-span-2 p-4 rounded-xl bg-primary/5 border border-primary/20 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-bold flex items-center gap-2"><Bell className="h-4 w-4 text-primary" /> Set Return Due Date?</span>
-                      <Switch checked={hasDueDate} onCheckedChange={setHasDueDate} />
-                    </div>
-                    {hasDueDate && (
-                      <div className="grid grid-cols-3 gap-2 animate-in slide-in-from-top-2 duration-300">
-                        <Select value={dueBsParts.year} onValueChange={(v) => handleDueBSChange('year', v)}>
-                          <SelectTrigger className="h-10 bg-background text-xs"><SelectValue /></SelectTrigger>
-                          <SelectContent className="max-h-[200px]">{years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
-                        </Select>
-                        <Select value={dueBsParts.month} onValueChange={(v) => handleDueBSChange('month', v)}>
-                          <SelectTrigger className="h-10 bg-background text-xs"><SelectValue /></SelectTrigger>
-                          <SelectContent>{BS_MONTHS.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
-                        </Select>
-                        <Select value={dueBsParts.day} onValueChange={(v) => handleDueBSChange('day', v)}>
-                          <SelectTrigger className="h-10 bg-background text-xs"><SelectValue /></SelectTrigger>
-                          <SelectContent className="max-h-[200px]">{daysList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
-                        </Select>
-                      </div>
-                    )}
                   </div>
                 )}
 
@@ -453,8 +286,7 @@ export default function TransactionsPage() {
                     <Loader2 className="h-6 w-6 animate-spin" />
                   ) : (
                     <>
-                      {transactionId ? <Save className="h-5 w-5 mr-2" /> : <Plus className="h-6 w-6 mr-2" />}
-                      {transactionId ? "Replace Record" : "Save Transaction"}
+                      <Plus className="h-6 w-6 mr-2" /> Save Transaction
                     </>
                   )}
                 </Button>
