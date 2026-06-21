@@ -100,14 +100,16 @@ export default function TransactionsPage() {
     remark: '',
   });
 
-  // Handle data pre-filling for edits
+  // Handle data pre-filling for edits with robust mapping
   useEffect(() => {
     if (transactionId && existingTxn) {
+      // 1. AD Date parsing (handle both string and Firestore Timestamp)
       const adDate = typeof existingTxn.date === 'string' 
         ? existingTxn.date 
         : new Date(toMillis(existingTxn.date)).toISOString().split('T')[0];
       
-      const parts = existingTxn.bsDate.split('-');
+      // 2. BS Date parsing (handle dashes or slashes and ensure 2-digit padding)
+      const parts = existingTxn.bsDate.split(/[-/]/);
       if (parts.length === 3) {
         setBsParts({ 
           year: parts[0], 
@@ -116,24 +118,31 @@ export default function TransactionsPage() {
         });
       }
       
-      // Map legacy types to current UI options if necessary
-      let displayType = existingTxn.type;
-      if (displayType === 'IN') displayType = 'IN_EMPTY';
-      if (displayType === 'OUT') displayType = 'OUT_FULL';
+      // 3. Robust Type Mapping (Legacy IN/OUT -> IN_EMPTY/OUT_FULL)
+      let displayType: TransactionType = 'OUT_FULL';
+      const rawType = String(existingTxn.type).toUpperCase();
+      
+      if (rawType === 'IN' || rawType === 'IN_EMPTY') displayType = 'IN_EMPTY';
+      else if (rawType === 'OUT' || rawType === 'OUT_FULL') displayType = 'OUT_FULL';
+      else if (rawType === 'LEAKAGE') displayType = 'LEAKAGE';
+      else if (rawType === 'LOST') displayType = 'LOST';
+      else if (rawType === 'ADJUSTMENT') displayType = 'ADJUSTMENT';
 
-      setFormData(prev => ({
-        ...prev,
+      setFormData({
         customerId: existingTxn.customerId,
         date: adDate,
         dueDate: existingTxn.dueDate || adDate, 
         type: displayType,
-        quantity: existingTxn.quantity,
+        quantity: existingTxn.quantity || 0,
+        returnQuantity: 0, 
+        simultaneousOutQuantity: 0,
         remark: existingTxn.remark || '',
-      }));
-      setHasDueDate(!!existingTxn.dueDate);
+      });
 
+      // 4. Due Date logic
+      setHasDueDate(!!existingTxn.dueDate);
       if (existingTxn.dueDate) {
-        const dParts = adToBs(existingTxn.dueDate).split('-');
+        const dParts = adToBs(existingTxn.dueDate).split(/[-/]/);
         if (dParts.length === 3) {
           setDueBsParts({ 
             year: dParts[0], 
@@ -143,7 +152,7 @@ export default function TransactionsPage() {
         }
       }
     } else if (!transactionId) {
-      // Reset form for new transactions
+      // Reset form to defaults if not in edit mode
       const todayAD = getCurrentADDate();
       setFormData({
         customerId: urlCustomerId || '',
