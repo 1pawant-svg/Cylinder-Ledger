@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -168,7 +169,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="p-8 space-y-8 animate-in fade-in duration-500 max-w-4xl mx-auto">
+    <div className="p-8 space-y-8 animate-in fade-in duration-500 max-w-4xl mx-auto pb-24 md:pb-8">
       <header className="border-b border-border pb-6">
         <h1 className="font-headline text-4xl font-bold text-foreground">Settings & Maintenance</h1>
         <p className="text-muted-foreground mt-1 font-medium">Configure business identity and manage system data</p>

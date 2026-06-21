@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -76,7 +77,7 @@ export default function Dashboard() {
     setTodayLabel(formatFullDate(todayAD));
   }, []);
 
-  // 1. Core liability metrics
+  // Core liability metrics
   const toReceiveTotal = useMemo(() => 
     customers.reduce((sum, c) => sum + Math.max(0, getCustomerBalance(c.id)), 0),
     [customers, getCustomerBalance]
@@ -87,14 +88,13 @@ export default function Dashboard() {
     [customers, getCustomerBalance]
   );
 
-  // 2. Collection logic filtered by balance > 0
+  // Collection logic filtered by balance > 0
   const collectionData = useMemo(() => {
     const today = getCurrentADDate();
     
     const collections = transactions
       .filter(t => t.status !== 'deleted' && t.dueDate && getTransactionImpact(t.type) === 1)
       .map(t => {
-        // Handle both string and Date due dates
         const dueDateStr = typeof t.dueDate === 'string' ? t.dueDate : new Date(toMillis(t.dueDate)).toISOString().split('T')[0];
         
         return {
@@ -108,7 +108,7 @@ export default function Dashboard() {
 
     const overdue = collections
       .filter(c => c.daysDiff < 0)
-      .sort((a, b) => a.daysDiff - b.daysDiff); // Most overdue first
+      .sort((a, b) => a.daysDiff - b.daysDiff);
 
     const dueToday = collections
       .filter(c => c.daysDiff === 0)
@@ -160,8 +160,8 @@ export default function Dashboard() {
       {/* Primary Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <StatCard 
-          title="Market Stock" 
-          value={`${toReceiveTotal} To Receive`} 
+          title="To Receive" 
+          value={`${toReceiveTotal} PCS`} 
           icon={Package} 
           description="Total outstanding cylinders"
           variant="primary"
@@ -169,7 +169,7 @@ export default function Dashboard() {
         />
         <StatCard 
           title="To Give" 
-          value={`${toGiveTotal} To Give`} 
+          value={`${toGiveTotal} PCS`} 
           icon={ArrowDownLeft} 
           description="Cylinders owed to customers"
           variant="warning"
@@ -214,13 +214,13 @@ export default function Dashboard() {
                 const customer = customers.find(c => c.id === item.customerId);
                 return (
                   <div key={item.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/20 border border-border/50 group hover:bg-muted/40 transition-colors">
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <Link href={`/customers/${customer?.id}`} className="font-bold text-xs truncate block group-hover:text-primary transition-colors">
                         {customer?.name}
                       </Link>
                       <p className="text-[9px] text-muted-foreground">{customer?.phone}</p>
                     </div>
-                    <div className="text-right flex items-center gap-2">
+                    <div className="text-right flex items-center gap-2 shrink-0">
                       <span className="text-xs font-bold text-orange-500">{item.balance} To Receive</span>
                       {getOverdueBadge(item.daysDiff)}
                     </div>
@@ -259,13 +259,13 @@ export default function Dashboard() {
                 const customer = customers.find(c => c.id === item.customerId);
                 return (
                   <div key={item.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/20 border border-border/50 group hover:bg-muted/40 transition-colors">
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <Link href={`/customers/${customer?.id}`} className="font-bold text-xs truncate block group-hover:text-primary transition-colors">
                         {customer?.name}
                       </Link>
                       <p className="text-[9px] text-muted-foreground">Due in {item.daysDiff} days</p>
                     </div>
-                    <span className="text-xs font-bold text-yellow-500 whitespace-nowrap">{item.balance} To Receive</span>
+                    <span className="text-xs font-bold text-yellow-500 whitespace-nowrap shrink-0">{item.balance} To Receive</span>
                   </div>
                 );
               })}
@@ -301,13 +301,13 @@ export default function Dashboard() {
                 const customer = customers.find(c => c.id === item.customerId);
                 return (
                   <div key={item.id} className="flex items-center justify-between p-2 rounded-lg bg-destructive/5 border border-destructive/10 group hover:bg-destructive/10 transition-colors">
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <Link href={`/customers/${customer?.id}`} className="font-bold text-sm hover:text-destructive transition-colors block truncate">
                         {customer?.name}
                       </Link>
                       <p className="text-[9px] text-destructive font-medium uppercase">{Math.abs(item.daysDiff)}d Overdue</p>
                     </div>
-                    <div className="text-right flex items-center gap-2">
+                    <div className="text-right flex items-center gap-2 shrink-0">
                       <span className="text-xs font-bold text-destructive">{item.balance} To Receive</span>
                       {getOverdueBadge(item.daysDiff)}
                     </div>
@@ -350,8 +350,8 @@ export default function Dashboard() {
                   const impact = getTransactionImpact(txn.type);
                   return (
                     <div key={txn.id} className="flex items-center justify-between py-3 border-b border-border/50 last:border-0 group transition-all">
-                      <div className="flex items-center gap-3 md:gap-4">
-                        <div className={cn("h-10 w-10 md:h-12 md:w-12 rounded-full flex items-center justify-center transition-transform group-hover:scale-110", getTransactionColor(txn.type))}>
+                      <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
+                        <div className={cn("h-10 w-10 md:h-12 md:w-12 rounded-full flex items-center justify-center transition-transform group-hover:scale-110 shrink-0", getTransactionColor(txn.type))}>
                           {getTransactionIcon(txn.type)}
                         </div>
                         <div className="min-w-0">
@@ -359,10 +359,10 @@ export default function Dashboard() {
                             <p className="font-bold text-sm truncate max-w-[120px] md:max-w-none">{customer?.name || "System"}</p>
                             {isInactive && <Badge variant="secondary" className="text-[7px] h-3 px-1 leading-none font-black uppercase">Inactive</Badge>}
                           </div>
-                          <p className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-widest font-bold">{txn.type.replace('_', ' ')} • {txn.bsDate}</p>
+                          <p className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-widest font-bold truncate">{txn.type.replace('_', ' ')} • {txn.bsDate}</p>
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right shrink-0">
                         <p className={cn("font-headline font-bold text-sm md:text-base", impact > 0 ? "text-primary" : "text-emerald-500")}>
                           {impact > 0 ? '+' : '-'}{txn.quantity} PCS
                         </p>
@@ -395,11 +395,13 @@ export default function Dashboard() {
                     return (
                       <div key={txn.id} className="p-4 rounded-xl bg-muted/30 border border-border/50 space-y-4 hover:bg-muted/50 transition-colors">
                         <div className="flex justify-between items-start">
-                          <div className="overflow-hidden">
+                          <div className="overflow-hidden min-w-0 flex-1">
                             <Link href={`/customers/${customer.id}`} className="font-bold text-sm hover:text-primary transition-colors block truncate">{customer.name}</Link>
                             <p className="text-[10px] text-muted-foreground mt-0.5">Owed: <span className="font-bold text-primary">{txn.balance} To Receive</span></p>
                           </div>
-                          {getOverdueBadge(txn.daysDiff)}
+                          <div className="shrink-0">
+                            {getOverdueBadge(txn.daysDiff)}
+                          </div>
                         </div>
                         <Button size="sm" variant="outline" className="w-full h-9 px-4 text-[10px] gap-2 border-accent/20 hover:bg-accent hover:text-white" onClick={() => window.open(`tel:${customer.phone}`)}>
                           <PhoneCall className="h-3 w-3" /> Call {customer.phone}

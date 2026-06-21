@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -51,20 +52,17 @@ import { useToast } from "@/hooks/use-toast";
 import { TransactionType, Transaction } from "@/lib/types";
 import { useDoc, useFirestore } from "@/firebase";
 import { doc } from "firebase/firestore";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
-export default function TransactionsPage(props: { 
-  params: Promise<any>; 
-  searchParams: Promise<any> 
-}) {
-  const searchParams = React.use(props.searchParams);
+export default function TransactionsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const db = useFirestore();
   const { customers, addCustomer, addTransaction, updateTransaction } = useLedger();
   const { toast } = useToast();
   
-  const transactionId = searchParams?.transactionId as string;
-  const urlCustomerId = searchParams?.customerId as string;
+  const transactionId = searchParams?.get('transactionId');
+  const urlCustomerId = searchParams?.get('customerId');
 
   const transactionRef = useMemo(() => 
     (db && transactionId) ? doc(db, 'transactions', transactionId) : null, 
@@ -72,7 +70,6 @@ export default function TransactionsPage(props: {
   
   const { data: existingTxn, loading: txnLoading } = useDoc<Transaction>(transactionRef);
 
-  // Helper to get today's BS date parts
   const getTodayBSParts = () => {
     const todayAD = getCurrentADDate();
     const bsDateStr = adToBs(todayAD);
@@ -99,7 +96,6 @@ export default function TransactionsPage(props: {
     remark: '',
   });
 
-  // Sync state with pre-filled transaction data in EDIT MODE
   useEffect(() => {
     if (transactionId && existingTxn) {
       const adDate = typeof existingTxn.date === 'string' 
@@ -129,7 +125,6 @@ export default function TransactionsPage(props: {
         }
       }
     } else if (!transactionId) {
-      // Reset form when not in edit mode
       const todayAD = getCurrentADDate();
       setFormData({
         customerId: urlCustomerId || '',
@@ -311,7 +306,7 @@ export default function TransactionsPage(props: {
                     <User className="h-3 w-3" /> Select Customer
                   </Label>
                   <Select 
-                    disabled={!!transactionId} // Cannot change customer on an existing transaction for audit integrity
+                    disabled={!!transactionId} 
                     value={formData.customerId} 
                     onValueChange={(v) => v === "ADD_NEW" ? setIsAddCustomerOpen(true) : setFormData({...formData, customerId: v})}
                   >
