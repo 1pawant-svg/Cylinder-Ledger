@@ -64,6 +64,16 @@ import {
   DialogDescription,
   DialogFooter
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -142,6 +152,7 @@ export default function CustomerProfile(props: {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editFields, setEditFields] = useState<any>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [isConfirmSaveOpen, setIsConfirmSaveOpen] = useState(false);
 
   useEffect(() => {
     if (user && db) {
@@ -339,6 +350,7 @@ export default function CustomerProfile(props: {
       toast({ variant: "destructive", title: "Update Failed", description: err.message });
     } finally {
       setIsSaving(false);
+      setIsConfirmSaveOpen(false);
     }
   };
 
@@ -463,7 +475,7 @@ export default function CustomerProfile(props: {
                           </TableCell>
                           <TableCell className="text-xs text-muted-foreground">Calc...</TableCell>
                           <TableCell className="text-right pr-4 md:pr-6 space-x-1">
-                            <Button size="icon" variant="default" className="h-8 w-8 bg-emerald-500 hover:bg-emerald-600" onClick={saveInlineEdit} disabled={isSaving}>
+                            <Button size="icon" variant="default" className="h-8 w-8 bg-emerald-500 hover:bg-emerald-600" onClick={() => setIsConfirmSaveOpen(true)} disabled={isSaving}>
                               <Save className="h-4 w-4" />
                             </Button>
                             <Button size="icon" variant="ghost" className="h-8 w-8" onClick={cancelInlineEdit} disabled={isSaving}>
@@ -544,7 +556,7 @@ export default function CustomerProfile(props: {
             <Card className="border-none shadow-xl bg-muted/20 border-l-4 border-l-accent">
               <CardHeader className="px-4 md:px-6">
                 <CardTitle className="font-headline text-base font-bold text-accent">Account Inactive</CardTitle>
-                <CardDescription className="text-xs">This customer is currently inactive. Reactivate to log new transactions.</CardDescription>
+                <CardTitle className="text-xs">This customer is currently inactive. Reactivate to log new transactions.</CardTitle>
               </CardHeader>
               <CardContent className="px-4 md:px-6">
                 <Button variant="outline" className="w-full text-emerald-500 border-emerald-500/50" onClick={handleToggleStatus}>
@@ -748,6 +760,30 @@ export default function CustomerProfile(props: {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={isConfirmSaveOpen} onOpenChange={setIsConfirmSaveOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Changes?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to update this ledger entry? This will modify the transaction record and adjust global inventory stock levels accordingly.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isSaving}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={(e) => {
+                e.preventDefault();
+                saveInlineEdit();
+              }} 
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              disabled={isSaving}
+            >
+              {isSaving ? "Saving..." : "Save Changes"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
