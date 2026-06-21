@@ -67,6 +67,7 @@ export async function addTransaction(db: Firestore, data: Omit<Transaction, 'id'
         details: `${data.type} transaction of ${data.quantity} PCS recorded.`,
       });
     }
+    return txnId;
   } catch (error: any) {
     if (error.code === 'permission-denied') {
       errorEmitter.emit('permission-error', new FirestorePermissionError({
@@ -105,14 +106,11 @@ export async function updateTransaction(db: Firestore, id: string, data: Partial
         ? invSnap.data() as Inventory 
         : { filledStock: 0, emptyStock: 0, updatedAt: new Date().toISOString() };
 
-      // 1. Undo old impact
       const oldImpact = getInventoryImpact(oldTxn.type, oldTxn.quantity);
-      // 2. Apply new impact (using new data merged with old if not provided)
       const newType = data.type || oldTxn.type;
       const newQty = data.quantity !== undefined ? data.quantity : oldTxn.quantity;
       const newImpact = getInventoryImpact(newType, newQty);
 
-      // Final deltas
       const filledDelta = newImpact.filledDelta - oldImpact.filledDelta;
       const emptyDelta = newImpact.emptyDelta - oldImpact.emptyDelta;
 
@@ -153,38 +151,70 @@ export async function updateTransaction(db: Firestore, id: string, data: Partial
   }
 }
 
-export function deleteTransaction(db: Firestore, id: string, userId: string, userName: string, reason: string = "Deleted by admin") {
+export async function deleteTransaction(db: Firestore, id: string, userId: string, userName: string, reason: string = "Deleted by admin") {
   const docRef = doc(db, 'transactions', id);
-  const rawDeleteData = {
-    status: 'deleted' as const,
-    deletedAt: serverTimestamp(),
-    deletedBy: userId,
-    deletedByName: userName,
-    deleteReason: reason || "No reason provided",
-  };
+  
+  try {
+    await runTransaction(db, async (transaction) => {
+      const txnSnap = await transaction.get(docRef);
+      if (!txnSnap.exists()) return;
+      
+      const oldTxn = txnSnap.data() as Transaction;
+      if (oldTxn.status === 'deleted') return;
 
-  const deleteData = cleanFirestoreData(rawDeleteData);
+      const inventoryRef = getInventoryRef(db);
+      const invSnap = await transaction.get(inventoryRef);
+      
+      let currentInv: Inventory = invSnap.exists() 
+        ? invSnap.data() as Inventory 
+        : { filledStock: 0, emptyStock: 0, updatedAt: new Date().toISOString() };
 
-  updateDoc(docRef, deleteData).then(() => {
+      // Undo impact
+      const impact = getInventoryImpact(oldTxn.type, oldTxn.quantity);
+      
+      const deleteData = cleanFirestoreData({
+        status: 'deleted' as const,
+        deletedAt: serverTimestamp(),
+        deletedBy: userId,
+        deletedByName: userName,
+        deleteReason: reason || "Replacement edit or manual delete",
+      });
+
+      transaction.update(docRef, deleteData);
+
+      const invUpdatePayload = cleanFirestoreData({
+        filledStock: (currentInv.filledStock || 0) - impact.filledDelta,
+        emptyStock: (currentInv.emptyStock || 0) - impact.emptyDelta,
+        updatedAt: serverTimestamp()
+      });
+
+      if (!invSnap.exists()) {
+        transaction.set(inventoryRef, invUpdatePayload);
+      } else {
+        transaction.update(inventoryRef, invUpdatePayload);
+      }
+    });
+
     logAction(db, {
       userId,
       userName,
       action: 'DELETE_TRANSACTION',
       entityType: 'TRANSACTION',
       entityId: id,
-      details: `Soft deleted transaction ${id}.`,
+      details: `Soft deleted transaction ${id}. Reversed inventory impact.`,
     });
-  }).catch(async (error: any) => {
+  } catch (error: any) {
     if (error.code === 'permission-denied') {
       errorEmitter.emit('permission-error', new FirestorePermissionError({
         path: docRef.path,
         operation: 'update',
-        requestResourceData: deleteData,
+        requestResourceData: { status: 'deleted' },
       } satisfies SecurityRuleContext));
     } else {
-      console.error("Delete transaction error:", error);
+      console.error("Atomic delete failed:", error);
     }
-  });
+    throw error;
+  }
 }
 
 export const getTransactionsQuery = (db: Firestore) => query(collection(db, 'transactions'), orderBy('date', 'desc'));

@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -51,7 +50,7 @@ import { adToBs, bsToAd, BS_MONTHS, getBSYears, getCurrentADDate, toMillis } fro
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { TransactionType, Transaction } from "@/lib/types";
-import { useDoc, useFirestore } from "@/firebase";
+import { useDoc, useFirestore, useUser } from "@/firebase";
 import { doc } from "firebase/firestore";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -59,7 +58,8 @@ export default function TransactionsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const db = useFirestore();
-  const { customers, addCustomer, addTransaction, updateTransaction } = useLedger();
+  const { user } = useUser();
+  const { customers, addCustomer, addTransaction, deleteTransaction } = useLedger();
   const { toast } = useToast();
   
   const transactionId = searchParams?.get('transactionId');
@@ -102,7 +102,7 @@ export default function TransactionsPage() {
     remark: '',
   });
 
-  // Handle data pre-filling for edits with robust mapping
+  // Handle data pre-filling for Duplicate & Replace workflow
   useEffect(() => {
     if (transactionId && existingTxn && !txnLoading) {
       // 1. AD Date parsing
@@ -238,8 +238,13 @@ export default function TransactionsPage() {
 
     try {
       if (transactionId) {
-        await updateTransaction(transactionId, payload);
-        toast({ title: "Entry Updated", description: "Ledger has been updated with changes." });
+        // DUPLICATE & REPLACE WORKFLOW
+        // 1. Create the new transaction
+        await addTransaction(payload);
+        // 2. Soft-delete the old transaction (service handles inventory reversal)
+        await deleteTransaction(transactionId, "Updated via Duplicate & Replace workflow");
+        
+        toast({ title: "Entry Updated", description: "The record has been replaced with updated information." });
         router.push(`/customers/${formData.customerId}`);
       } else {
         await addTransaction(payload);
@@ -253,18 +258,6 @@ export default function TransactionsPage() {
             type: 'IN_EMPTY',
             quantity: formData.returnQuantity,
             remark: `Empty return logged during delivery.`,
-            status: 'active'
-          });
-        }
-
-        if (formData.type === 'LEAKAGE' && formData.simultaneousOutQuantity > 0) {
-          await addTransaction({
-            customerId: formData.customerId,
-            date: transactionDate,
-            bsDate: bsDateStr,
-            type: 'OUT_FULL',
-            quantity: formData.simultaneousOutQuantity,
-            remark: `Replacement issued for leakage.`,
             status: 'active'
           });
         }
@@ -304,13 +297,13 @@ export default function TransactionsPage() {
               {transactionId ? "Edit Transaction" : "New Transaction"}
             </h1>
             <p className="text-muted-foreground mt-1 text-xs md:text-sm font-medium">
-              {transactionId ? "Update existing cylinder record" : "Log cylinder movements using accurate algorithmic Nepali calendar"}
+              {transactionId ? "Replace entry with updated data" : "Log cylinder movements using accurate algorithmic Nepali calendar"}
             </p>
           </div>
         </div>
         {transactionId && (
           <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 px-4 py-2 text-xs font-bold self-start md:self-center">
-            DOC ID: {transactionId.slice(-6).toUpperCase()}
+            REPLACING: {transactionId.slice(-6).toUpperCase()}
           </Badge>
         )}
       </header>
@@ -325,7 +318,7 @@ export default function TransactionsPage() {
                     {transactionId ? <Edit2 className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
                   </div>
                   <h3 className="font-bold uppercase tracking-widest text-xs">
-                    {transactionId ? "Edit Audit Trail" : "Direct Entry Mode"}
+                    {transactionId ? "Duplicate & Replace Mode" : "Direct Entry Mode"}
                   </h3>
                 </div>
               </div>
@@ -461,7 +454,7 @@ export default function TransactionsPage() {
                   ) : (
                     <>
                       {transactionId ? <Save className="h-5 w-5 mr-2" /> : <Plus className="h-6 w-6 mr-2" />}
-                      {transactionId ? "Save Changes" : "Save Transaction"}
+                      {transactionId ? "Replace Record" : "Save Transaction"}
                     </>
                   )}
                 </Button>
