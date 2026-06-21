@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -28,7 +29,6 @@ import {
   UserCheck,
   Save,
   X,
-  Banknote,
   User
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -318,7 +318,6 @@ export default function CustomerProfile(props: {
       bsDate: txn.bsDate,
       type: txn.type,
       quantity: txn.quantity,
-      amount: txn.amount || 0,
       remark: txn.remark || '',
       customerId: txn.customerId
     });
@@ -419,7 +418,6 @@ export default function CustomerProfile(props: {
                     <TableHead className="py-4 font-bold text-[9px] md:text-[10px] uppercase tracking-widest pl-4 md:pl-6">Date (BS)</TableHead>
                     <TableHead className="py-4 font-bold text-[9px] md:text-[10px] uppercase tracking-widest">Type</TableHead>
                     <TableHead className="py-4 font-bold text-[9px] md:text-[10px] uppercase tracking-widest">Qty</TableHead>
-                    <TableHead className="py-4 font-bold text-[9px] md:text-[10px] uppercase tracking-widest">Amount</TableHead>
                     <TableHead className="py-4 font-bold text-[9px] md:text-[10px] uppercase tracking-widest">Balance</TableHead>
                     <TableHead className="py-4 font-bold text-[9px] md:text-[10px] uppercase tracking-widest text-right pr-4 md:pr-6">Manage</TableHead>
                   </TableRow>
@@ -465,14 +463,6 @@ export default function CustomerProfile(props: {
                               className="h-8 text-xs w-16" 
                             />
                           </TableCell>
-                          <TableCell>
-                            <Input 
-                              type="number" 
-                              value={editFields.amount} 
-                              onChange={e => setEditFields({...editFields, amount: parseFloat(e.target.value) || 0})} 
-                              className="h-8 text-xs w-20" 
-                            />
-                          </TableCell>
                           <TableCell className="text-xs text-muted-foreground">Calc...</TableCell>
                           <TableCell className="text-right pr-4 md:pr-6 space-x-1">
                             <Button size="icon" variant="default" className="h-8 w-8 bg-emerald-500 hover:bg-emerald-600" onClick={() => setIsConfirmSaveOpen(true)} disabled={isSaving}>
@@ -500,9 +490,6 @@ export default function CustomerProfile(props: {
                         <TableCell className={cn("font-bold text-xs md:text-sm", impact > 0 ? "text-primary" : "text-emerald-500")}>
                           {impact > 0 ? `+${txn.quantity}` : `-${txn.quantity}`}
                         </TableCell>
-                        <TableCell className="text-[10px] md:text-xs font-mono text-muted-foreground">
-                          {txn.amount ? `Rs. ${txn.amount}` : '-'}
-                        </TableCell>
                         <TableCell className="font-bold text-xs">
                            <span className={cn(txn.runningBalance > 0 ? "text-primary" : txn.runningBalance < 0 ? "text-accent" : "text-emerald-500")}>
                               {txn.runningBalance === 0 ? "Settled" : txn.runningBalance > 0 ? `${txn.runningBalance} To Receive` : `${Math.abs(txn.runningBalance)} To Give`}
@@ -529,7 +516,7 @@ export default function CustomerProfile(props: {
                     );
                   })}
                   {transactions.length === 0 && (
-                    <TableRow><TableCell colSpan={6} className="py-16 text-center text-muted-foreground italic text-sm">No transaction records found.</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={5} className="py-16 text-center text-muted-foreground italic text-sm">No transaction records found.</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>

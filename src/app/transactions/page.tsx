@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -9,8 +10,7 @@ import {
   Plus,
   Loader2,
   ArrowLeft,
-  X,
-  Banknote
+  X
 } from "lucide-react";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -39,14 +39,18 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { TransactionType } from "@/lib/types";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useFirestore } from "@/firebase";
+import { doc, getDoc } from "firebase/firestore";
 
 export default function TransactionsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { customers, addCustomer, addTransaction } = useLedger();
+  const db = useFirestore();
+  const { customers, addCustomer, addTransaction, deleteTransaction } = useLedger();
   const { toast } = useToast();
   
   const urlCustomerId = searchParams?.get('customerId');
+  const editTransactionId = searchParams?.get('editId');
 
   const getTodayBSParts = () => {
     const todayAD = getCurrentADDate();
@@ -64,16 +68,60 @@ export default function TransactionsPage() {
 
   const [bsParts, setBsParts] = useState(getTodayBSParts);
   const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(!!editTransactionId);
 
   const [formData, setFormData] = useState({
     customerId: urlCustomerId || '',
     date: getCurrentADDate(), 
     type: 'OUT_FULL' as TransactionType,
     quantity: 1,
-    amount: 0,
     returnQuantity: 0, 
     remark: '',
   });
+
+  // Fetch transaction data if editing (Duplicate & Replace workflow)
+  useEffect(() => {
+    async function fetchTxn() {
+      if (!editTransactionId || !db) return;
+      setLoading(true);
+      try {
+        const docRef = doc(db, 'transactions', editTransactionId);
+        const snap = await getDoc(docRef);
+        if (snap.exists()) {
+          const data = snap.data();
+          const bsStr = data.bsDate || '';
+          const parts = bsStr.split(/[-/]/);
+          
+          if (parts.length === 3) {
+            setBsParts({
+              year: parts[0],
+              month: parts[1].padStart(2, '0'),
+              day: parts[2].padStart(2, '0')
+            });
+          }
+
+          // Map legacy types
+          let mappedType = data.type as TransactionType;
+          if (mappedType === 'IN' as any) mappedType = 'IN_EMPTY';
+          if (mappedType === 'OUT' as any) mappedType = 'OUT_FULL';
+
+          setFormData({
+            customerId: data.customerId,
+            date: data.date,
+            type: mappedType,
+            quantity: data.quantity,
+            returnQuantity: 0,
+            remark: data.remark || ''
+          });
+        }
+      } catch (e) {
+        toast({ variant: "destructive", title: "Load Failed" });
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchTxn();
+  }, [editTransactionId, db, toast]);
 
   const handleBSChange = (field: 'year' | 'month' | 'day', value: string) => {
     const newBS = { ...bsParts, [field]: value };
@@ -119,18 +167,20 @@ export default function TransactionsPage() {
     const transactionDate = formData.date || getCurrentADDate();
     const bsDateStr = `${bsParts.year}-${bsParts.month}-${bsParts.day}`;
 
-    const payload = {
-      customerId: formData.customerId,
-      date: transactionDate,
-      bsDate: bsDateStr,
-      type: formData.type,
-      quantity: formData.quantity,
-      amount: formData.amount,
-      remark: formData.remark
-    };
-
     try {
-      await addTransaction(payload);
+      // If editing, delete the old one first (Duplicate & Replace workflow)
+      if (editTransactionId) {
+        await deleteTransaction(editTransactionId, "Replaced by updated entry");
+      }
+
+      await addTransaction({
+        customerId: formData.customerId,
+        date: transactionDate,
+        bsDate: bsDateStr,
+        type: formData.type,
+        quantity: formData.quantity,
+        remark: formData.remark
+      });
       
       const isPositiveImpact = formData.type === 'OUT_FULL' || formData.type === 'OUT';
       if (isPositiveImpact && formData.returnQuantity > 0) {
@@ -144,10 +194,10 @@ export default function TransactionsPage() {
         });
       }
 
-      toast({ title: "Transaction Logged", description: "Cylinder movement recorded successfully." });
+      toast({ title: editTransactionId ? "Transaction Updated" : "Transaction Logged" });
       router.push(`/customers/${formData.customerId}`);
     } catch (err) {
-      toast({ variant: "destructive", title: "Action Failed", description: "There was an error saving the transaction." });
+      toast({ variant: "destructive", title: "Action Failed" });
     } finally {
       setSubmitting(false);
     }
@@ -157,6 +207,10 @@ export default function TransactionsPage() {
   const daysList = Array.from({ length: 32 }, (_, i) => (i + 1).toString().padStart(2, '0'));
   const isPositiveImpact = formData.type === 'OUT_FULL' || formData.type === 'OUT';
 
+  if (loading) {
+    return <div className="flex h-full w-full items-center justify-center p-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  }
+
   return (
     <div className="p-4 md:p-8 space-y-6 md:space-y-8 animate-in slide-in-from-right-4 duration-500 pb-24">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-6">
@@ -165,7 +219,9 @@ export default function TransactionsPage() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="font-headline text-2xl md:text-4xl font-bold text-foreground">New Transaction</h1>
+            <h1 className="font-headline text-2xl md:text-4xl font-bold text-foreground">
+              {editTransactionId ? "Edit Transaction" : "New Transaction"}
+            </h1>
             <p className="text-muted-foreground mt-1 text-xs md:text-sm font-medium">Log cylinder movements using accurate algorithmic Nepali calendar</p>
           </div>
         </div>
@@ -179,7 +235,9 @@ export default function TransactionsPage() {
                 <div className="p-2 rounded-lg bg-muted text-muted-foreground">
                   <Plus className="h-5 w-5" />
                 </div>
-                <h3 className="font-bold uppercase tracking-widest text-xs">Direct Entry Mode</h3>
+                <h3 className="font-bold uppercase tracking-widest text-xs">
+                  {editTransactionId ? "Direct Edit Mode" : "Direct Entry Mode"}
+                </h3>
               </div>
             </CardHeader>
             <CardContent className="p-6 md:p-8 space-y-8">
@@ -196,8 +254,12 @@ export default function TransactionsPage() {
                       <SelectValue placeholder="Select customer..." />
                     </SelectTrigger>
                     <SelectContent className="bg-card border-border max-h-[300px]">
-                      <SelectItem value="ADD_NEW" className="text-primary font-bold"><Plus className="h-4 w-4 mr-2" /> Add New Customer</SelectItem>
-                      <SelectSeparator />
+                      {!editTransactionId && (
+                        <>
+                          <SelectItem value="ADD_NEW" className="text-primary font-bold"><Plus className="h-4 w-4 mr-2" /> Add New Customer</SelectItem>
+                          <SelectSeparator />
+                        </>
+                      )}
                       {customers.map(c => (
                         <SelectItem key={c.id} value={c.id}>
                           {c.name} ({c.phone})
@@ -246,16 +308,7 @@ export default function TransactionsPage() {
                   <Input type="number" min="1" className="h-12 bg-background font-headline font-bold text-lg" value={formData.quantity} onChange={e => setFormData({...formData, quantity: parseInt(e.target.value) || 0})} />
                 </div>
 
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2 text-muted-foreground uppercase text-[10px] tracking-widest font-bold mb-1">
-                    <Banknote className="h-3 w-3" /> Amount (Optional)
-                  </Label>
-                  <Input type="number" className="h-12 bg-background font-headline font-bold" value={formData.amount} onChange={e => setFormData({...formData, amount: parseFloat(e.target.value) || 0})} />
-                </div>
-
-                <div className="space-y-2 hidden md:block" />
-
-                {isPositiveImpact && (
+                {isPositiveImpact && !editTransactionId && (
                   <div className="space-y-2 md:col-span-2 p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
                     <Label className="text-emerald-500 uppercase text-[10px] tracking-widest font-bold">Return Owed (PCS)</Label>
                     <Input type="number" min="0" className="h-12 bg-background text-emerald-500 font-bold" value={formData.returnQuantity} onChange={e => setFormData({...formData, returnQuantity: parseInt(e.target.value) || 0})} />
@@ -286,7 +339,8 @@ export default function TransactionsPage() {
                     <Loader2 className="h-6 w-6 animate-spin" />
                   ) : (
                     <>
-                      <Plus className="h-6 w-6 mr-2" /> Save Transaction
+                      {editTransactionId ? <History className="h-6 w-6 mr-2" /> : <Plus className="h-6 w-6 mr-2" />}
+                      {editTransactionId ? "Update Entry" : "Save Transaction"}
                     </>
                   )}
                 </Button>
