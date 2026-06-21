@@ -75,7 +75,11 @@ export default function TransactionsPage() {
     const bsDateStr = adToBs(todayAD);
     const parts = bsDateStr.split('-');
     if (parts.length === 3) {
-      return { year: parts[0], month: parts[1], day: parts[2] };
+      return { 
+        year: parts[0], 
+        month: parts[1].padStart(2, '0'), 
+        day: parts[2].padStart(2, '0') 
+      };
     }
     return { year: '2081', month: '01', day: '01' };
   };
@@ -96,6 +100,7 @@ export default function TransactionsPage() {
     remark: '',
   });
 
+  // Handle data pre-filling for edits
   useEffect(() => {
     if (transactionId && existingTxn) {
       const adDate = typeof existingTxn.date === 'string' 
@@ -104,15 +109,24 @@ export default function TransactionsPage() {
       
       const parts = existingTxn.bsDate.split('-');
       if (parts.length === 3) {
-        setBsParts({ year: parts[0], month: parts[1], day: parts[2] });
+        setBsParts({ 
+          year: parts[0], 
+          month: parts[1].padStart(2, '0'), 
+          day: parts[2].padStart(2, '0') 
+        });
       }
       
+      // Map legacy types to current UI options if necessary
+      let displayType = existingTxn.type;
+      if (displayType === 'IN') displayType = 'IN_EMPTY';
+      if (displayType === 'OUT') displayType = 'OUT_FULL';
+
       setFormData(prev => ({
         ...prev,
         customerId: existingTxn.customerId,
         date: adDate,
         dueDate: existingTxn.dueDate || adDate, 
-        type: existingTxn.type,
+        type: displayType,
         quantity: existingTxn.quantity,
         remark: existingTxn.remark || '',
       }));
@@ -121,10 +135,15 @@ export default function TransactionsPage() {
       if (existingTxn.dueDate) {
         const dParts = adToBs(existingTxn.dueDate).split('-');
         if (dParts.length === 3) {
-          setDueBsParts({ year: dParts[0], month: dParts[1], day: dParts[2] });
+          setDueBsParts({ 
+            year: dParts[0], 
+            month: dParts[1].padStart(2, '0'), 
+            day: dParts[2].padStart(2, '0') 
+          });
         }
       }
     } else if (!transactionId) {
+      // Reset form for new transactions
       const todayAD = getCurrentADDate();
       setFormData({
         customerId: urlCustomerId || '',
