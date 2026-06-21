@@ -25,6 +25,7 @@ export interface Transaction {
   dueDate?: string; // Optional AD date string for return reminders
   type: TransactionType;
   quantity: number;
+  amount?: number; // Optional financial value
   remark?: string;
   status: 'active' | 'deleted';
   createdAt: Timestamp | string;

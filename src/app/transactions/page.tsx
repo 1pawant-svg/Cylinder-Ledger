@@ -22,7 +22,8 @@ import {
   RotateCcw,
   ArrowLeft,
   Save,
-  X
+  X,
+  Banknote
 } from "lucide-react";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -73,7 +74,7 @@ export default function TransactionsPage() {
   const getTodayBSParts = () => {
     const todayAD = getCurrentADDate();
     const bsDateStr = adToBs(todayAD);
-    const parts = bsDateStr.split('-');
+    const parts = bsDateStr.split(/[-/]/);
     if (parts.length === 3) {
       return { 
         year: parts[0], 
@@ -95,6 +96,7 @@ export default function TransactionsPage() {
     dueDate: getCurrentADDate(), 
     type: 'OUT_FULL' as TransactionType,
     quantity: 1,
+    amount: 0,
     returnQuantity: 0, 
     simultaneousOutQuantity: 0,
     remark: '',
@@ -102,13 +104,13 @@ export default function TransactionsPage() {
 
   // Handle data pre-filling for edits with robust mapping
   useEffect(() => {
-    if (transactionId && existingTxn) {
-      // 1. AD Date parsing (handle both string and Firestore Timestamp)
+    if (transactionId && existingTxn && !txnLoading) {
+      // 1. AD Date parsing
       const adDate = typeof existingTxn.date === 'string' 
         ? existingTxn.date 
         : new Date(toMillis(existingTxn.date)).toISOString().split('T')[0];
       
-      // 2. BS Date parsing (handle dashes or slashes and ensure 2-digit padding)
+      // 2. BS Date parsing with strict 2-digit padding
       const parts = existingTxn.bsDate.split(/[-/]/);
       if (parts.length === 3) {
         setBsParts({ 
@@ -118,26 +120,25 @@ export default function TransactionsPage() {
         });
       }
       
-      // 3. Robust Type Mapping (Legacy IN/OUT -> IN_EMPTY/OUT_FULL)
+      // 3. Robust Type Mapping (handle legacy IN/OUT)
       let displayType: TransactionType = 'OUT_FULL';
       const rawType = String(existingTxn.type).toUpperCase();
-      
       if (rawType === 'IN' || rawType === 'IN_EMPTY') displayType = 'IN_EMPTY';
       else if (rawType === 'OUT' || rawType === 'OUT_FULL') displayType = 'OUT_FULL';
       else if (rawType === 'LEAKAGE') displayType = 'LEAKAGE';
       else if (rawType === 'LOST') displayType = 'LOST';
       else if (rawType === 'ADJUSTMENT') displayType = 'ADJUSTMENT';
 
-      setFormData({
+      setFormData(prev => ({
+        ...prev,
         customerId: existingTxn.customerId,
         date: adDate,
         dueDate: existingTxn.dueDate || adDate, 
         type: displayType,
         quantity: existingTxn.quantity || 0,
-        returnQuantity: 0, 
-        simultaneousOutQuantity: 0,
+        amount: existingTxn.amount || 0,
         remark: existingTxn.remark || '',
-      });
+      }));
 
       // 4. Due Date logic
       setHasDueDate(!!existingTxn.dueDate);
@@ -160,6 +161,7 @@ export default function TransactionsPage() {
         dueDate: todayAD,
         type: 'OUT_FULL',
         quantity: 1,
+        amount: 0,
         returnQuantity: 0,
         simultaneousOutQuantity: 0,
         remark: '',
@@ -168,7 +170,7 @@ export default function TransactionsPage() {
       setDueBsParts(getTodayBSParts());
       setHasDueDate(false);
     }
-  }, [transactionId, existingTxn, urlCustomerId]);
+  }, [transactionId, existingTxn, txnLoading, urlCustomerId]);
 
   const handleBSChange = (field: 'year' | 'month' | 'day', value: string) => {
     const newBS = { ...bsParts, [field]: value };
@@ -230,6 +232,7 @@ export default function TransactionsPage() {
       dueDate: hasDueDate ? (formData.dueDate || undefined) : undefined,
       type: formData.type,
       quantity: formData.quantity,
+      amount: formData.amount,
       remark: formData.remark
     };
 
@@ -280,7 +283,7 @@ export default function TransactionsPage() {
     return (
       <div className="flex flex-col h-[70vh] items-center justify-center p-20 gap-4">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        <p className="font-headline font-bold text-muted-foreground">Loading Transaction Data...</p>
+        <p className="font-headline font-bold text-muted-foreground">Fetching ledger document...</p>
       </div>
     );
   }
@@ -298,16 +301,16 @@ export default function TransactionsPage() {
           </Button>
           <div>
             <h1 className="font-headline text-2xl md:text-4xl font-bold text-foreground">
-              {transactionId ? "Edit Ledger Entry" : "New Transaction"}
+              {transactionId ? "Edit Transaction" : "New Transaction"}
             </h1>
             <p className="text-muted-foreground mt-1 text-xs md:text-sm font-medium">
-              {transactionId ? "Modify existing cylinder movement record" : "Log cylinder movements using accurate algorithmic Nepali calendar"}
+              {transactionId ? "Update existing cylinder record" : "Log cylinder movements using accurate algorithmic Nepali calendar"}
             </p>
           </div>
         </div>
         {transactionId && (
           <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 px-4 py-2 text-xs font-bold self-start md:self-center">
-            MODIFICATION MODE
+            DOC ID: {transactionId.slice(-6).toUpperCase()}
           </Badge>
         )}
       </header>
@@ -322,7 +325,7 @@ export default function TransactionsPage() {
                     {transactionId ? <Edit2 className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
                   </div>
                   <h3 className="font-bold uppercase tracking-widest text-xs">
-                    {transactionId ? `Audit ID: ${transactionId.slice(-6).toUpperCase()}` : "Direct Entry Mode"}
+                    {transactionId ? "Edit Audit Trail" : "Direct Entry Mode"}
                   </h3>
                 </div>
               </div>
@@ -331,7 +334,7 @@ export default function TransactionsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2 text-muted-foreground uppercase text-[10px] tracking-widest font-bold mb-1">
-                    <User className="h-3 w-3" /> Select Customer
+                    <User className="h-3 w-3" /> Customer
                   </Label>
                   <Select 
                     disabled={!!transactionId} 
@@ -339,7 +342,7 @@ export default function TransactionsPage() {
                     onValueChange={(v) => v === "ADD_NEW" ? setIsAddCustomerOpen(true) : setFormData({...formData, customerId: v})}
                   >
                     <SelectTrigger className="h-12 bg-background border-border">
-                      <SelectValue placeholder="Search customer..." />
+                      <SelectValue placeholder="Select customer..." />
                     </SelectTrigger>
                     <SelectContent className="bg-card border-border max-h-[300px]">
                       {!transactionId && <SelectItem value="ADD_NEW" className="text-primary font-bold"><Plus className="h-4 w-4 mr-2" /> Add New Customer</SelectItem>}
@@ -355,7 +358,7 @@ export default function TransactionsPage() {
 
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2 text-muted-foreground uppercase text-[10px] tracking-widest font-bold mb-1">
-                    <Calendar className="h-3 w-3" /> Transaction Date (BS)
+                    <Calendar className="h-3 w-3" /> Date (BS)
                   </Label>
                   <div className="grid grid-cols-3 gap-2">
                     <Select value={bsParts.year} onValueChange={(v) => handleBSChange('year', v)}>
@@ -392,17 +395,19 @@ export default function TransactionsPage() {
                   <Input type="number" min="1" className="h-12 bg-background font-headline font-bold text-lg" value={formData.quantity} onChange={e => setFormData({...formData, quantity: parseInt(e.target.value) || 0})} />
                 </div>
 
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2 text-muted-foreground uppercase text-[10px] tracking-widest font-bold mb-1">
+                    <Banknote className="h-3 w-3" /> Amount (Optional)
+                  </Label>
+                  <Input type="number" className="h-12 bg-background font-headline font-bold" value={formData.amount} onChange={e => setFormData({...formData, amount: parseFloat(e.target.value) || 0})} />
+                </div>
+
+                <div className="space-y-2 hidden md:block" />
+
                 {isPositiveImpact && !transactionId && (
                   <div className="space-y-2 md:col-span-2 p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
                     <Label className="text-emerald-500 uppercase text-[10px] tracking-widest font-bold">Return Owed (PCS)</Label>
                     <Input type="number" min="0" className="h-12 bg-background text-emerald-500 font-bold" value={formData.returnQuantity} onChange={e => setFormData({...formData, returnQuantity: parseInt(e.target.value) || 0})} />
-                  </div>
-                )}
-
-                {formData.type === 'LEAKAGE' && !transactionId && (
-                  <div className="space-y-2 md:col-span-2 p-4 rounded-xl bg-primary/5 border border-primary/20">
-                    <Label className="text-primary uppercase text-[10px] tracking-widest font-bold">Replacement Issue (PCS)</Label>
-                    <Input type="number" min="0" className="h-12 bg-background text-primary font-bold" value={formData.simultaneousOutQuantity} onChange={e => setFormData({...formData, simultaneousOutQuantity: parseInt(e.target.value) || 0})} />
                   </div>
                 )}
 

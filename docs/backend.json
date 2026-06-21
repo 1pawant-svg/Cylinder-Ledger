@@ -25,6 +25,7 @@
         "dueDate": { "type": "string", "format": "date-time", "description": "Expected return date for the cylinder." },
         "type": { "type": "string", "enum": ["IN", "OUT", "OUT_FULL", "IN_EMPTY", "LEAKAGE", "LOST", "ADJUSTMENT"] },
         "quantity": { "type": "number" },
+        "amount": { "type": "number", "description": "Financial value of the transaction." },
         "remark": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
