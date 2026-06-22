@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -10,7 +9,8 @@ import {
   Plus,
   Loader2,
   ArrowLeft,
-  X
+  X,
+  History
 } from "lucide-react";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -190,7 +190,7 @@ export default function TransactionsPage() {
           bsDate: bsDateStr,
           type: 'IN_EMPTY',
           quantity: formData.returnQuantity,
-          remark: `Empty return logged during delivery.`,
+          remark: '',
         });
       }
 

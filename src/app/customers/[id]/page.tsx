@@ -268,7 +268,7 @@ export default function CustomerProfile(props: {
       bsDate: logBS, 
       type: quickLogType, 
       quantity: qty, 
-      remark: quickRemark || `Quick log: ${quickLogType.replace('_', ' ')}` 
+      remark: quickRemark || "" 
     });
     
     setQuickLogOpen(false);
