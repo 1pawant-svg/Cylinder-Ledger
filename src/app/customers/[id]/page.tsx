@@ -301,6 +301,19 @@ export default function CustomerProfile(props: {
       return;
     }
 
+    if (editFormData.pan) {
+      const cleanPan = editFormData.pan.replace(/\D/g, '');
+      if (cleanPan.length !== 9) {
+        toast({ variant: "destructive", title: "Invalid PAN", description: "PAN number must be exactly 9 digits." });
+        return;
+      }
+      const isPanDuplicate = customers.some(c => c.id !== customer.id && c.pan === cleanPan);
+      if (isPanDuplicate) {
+        toast({ variant: "destructive", title: "Duplicate PAN", description: "A customer with this PAN already exists." });
+        return;
+      }
+    }
+
     updateCustomer(customer.id, { 
       name: editFormData.name, 
       address: editFormData.address, 
@@ -713,7 +726,7 @@ export default function CustomerProfile(props: {
               <div className="space-y-2"><Label className="text-muted-foreground uppercase text-[10px] tracking-widest font-bold">Full Name</Label><Input value={editFormData.name} onChange={e => setEditFormData({...editFormData, name: e.target.value})} placeholder="Name" className="bg-background h-12" /></div>
               <div className="space-y-2"><Label className="text-muted-foreground uppercase text-[10px] tracking-widest font-bold">Phone</Label><Input value={editFormData.phone} onChange={e => setEditFormData({...editFormData, phone: e.target.value.replace(/\D/g, '').slice(0, 10)})} placeholder="98XXXXXXXX" className="bg-background h-12" maxLength={10}/></div>
               <div className="space-y-2"><Label className="text-muted-foreground uppercase text-[10px] tracking-widest font-bold">Address</Label><Input value={editFormData.address} onChange={e => setEditFormData({...editFormData, address: e.target.value})} placeholder="Location" className="bg-background h-12" /></div>
-              <div className="space-y-2"><Label className="text-muted-foreground uppercase text-[10px] tracking-widest font-bold">PAN Number</Label><Input value={editFormData.pan} onChange={e => setEditFormData({...editFormData, pan: e.target.value})} placeholder="PAN" className="bg-background h-12" /></div>
+              <div className="space-y-2"><Label className="text-muted-foreground uppercase text-[10px] tracking-widest font-bold">PAN Number</Label><Input value={editFormData.pan} onChange={e => setEditFormData({...editFormData, pan: e.target.value.replace(/\D/g, '').slice(0, 9)})} placeholder="9-digit PAN" className="bg-background h-12" maxLength={9} /></div>
               
               <div className="space-y-2">
                 <Label className="text-muted-foreground uppercase text-[10px] tracking-widest font-bold">General Remarks</Label>

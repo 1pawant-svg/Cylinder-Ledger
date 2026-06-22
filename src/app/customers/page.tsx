@@ -195,6 +195,19 @@ export default function CustomersPage() {
       });
       return;
     }
+
+    if (newCust.pan) {
+      const cleanPan = newCust.pan.replace(/\D/g, '');
+      if (cleanPan.length !== 9) {
+        toast({ variant: "destructive", title: "Invalid PAN", description: "PAN number must be exactly 9 digits." });
+        return;
+      }
+      const isPanDuplicate = customers.some(c => c.pan === cleanPan);
+      if (isPanDuplicate) {
+        toast({ variant: "destructive", title: "Duplicate PAN", description: "A customer with this PAN already exists." });
+        return;
+      }
+    }
     
     const customerId = addCustomer({
       name: newCust.name,
@@ -269,7 +282,7 @@ export default function CustomersPage() {
                   </div>
                   <div className="space-y-2">
                     <Label className="text-muted-foreground uppercase text-[10px] tracking-widest font-bold">PAN Number</Label>
-                    <Input value={newCust.pan} onChange={e => setNewCust({...newCust, pan: e.target.value})} placeholder="Optional PAN" className="bg-background h-12" />
+                    <Input value={newCust.pan} onChange={e => setNewCust({...newCust, pan: e.target.value.replace(/\D/g, '').slice(0, 9)})} placeholder="9-digit PAN" className="bg-background h-12" maxLength={9} />
                   </div>
                 </div>
                 <div className="pt-2">
