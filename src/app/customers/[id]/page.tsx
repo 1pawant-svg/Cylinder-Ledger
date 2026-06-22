@@ -33,7 +33,8 @@ import {
   Hash,
   FileText,
   Loader2,
-  Download
+  Download,
+  Plus
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -131,7 +132,8 @@ export default function CustomerProfile(props: {
   params: Promise<{ id: string }>;
   searchParams: Promise<any>;
 }) {
-  const { id } = React.use(props.params);
+  const params = React.use(props.params);
+  const id = params.id;
   const router = useRouter();
   const { toast } = useToast();
   const db = useFirestore();
@@ -447,6 +449,14 @@ export default function CustomerProfile(props: {
           </div>
         </div>
         <div className="flex flex-wrap gap-2 md:gap-3">
+          <Button 
+            size="sm" 
+            className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 font-bold h-10 md:h-12 flex-1 md:flex-none" 
+            onClick={() => router.push(`/transactions?customerId=${id}`)}
+          >
+            <Plus className="h-4 w-4" /> New Entry
+          </Button>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button 
