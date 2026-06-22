@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -215,9 +214,9 @@ export default function CustomerProfile(props: {
       );
       
       const filename = `${customer.name.replace(/\s+/g, '_')}_Ledger_${adToBs(getCurrentADDate())}.pdf`;
-      await sharePDF(doc, filename);
+      await sharePDF(doc, filename, customer.phone, customer.name);
       
-      toast({ title: "Statement Shared" });
+      toast({ title: "Statement Prepared", description: "Sharing started or download complete." });
     } catch (err: any) {
       toast({ variant: "destructive", title: "PDF Generation Failed", description: err.message });
     } finally {
@@ -420,7 +419,7 @@ export default function CustomerProfile(props: {
             disabled={isGeneratingPDF}
           >
             {isGeneratingPDF ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
-            {isGeneratingPDF ? "Generating..." : "Share PDF"}
+            {isGeneratingPDF ? "Preparing..." : "Share PDF"}
           </Button>
           <Button size="sm" className="bg-primary text-primary-foreground gap-2 font-bold h-10 md:h-12 flex-1 md:flex-none" onClick={() => setIsEditSheetOpen(true)}>
             <Edit2 className="h-4 w-4" /> Edit
@@ -665,7 +664,7 @@ export default function CustomerProfile(props: {
         </div>
       </div>
 
-      <Sheet open={isEditSheetOpen} onOpenChange={setIsEditSheetOpen}>
+      <Sheet id="edit-profile-sheet" open={isEditSheetOpen} onOpenChange={setIsEditSheetOpen}>
         <SheetContent className="sm:max-w-[450px] bg-card border-l border-border overflow-y-auto">
           <SheetHeader className="pb-8 border-b border-border/50">
             <SheetTitle className="font-headline text-2xl font-bold text-primary flex items-center gap-2">

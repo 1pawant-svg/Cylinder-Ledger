@@ -1,4 +1,3 @@
-
 'use client';
 
 import jsPDF from 'jspdf';
@@ -150,23 +149,42 @@ export async function generateCustomerLedgerPDF(
   return doc;
 }
 
-export async function sharePDF(doc: jsPDF, filename: string) {
+export async function sharePDF(doc: jsPDF, filename: string, customerPhone?: string, customerName?: string) {
   const blob = doc.output('blob');
   const file = new File([blob], filename, { type: 'application/pdf' });
 
+  // Native share is primarily for mobile devices
   if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
     try {
       await navigator.share({
         files: [file],
-        title: 'Cylinder Ledger Statement',
-        text: 'Please find the attached cylinder movement statement.',
+        title: `Ledger Statement: ${customerName || 'Customer'}`,
+        text: `Please find the attached cylinder movement statement for your records.`,
       });
+      return true;
     } catch (err) {
+      if ((err as any).name === 'AbortError') {
+        return false;
+      }
       console.error('Share failed, falling back to download', err);
       doc.save(filename);
     }
   } else {
-    // Fallback for desktop or non-supporting browsers
+    // Fallback for desktop: Download file + Open WhatsApp Web with a message
     doc.save(filename);
+    
+    if (customerPhone) {
+      const cleanPhone = customerPhone.replace(/\D/g, '');
+      // Assuming Nepal (977) if number is 10 digits
+      const phoneWithCountry = cleanPhone.length === 10 ? `977${cleanPhone}` : cleanPhone;
+      const message = encodeURIComponent(`Namaste, I have just downloaded your latest cylinder ledger statement PDF. I am sending it to you now. Please check the attached file.`);
+      const waUrl = `https://wa.me/${phoneWithCountry}?text=${message}`;
+      
+      // Short delay to ensure download starts before opening new tab
+      setTimeout(() => {
+        window.open(waUrl, '_blank');
+      }, 500);
+    }
   }
+  return false;
 }
