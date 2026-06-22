@@ -629,7 +629,7 @@ export default function CustomerProfile(props: {
                   <div className="grid grid-cols-3 gap-1">
                     <Select value={quickBSDate.year} onValueChange={(v) => setQuickBSDate({...quickBSDate, year: v})}>
                       <SelectTrigger className="h-9 bg-background text-[10px]"><SelectValue /></SelectTrigger>
-                      <SelectContent className="max-h-[200px]">{bsYears.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
+                      <SelectContent className="max-h-[400px]">{bsYears.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
                     </Select>
                     <Select value={quickBSDate.month} onValueChange={(v) => setQuickBSDate({...quickBSDate, month: v})}>
                       <SelectTrigger className="h-9 bg-background text-[10px]"><SelectValue /></SelectTrigger>
@@ -637,7 +637,7 @@ export default function CustomerProfile(props: {
                     </Select>
                     <Select value={quickBSDate.day} onValueChange={(v) => setQuickBSDate({...quickBSDate, day: v})}>
                       <SelectTrigger className="h-9 bg-background text-[10px]"><SelectValue /></SelectTrigger>
-                      <SelectContent className="max-h-[200px]">{daysList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+                      <SelectContent className="max-h-[400px]">{daysList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                 </div>

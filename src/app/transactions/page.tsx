@@ -276,7 +276,7 @@ export default function TransactionsPage() {
                   <div className="grid grid-cols-3 gap-2">
                     <Select value={bsParts.year} onValueChange={(v) => handleBSChange('year', v)}>
                       <SelectTrigger className="h-12 bg-background border-border text-xs"><SelectValue /></SelectTrigger>
-                      <SelectContent className="max-h-[200px]">{years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
+                      <SelectContent className="max-h-[400px]">{years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
                     </Select>
                     <Select value={bsParts.month} onValueChange={(v) => handleBSChange('month', v)}>
                       <SelectTrigger className="h-12 bg-background border-border text-xs"><SelectValue /></SelectTrigger>
@@ -284,7 +284,7 @@ export default function TransactionsPage() {
                     </Select>
                     <Select value={bsParts.day} onValueChange={(v) => handleBSChange('day', v)}>
                       <SelectTrigger className="h-12 bg-background border-border text-xs"><SelectValue /></SelectTrigger>
-                      <SelectContent className="max-h-[200px]">{daysList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+                      <SelectContent className="max-h-[400px]">{daysList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                 </div>

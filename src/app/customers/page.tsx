@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -38,7 +37,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { 
   Dialog, 
   DialogContent, 
@@ -309,7 +308,7 @@ export default function CustomersPage() {
                       <div className="grid grid-cols-3 gap-2">
                         <Select value={openingDateBS.year} onValueChange={(v) => setOpeningDateBS({...openingDateBS, year: v})}>
                           <SelectTrigger className="h-10 bg-background border-border text-xs"><SelectValue /></SelectTrigger>
-                          <SelectContent>{years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
+                          <SelectContent className="max-h-[400px]">{years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
                         </Select>
                         <Select value={openingDateBS.month} onValueChange={(v) => setOpeningDateBS({...openingDateBS, month: v})}>
                           <SelectTrigger className="h-10 bg-background border-border text-xs"><SelectValue /></SelectTrigger>
@@ -317,7 +316,7 @@ export default function CustomersPage() {
                         </Select>
                         <Select value={openingDateBS.day} onValueChange={(v) => setOpeningDateBS({...openingDateBS, day: v})}>
                           <SelectTrigger className="h-10 bg-background border-border text-xs"><SelectValue /></SelectTrigger>
-                          <SelectContent>{daysList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+                          <SelectContent className="max-h-[400px]">{daysList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
                         </Select>
                       </div>
                     </div>
