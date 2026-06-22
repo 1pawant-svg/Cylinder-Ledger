@@ -9,6 +9,7 @@ export interface Customer {
   name: string;
   phone: string;
   address: string;
+  pan?: string;
   notes?: string;
   remarks?: string;
   specialInstructions?: string;

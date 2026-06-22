@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -29,7 +30,8 @@ import {
   Save,
   X,
   User,
-  Calendar
+  Calendar,
+  Hash
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -198,6 +200,7 @@ export default function CustomerProfile(props: {
     name: '', 
     address: '', 
     phone: '', 
+    pan: '',
     remarks: '',
     specialInstructions: '',
     collectionNotes: ''
@@ -209,6 +212,7 @@ export default function CustomerProfile(props: {
         name: customer.name, 
         address: customer.address, 
         phone: customer.phone, 
+        pan: customer.pan || '',
         remarks: customer.remarks || '',
         specialInstructions: customer.specialInstructions || '',
         collectionNotes: customer.collectionNotes || ''
@@ -262,7 +266,6 @@ export default function CustomerProfile(props: {
     const logAD = bsToAd(quickBSDate.year, quickBSDate.month, quickBSDate.day);
     const logBS = `${quickBSDate.year}-${quickBSDate.month}-${quickBSDate.day}`;
 
-    // Ensure remark strictly contains only what the user explicitly typed
     addTransaction({ 
       customerId: customer.id, 
       date: logAD, 
@@ -302,6 +305,7 @@ export default function CustomerProfile(props: {
       name: editFormData.name, 
       address: editFormData.address, 
       phone: cleanPhone, 
+      pan: editFormData.pan,
       remarks: editFormData.remarks,
       specialInstructions: editFormData.specialInstructions,
       collectionNotes: editFormData.collectionNotes
@@ -391,6 +395,12 @@ export default function CustomerProfile(props: {
             <div className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {customer.address}</div>
             <div className="hidden md:block opacity-50">•</div>
             <div className="flex items-center gap-1"><Phone className="h-3 w-3" /> {customer.phone}</div>
+            {customer.pan && (
+              <>
+                <div className="hidden md:block opacity-50">•</div>
+                <div className="flex items-center gap-1"><Hash className="h-3 w-3" /> PAN: {customer.pan}</div>
+              </>
+            )}
           </div>
         </div>
         <div className="flex flex-wrap gap-2 md:gap-3">
@@ -703,6 +713,7 @@ export default function CustomerProfile(props: {
               <div className="space-y-2"><Label className="text-muted-foreground uppercase text-[10px] tracking-widest font-bold">Full Name</Label><Input value={editFormData.name} onChange={e => setEditFormData({...editFormData, name: e.target.value})} placeholder="Name" className="bg-background h-12" /></div>
               <div className="space-y-2"><Label className="text-muted-foreground uppercase text-[10px] tracking-widest font-bold">Phone</Label><Input value={editFormData.phone} onChange={e => setEditFormData({...editFormData, phone: e.target.value.replace(/\D/g, '').slice(0, 10)})} placeholder="98XXXXXXXX" className="bg-background h-12" maxLength={10}/></div>
               <div className="space-y-2"><Label className="text-muted-foreground uppercase text-[10px] tracking-widest font-bold">Address</Label><Input value={editFormData.address} onChange={e => setEditFormData({...editFormData, address: e.target.value})} placeholder="Location" className="bg-background h-12" /></div>
+              <div className="space-y-2"><Label className="text-muted-foreground uppercase text-[10px] tracking-widest font-bold">PAN Number</Label><Input value={editFormData.pan} onChange={e => setEditFormData({...editFormData, pan: e.target.value})} placeholder="PAN" className="bg-background h-12" /></div>
               
               <div className="space-y-2">
                 <Label className="text-muted-foreground uppercase text-[10px] tracking-widest font-bold">General Remarks</Label>

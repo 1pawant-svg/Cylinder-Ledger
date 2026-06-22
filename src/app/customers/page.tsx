@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -16,7 +17,8 @@ import {
   ArrowUpDown,
   Loader2,
   UserPlus,
-  Calendar
+  Calendar,
+  Hash
 } from "lucide-react";
 import {
   Table,
@@ -111,6 +113,7 @@ export default function CustomersPage() {
     name: '', 
     address: '', 
     phone: '', 
+    pan: '',
     notes: '',
     openingToReceive: '',
     openingToGive: ''
@@ -124,7 +127,8 @@ export default function CustomersPage() {
     let result = customers.filter(c => 
       c.name.toLowerCase().includes(search.toLowerCase()) || 
       c.phone.includes(search) ||
-      c.address.toLowerCase().includes(search.toLowerCase())
+      c.address.toLowerCase().includes(search.toLowerCase()) ||
+      (c.pan && c.pan.toLowerCase().includes(search.toLowerCase()))
     );
 
     result = result.filter(c => {
@@ -196,6 +200,7 @@ export default function CustomersPage() {
       name: newCust.name,
       address: newCust.address,
       phone: cleanPhone,
+      pan: newCust.pan,
       notes: newCust.notes
     });
 
@@ -207,7 +212,6 @@ export default function CustomersPage() {
     const toReceive = parseInt(newCust.openingToReceive) || 0;
     const toGive = parseInt(newCust.openingToGive) || 0;
 
-    // No auto-generated remarks like "Opening Balance" to comply with user's request
     if (toReceive > 0) {
       addTransaction({ customerId, date: openingAD, bsDate: openingBSStr, type: 'OUT_FULL', quantity: toReceive, remark: '' });
     }
@@ -215,7 +219,7 @@ export default function CustomersPage() {
       addTransaction({ customerId, date: openingAD, bsDate: openingBSStr, type: 'IN_EMPTY', quantity: toGive, remark: '' });
     }
 
-    setNewCust({ name: '', address: '', phone: '', notes: '', openingToReceive: '', openingToGive: '' });
+    setNewCust({ name: '', address: '', phone: '', pan: '', notes: '', openingToReceive: '', openingToGive: '' });
     setOpeningDateBS(getTodayBSParts());
     setIsAddOpen(false);
     toast({ title: "Customer Added", description: `${newCust.name} has been added.` });
@@ -258,9 +262,15 @@ export default function CustomersPage() {
                     <Input value={newCust.phone} onChange={e => setNewCust({...newCust, phone: e.target.value.replace(/\D/g, '').slice(0, 10)})} placeholder="98XXXXXXXX" className="bg-background h-12" maxLength={10} />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-muted-foreground uppercase text-[10px] tracking-widest font-bold">Address</Label>
-                  <Input value={newCust.address} onChange={e => setNewCust({...newCust, address: e.target.value})} placeholder="Location" className="bg-background h-12" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground uppercase text-[10px] tracking-widest font-bold">Address</Label>
+                    <Input value={newCust.address} onChange={e => setNewCust({...newCust, address: e.target.value})} placeholder="Location" className="bg-background h-12" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground uppercase text-[10px] tracking-widest font-bold">PAN Number</Label>
+                    <Input value={newCust.pan} onChange={e => setNewCust({...newCust, pan: e.target.value})} placeholder="Optional PAN" className="bg-background h-12" />
+                  </div>
                 </div>
                 <div className="pt-2">
                   <div className="flex items-center gap-2 mb-4">
@@ -316,7 +326,7 @@ export default function CustomersPage() {
       <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-          <Input placeholder="Search name or phone..." className="pl-10 h-11 md:h-12 bg-card border-border shadow-sm focus-visible:ring-primary text-sm" value={search} onChange={e => setSearch(e.target.value)} />
+          <Input placeholder="Search name, phone or PAN..." className="pl-10 h-11 md:h-12 bg-card border-border shadow-sm focus-visible:ring-primary text-sm" value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         <div className="grid grid-cols-2 gap-2 w-full md:w-auto">
           <Select value={statusFilter} onValueChange={(v: StatusFilter) => setStatusFilter(v)}>

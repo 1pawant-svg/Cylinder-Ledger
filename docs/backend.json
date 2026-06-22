@@ -9,6 +9,7 @@
         "name": { "type": "string" },
         "phone": { "type": "string" },
         "address": { "type": "string" },
+        "pan": { "type": "string", "description": "Customer's PAN number." },
         "notes": { "type": "string" },
         "status": { "type": "string", "enum": ["active", "inactive"], "description": "Current status of the customer." },
         "createdAt": { "type": "string", "format": "date-time" }
