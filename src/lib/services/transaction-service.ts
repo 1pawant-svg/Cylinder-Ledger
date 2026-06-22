@@ -1,19 +1,29 @@
+
 import { 
   Firestore, 
   collection, 
   doc, 
-  updateDoc,
   serverTimestamp,
   query,
   orderBy,
-  runTransaction
+  runTransaction 
 } from 'firebase/firestore';
-import { Transaction, Inventory } from '@/lib/types';
+import { Transaction, Inventory, Customer, TransactionType } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 import { logAction } from './audit-service';
 import { getInventoryRef, getInventoryImpact } from './inventory-service';
 import { cleanFirestoreData } from '@/lib/utils';
+
+/**
+ * Calculates the balance impact of a transaction type on the customer.
+ */
+function getCustomerBalanceImpact(type: TransactionType, quantity: number): number {
+  const t = type.toUpperCase();
+  if (t === 'OUT' || t === 'OUT_FULL') return quantity;
+  if (t === 'IN' || t === 'IN_EMPTY' || t === 'LEAKAGE' || t === 'LOST' || t === 'ADJUSTMENT') return -quantity;
+  return 0;
+}
 
 export async function addTransaction(db: Firestore, data: Omit<Transaction, 'id' | 'createdAt' | 'status'>, userId?: string, userName?: string) {
   let txnId = '';
@@ -33,27 +43,43 @@ export async function addTransaction(db: Firestore, data: Omit<Transaction, 'id'
       const colRef = collection(db, 'transactions');
       const txnDocRef = doc(colRef);
       txnId = txnDocRef.id;
+
+      const customerRef = doc(db, 'customers', data.customerId);
       const inventoryRef = getInventoryRef(db);
       
-      const invSnap = await transaction.get(inventoryRef);
+      const [custSnap, invSnap] = await Promise.all([
+        transaction.get(customerRef),
+        transaction.get(inventoryRef)
+      ]);
+
+      if (!custSnap.exists()) throw new Error("Customer not found");
+
+      // 1. Update Inventory
       let currentInv: Inventory = invSnap.exists() 
         ? invSnap.data() as Inventory 
         : { filledStock: 0, emptyStock: 0, updatedAt: new Date().toISOString() };
 
       const { filledDelta, emptyDelta } = getInventoryImpact(data.type, data.quantity);
       
-      transaction.set(txnDocRef, payload);
+      // 2. Update Customer Balance
+      const currentCust = custSnap.data() as Customer;
+      const balanceDelta = getCustomerBalanceImpact(data.type, data.quantity);
+      const newBalance = (currentCust.balance || 0) + balanceDelta;
 
-      const updatePayload = cleanFirestoreData({
+      // Commit Operations
+      transaction.set(txnDocRef, payload);
+      transaction.update(customerRef, { balance: newBalance });
+
+      const invUpdatePayload = cleanFirestoreData({
         filledStock: (currentInv.filledStock || 0) + filledDelta,
         emptyStock: (currentInv.emptyStock || 0) + emptyDelta,
         updatedAt: serverTimestamp()
       });
 
       if (!invSnap.exists()) {
-        transaction.set(inventoryRef, updatePayload);
+        transaction.set(inventoryRef, invUpdatePayload);
       } else {
-        transaction.update(inventoryRef, updatePayload);
+        transaction.update(inventoryRef, invUpdatePayload);
       }
     });
 
@@ -64,7 +90,7 @@ export async function addTransaction(db: Firestore, data: Omit<Transaction, 'id'
         action: 'CREATE_TRANSACTION',
         entityType: 'TRANSACTION',
         entityId: txnId,
-        details: `${data.type} transaction of ${data.quantity} PCS recorded.`,
+        details: `${data.type} transaction of ${data.quantity} PCS recorded for ${data.customerId}. Balance updated.`,
       });
     }
     return txnId;
@@ -75,8 +101,6 @@ export async function addTransaction(db: Firestore, data: Omit<Transaction, 'id'
         operation: 'create',
         requestResourceData: payload,
       } satisfies SecurityRuleContext));
-    } else {
-      console.error("Atomic transaction failed:", error);
     }
     throw error;
   }
@@ -99,22 +123,37 @@ export async function updateTransaction(db: Firestore, id: string, data: Partial
       if (!txnSnap.exists()) throw new Error("Transaction not found");
       
       const oldTxn = txnSnap.data() as Transaction;
+      const customerRef = doc(db, 'customers', oldTxn.customerId);
       const inventoryRef = getInventoryRef(db);
-      const invSnap = await transaction.get(inventoryRef);
       
-      let currentInv: Inventory = invSnap.exists() 
+      const [custSnap, invSnap] = await Promise.all([
+        transaction.get(customerRef),
+        transaction.get(inventoryRef)
+      ]);
+
+      if (!custSnap.exists()) throw new Error("Customer not found");
+
+      // Calculate Deltas
+      const oldInvImpact = getInventoryImpact(oldTxn.type, oldTxn.quantity);
+      const newType = data.type || oldTxn.type;
+      const newQty = data.quantity !== undefined ? data.quantity : oldTxn.quantity;
+      const newInvImpact = getInventoryImpact(newType, newQty);
+
+      const oldBalImpact = getCustomerBalanceImpact(oldTxn.type, oldTxn.quantity);
+      const newBalImpact = getCustomerBalanceImpact(newType, newQty);
+
+      const filledDelta = newInvImpact.filledDelta - oldInvImpact.filledDelta;
+      const emptyDelta = newInvImpact.emptyDelta - oldInvImpact.emptyDelta;
+      const balanceDelta = newBalImpact - oldBalImpact;
+
+      const currentCust = custSnap.data() as Customer;
+      const currentInv: Inventory = invSnap.exists() 
         ? invSnap.data() as Inventory 
         : { filledStock: 0, emptyStock: 0, updatedAt: new Date().toISOString() };
 
-      const oldImpact = getInventoryImpact(oldTxn.type, oldTxn.quantity);
-      const newType = data.type || oldTxn.type;
-      const newQty = data.quantity !== undefined ? data.quantity : oldTxn.quantity;
-      const newImpact = getInventoryImpact(newType, newQty);
-
-      const filledDelta = newImpact.filledDelta - oldImpact.filledDelta;
-      const emptyDelta = newImpact.emptyDelta - oldImpact.emptyDelta;
-
+      // Commit
       transaction.update(docRef, updateData);
+      transaction.update(customerRef, { balance: (currentCust.balance || 0) + balanceDelta });
 
       const invUpdatePayload = cleanFirestoreData({
         filledStock: (currentInv.filledStock || 0) + filledDelta,
@@ -135,7 +174,7 @@ export async function updateTransaction(db: Firestore, id: string, data: Partial
       action: 'UPDATE_TRANSACTION',
       entityType: 'TRANSACTION',
       entityId: id,
-      details: `Updated transaction ${id}. Adjusted inventory impact.`,
+      details: `Updated transaction ${id}. Adjusted balance and inventory impact.`,
     });
   } catch (error: any) {
     if (error.code === 'permission-denied') {
@@ -144,8 +183,6 @@ export async function updateTransaction(db: Firestore, id: string, data: Partial
         operation: 'update',
         requestResourceData: updateData,
       } satisfies SecurityRuleContext));
-    } else {
-      console.error("Update transaction error:", error);
     }
     throw error;
   }
@@ -162,25 +199,35 @@ export async function deleteTransaction(db: Firestore, id: string, userId: strin
       const oldTxn = txnSnap.data() as Transaction;
       if (oldTxn.status === 'deleted') return;
 
+      const customerRef = doc(db, 'customers', oldTxn.customerId);
       const inventoryRef = getInventoryRef(db);
-      const invSnap = await transaction.get(inventoryRef);
       
-      let currentInv: Inventory = invSnap.exists() 
-        ? invSnap.data() as Inventory 
-        : { filledStock: 0, emptyStock: 0, updatedAt: new Date().toISOString() };
+      const [custSnap, invSnap] = await Promise.all([
+        transaction.get(customerRef),
+        transaction.get(inventoryRef)
+      ]);
 
-      // Undo impact
       const impact = getInventoryImpact(oldTxn.type, oldTxn.quantity);
+      const balImpact = getCustomerBalanceImpact(oldTxn.type, oldTxn.quantity);
       
       const deleteData = cleanFirestoreData({
         status: 'deleted' as const,
         deletedAt: serverTimestamp(),
         deletedBy: userId,
         deletedByName: userName,
-        deleteReason: reason || "Replacement edit or manual delete",
+        deleteReason: reason,
       });
 
       transaction.update(docRef, deleteData);
+
+      if (custSnap.exists()) {
+        const currentCust = custSnap.data() as Customer;
+        transaction.update(customerRef, { balance: (currentCust.balance || 0) - balImpact });
+      }
+
+      const currentInv: Inventory = invSnap.exists() 
+        ? invSnap.data() as Inventory 
+        : { filledStock: 0, emptyStock: 0, updatedAt: new Date().toISOString() };
 
       const invUpdatePayload = cleanFirestoreData({
         filledStock: (currentInv.filledStock || 0) - impact.filledDelta,
@@ -201,7 +248,7 @@ export async function deleteTransaction(db: Firestore, id: string, userId: strin
       action: 'DELETE_TRANSACTION',
       entityType: 'TRANSACTION',
       entityId: id,
-      details: `Soft deleted transaction ${id}. Reversed inventory impact.`,
+      details: `Soft deleted transaction ${id}. Reversed balance and inventory impact.`,
     });
   } catch (error: any) {
     if (error.code === 'permission-denied') {
@@ -210,8 +257,6 @@ export async function deleteTransaction(db: Firestore, id: string, userId: strin
         operation: 'update',
         requestResourceData: { status: 'deleted' },
       } satisfies SecurityRuleContext));
-    } else {
-      console.error("Atomic delete failed:", error);
     }
     throw error;
   }

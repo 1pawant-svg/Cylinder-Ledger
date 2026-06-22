@@ -15,6 +15,7 @@ export interface Customer {
   specialInstructions?: string;
   collectionNotes?: string;
   status: CustomerStatus;
+  balance: number; // Denormalized field for performance
   createdAt: Timestamp | string;
 }
 
@@ -22,8 +23,8 @@ export interface Transaction {
   id: string;
   customerId: string;
   date: Timestamp | string;
-  bsDate: string; // The explicit Nepali date string (e.g., "2083-02-28")
-  dueDate?: string; // Optional AD date string for return reminders
+  bsDate: string; 
+  dueDate?: string; 
   type: TransactionType;
   quantity: number;
   remark?: string;

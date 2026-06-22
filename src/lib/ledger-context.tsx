@@ -4,7 +4,6 @@
 import React, { createContext, useContext, useMemo, useState, useEffect, useCallback } from 'react';
 import { Customer, Transaction, UserProfile, CustomerStatus, TransactionType } from './types';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { useToast } from '@/hooks/use-toast';
 import { 
   addCustomer as fsAddCustomer, 
   updateCustomer as fsUpdateCustomer, 
@@ -27,7 +26,7 @@ interface LedgerContextType {
   inactiveCustomers: Customer[];
   transactions: Transaction[];
   loading: boolean;
-  addCustomer: (customer: Omit<Customer, 'id' | 'createdAt' | 'status'>) => string;
+  addCustomer: (customer: Omit<Customer, 'id' | 'createdAt' | 'status' | 'balance'>) => string;
   updateCustomer: (id: string, customer: Partial<Customer>) => void;
   updateCustomerStatus: (id: string, status: CustomerStatus) => void;
   deleteCustomer: (id: string) => void;
@@ -41,17 +40,9 @@ interface LedgerContextType {
 
 const LedgerContext = createContext<LedgerContextType | undefined>(undefined);
 
-const getTransactionImpact = (type: TransactionType): number => {
-  const t = type.toUpperCase();
-  if (t === 'OUT' || t === 'OUT_FULL') return 1;
-  if (t === 'IN' || t === 'IN_EMPTY' || t === 'LEAKAGE' || t === 'LOST' || t === 'ADJUSTMENT') return -1;
-  return 0;
-};
-
 export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const db = useFirestore();
   const { user } = useUser();
-  const { toast } = useToast();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   
   useEffect(() => {
@@ -72,7 +63,6 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const customers = useMemo(() => customersData || [], [customersData]);
   const allTransactions = useMemo(() => transactionsData || [], [transactionsData]);
-  
   const transactions = useMemo(() => allTransactions.filter(t => t.status !== 'deleted'), [allTransactions]);
   
   const loading = (!!customersQuery && customersLoading) || (!!transactionsQuery && transactionsLoading);
@@ -80,43 +70,29 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const activeCustomers = useMemo(() => customers.filter(c => c.status === 'active' || !c.status), [customers]);
   const inactiveCustomers = useMemo(() => customers.filter(c => c.status === 'inactive'), [customers]);
 
-  const stats = useMemo(() => {
-    const tMap: Record<string, Transaction[]> = {};
-    const bMap: Record<string, number> = {};
-
+  // Efficient indexing of transactions by customer ID
+  const customerTransactionsMap = useMemo(() => {
+    const map: Record<string, Transaction[]> = {};
     transactions.forEach(t => {
-      const cid = t.customerId;
-      if (!tMap[cid]) tMap[cid] = [];
-      tMap[cid].push(t);
-
-      const q = t.quantity || 0;
-      const impact = getTransactionImpact(t.type);
-      
-      if (!bMap[cid]) bMap[cid] = 0;
-      bMap[cid] += (q * impact);
+      if (!map[t.customerId]) map[t.customerId] = [];
+      map[t.customerId].push(t);
     });
-
-    customers.forEach(c => {
-      if (bMap[c.id] === undefined) bMap[c.id] = 0;
-      if (tMap[c.id]) {
-        tMap[c.id].sort((a, b) => toMillis(b.date) - toMillis(a.date));
-      } else {
-        tMap[c.id] = [];
-      }
+    // Sort each customer's transactions by date
+    Object.keys(map).forEach(cid => {
+      map[cid].sort((a, b) => toMillis(b.date) - toMillis(a.date));
     });
+    return map;
+  }, [transactions]);
 
-    return { balanceMap: bMap, customerTransactionsMap: tMap };
-  }, [customers, transactions]);
-
-  const addCustomer = useCallback((customer: Omit<Customer, 'id' | 'createdAt' | 'status'>): string => {
+  const addCustomer = useCallback((customer: Omit<Customer, 'id' | 'createdAt' | 'status' | 'balance'>): string => {
     if (!db) return '';
     return fsAddCustomer(db, customer, user?.uid, userProfile?.fullName || user?.email || undefined);
   }, [db, user, userProfile]);
 
   const updateCustomer = useCallback((id: string, updated: Partial<Customer>) => {
     if (!db) return;
-    const { id: _, createdAt: __, ...rest } = updated;
-    fsUpdateCustomer(db, id, rest as any, user?.uid, userProfile?.fullName || user?.email || undefined);
+    const { id: _, createdAt: __, balance: ___, ...rest } = updated as any;
+    fsUpdateCustomer(db, id, rest, user?.uid, userProfile?.fullName || user?.email || undefined);
   }, [db, user, userProfile]);
 
   const updateCustomerStatus = useCallback((id: string, status: CustomerStatus) => {
@@ -136,7 +112,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const updateTransaction = useCallback((id: string, data: Partial<Transaction>) => {
     if (!db || !user || !userProfile) return;
-    fsUpdateTransaction(db, id, data as any, user.uid, userProfile.fullName || user.email || "User");
+    fsUpdateTransaction(db, id, data, user.uid, userProfile.fullName || user.email || "User");
   }, [db, user, userProfile]);
 
   const deleteTransaction = useCallback((id: string, reason?: string) => {
@@ -145,12 +121,13 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [db, user, userProfile]);
 
   const getCustomerTransactions = useCallback((customerId: string) => {
-    return stats.customerTransactionsMap[customerId] || [];
-  }, [stats.customerTransactionsMap]);
+    return customerTransactionsMap[customerId] || [];
+  }, [customerTransactionsMap]);
 
   const getCustomerBalance = useCallback((customerId: string) => {
-    return stats.balanceMap[customerId] || 0;
-  }, [stats.balanceMap]);
+    const cust = customers.find(c => c.id === customerId);
+    return cust?.balance || 0;
+  }, [customers]);
 
   const getStaffActivity = useCallback(() => {
     const activityMap: Record<string, { count: number; volume: number }> = {};

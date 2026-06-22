@@ -11,7 +11,11 @@
         "address": { "type": "string" },
         "pan": { "type": "string", "description": "Customer's PAN number." },
         "notes": { "type": "string" },
+        "remarks": { "type": "string" },
+        "specialInstructions": { "type": "string" },
+        "collectionNotes": { "type": "string" },
         "status": { "type": "string", "enum": ["active", "inactive"], "description": "Current status of the customer." },
+        "balance": { "type": "number", "description": "Current net cylinder balance (denormalized for performance)." },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["name", "phone", "status", "createdAt"]
@@ -23,10 +27,12 @@
       "properties": {
         "customerId": { "type": "string" },
         "date": { "type": "string", "format": "date-time" },
-        "dueDate": { "type": "string", "format": "date-time", "description": "Expected return date for the cylinder." },
-        "type": { "type": "string", "enum": ["IN", "OUT", "OUT_FULL", "IN_EMPTY", "LEAKAGE", "LOST", "ADJUSTMENT"] },
+        "bsDate": { "type": "string" },
+        "dueDate": { "type": "string", "format": "date-time" },
+        "type": { "type": "string", "enum": ["OUT_FULL", "IN_EMPTY", "LEAKAGE", "LOST", "ADJUSTMENT"] },
         "quantity": { "type": "number" },
         "remark": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "deleted"] },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["customerId", "date", "type", "quantity", "createdAt"]

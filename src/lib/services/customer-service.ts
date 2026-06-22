@@ -1,3 +1,4 @@
+
 import { 
   Firestore, 
   collection, 
@@ -15,12 +16,13 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import { logAction } from './audit-service';
 import { cleanFirestoreData } from '@/lib/utils';
 
-export function addCustomer(db: Firestore, data: Omit<Customer, 'id' | 'createdAt' | 'status'>, userId?: string, userName?: string) {
+export function addCustomer(db: Firestore, data: Omit<Customer, 'id' | 'createdAt' | 'status' | 'balance'>, userId?: string, userName?: string) {
   const colRef = collection(db, 'customers');
   const docRef = doc(colRef);
   const rawPayload = {
     ...data,
     status: 'active' as CustomerStatus,
+    balance: 0, // Initial denormalized balance
     createdAt: serverTimestamp(),
   };
 
@@ -48,9 +50,9 @@ export function addCustomer(db: Firestore, data: Omit<Customer, 'id' | 'createdA
   return docRef.id;
 }
 
-export function updateCustomer(db: Firestore, id: string, data: Partial<Omit<Customer, 'id' | 'createdAt'>>, userId?: string, userName?: string) {
+export function updateCustomer(db: Firestore, id: string, data: Partial<Omit<Customer, 'id' | 'createdAt' | 'balance'>>, userId?: string, userName?: string) {
   const docRef = doc(db, 'customers', id);
-  const { id: _, createdAt: __, ...sanitizedData } = data as any;
+  const { id: _, createdAt: __, balance: ___, ...sanitizedData } = data as any;
   const updateData = cleanFirestoreData(sanitizedData);
 
   updateDoc(docRef, updateData).then(() => {
@@ -62,9 +64,7 @@ export function updateCustomer(db: Firestore, id: string, data: Partial<Omit<Cus
         action: isNoteUpdate ? 'UPDATE_NOTES' : 'UPDATE_CUSTOMER',
         entityType: 'CUSTOMER',
         entityId: id,
-        details: isNoteUpdate 
-          ? `Updated internal instructions/notes for customer ${id}` 
-          : `Updated core details for customer ${id}`,
+        details: `Updated details for customer ${id}`,
       });
     }
   }).catch(async (error) => {
