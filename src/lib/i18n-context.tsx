@@ -1,6 +1,7 @@
+
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo, useCallback } from 'react';
 import { Language, translations } from './translations';
 
 interface I18nContextType {
@@ -13,14 +14,12 @@ const I18nContext = createContext<I18nContextType | undefined>(undefined);
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Language>('en');
-  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     const savedLang = localStorage.getItem('cylindera_lang') as Language;
     if (savedLang && (savedLang === 'en' || savedLang === 'ne')) {
       setLanguageState(savedLang);
     }
-    setIsLoaded(true);
   }, []);
 
   const setLanguage = (lang: Language) => {
@@ -28,15 +27,18 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('cylindera_lang', lang);
   };
 
-  const t = (key: keyof typeof translations['en']): string => {
+  const t = useCallback((key: keyof typeof translations['en']): string => {
     return translations[language][key] || translations['en'][key] || key;
-  };
+  }, [language]);
 
-  // Prevent flash of untranslated content during initial load if possible
-  if (!isLoaded) return <div className="hidden">{children}</div>;
+  const value = useMemo(() => ({
+    language,
+    setLanguage,
+    t
+  }), [language, t]);
 
   return (
-    <I18nContext.Provider value={{ language, setLanguage, t }}>
+    <I18nContext.Provider value={value}>
       {children}
     </I18nContext.Provider>
   );
