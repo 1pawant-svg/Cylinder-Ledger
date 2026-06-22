@@ -28,7 +28,8 @@ import {
   UserCheck,
   Save,
   X,
-  User
+  User,
+  Calendar
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -84,7 +85,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { getCurrentADDate, adToBs, bsToAd, toMillis } from "@/lib/date-utils";
+import { getCurrentADDate, adToBs, bsToAd, toMillis, BS_MONTHS, getBSYears } from "@/lib/date-utils";
 import { useToast } from "@/hooks/use-toast";
 import { useUser, useFirestore } from "@/firebase";
 import { getUserProfile } from "@/lib/services/user-service";
@@ -153,6 +154,22 @@ export default function CustomerProfile(props: {
   const [isSaving, setIsSaving] = useState(false);
   const [isConfirmSaveOpen, setIsConfirmSaveOpen] = useState(false);
 
+  // Quick Log State
+  const [quickLogOpen, setQuickLogOpen] = useState(false);
+  const [quickLogType, setQuickLogType] = useState<TransactionType>('OUT_FULL');
+  const [quickQty, setQuickQty] = useState("1");
+  const [quickRemark, setQuickRemark] = useState("");
+  const [quickBSDate, setQuickBSDate] = useState(() => {
+    const todayAD = getCurrentADDate();
+    const bsDateStr = adToBs(todayAD);
+    const parts = bsDateStr.split('-');
+    return { 
+      year: parts[0] || '2081', 
+      month: parts[1] || '01', 
+      day: parts[2] || '01' 
+    };
+  });
+
   useEffect(() => {
     if (user && db) {
       getUserProfile(db, user.uid).then(setProfile);
@@ -172,11 +189,6 @@ export default function CustomerProfile(props: {
 
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [shareType, setShareType] = useState<'balance' | 'statement'>('balance');
-
-  const [quickLogOpen, setQuickLogOpen] = useState(false);
-  const [quickLogType, setQuickLogType] = useState<TransactionType>('OUT_FULL');
-  const [quickQty, setQuickQty] = useState("1");
-  const [quickRemark, setQuickRemark] = useState("");
 
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
   const [deleteReason, setDeleteReason] = useState("");
@@ -246,15 +258,19 @@ export default function CustomerProfile(props: {
     if (!customer || isInactive) return;
     const qty = parseInt(quickQty);
     if (isNaN(qty) || qty <= 0) return;
-    const todayAD = getCurrentADDate();
+    
+    const logAD = bsToAd(quickBSDate.year, quickBSDate.month, quickBSDate.day);
+    const logBS = `${quickBSDate.year}-${quickBSDate.month}-${quickBSDate.day}`;
+
     addTransaction({ 
       customerId: customer.id, 
-      date: todayAD, 
-      bsDate: adToBs(todayAD), 
+      date: logAD, 
+      bsDate: logBS, 
       type: quickLogType, 
       quantity: qty, 
-      remark: quickRemark || `Quick log: ${quickLogType}` 
+      remark: quickRemark || `Quick log: ${quickLogType.replace('_', ' ')}` 
     });
+    
     setQuickLogOpen(false);
     setQuickQty("1");
     setQuickRemark("");
@@ -353,6 +369,9 @@ export default function CustomerProfile(props: {
   };
 
   if (!customer) return <div className="p-20 text-center">Customer not found</div>;
+
+  const bsYears = getBSYears();
+  const daysList = Array.from({ length: 32 }, (_, i) => (i + 1).toString().padStart(2, '0'));
 
   return (
     <div className="p-4 md:p-8 space-y-6 md:space-y-8 animate-in fade-in duration-700 pb-24 md:pb-8">
@@ -542,6 +561,26 @@ export default function CustomerProfile(props: {
                 <CardTitle className="font-headline text-lg font-bold">Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 px-4 md:px-6">
+                <div className="space-y-2 mb-4 p-3 rounded-xl bg-muted/30 border border-border/50">
+                  <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5 mb-2">
+                    <Calendar className="h-3 w-3" /> Log Date (BS)
+                  </Label>
+                  <div className="grid grid-cols-3 gap-1">
+                    <Select value={quickBSDate.year} onValueChange={(v) => setQuickBSDate({...quickBSDate, year: v})}>
+                      <SelectTrigger className="h-9 bg-background text-[10px]"><SelectValue /></SelectTrigger>
+                      <SelectContent className="max-h-[200px]">{bsYears.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <Select value={quickBSDate.month} onValueChange={(v) => setQuickBSDate({...quickBSDate, month: v})}>
+                      <SelectTrigger className="h-9 bg-background text-[10px]"><SelectValue /></SelectTrigger>
+                      <SelectContent>{BS_MONTHS.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <Select value={quickBSDate.day} onValueChange={(v) => setQuickBSDate({...quickBSDate, day: v})}>
+                      <SelectTrigger className="h-9 bg-background text-[10px]"><SelectValue /></SelectTrigger>
+                      <SelectContent className="max-h-[200px]">{daysList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
                 <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-12 flex items-center gap-2" onClick={() => { setQuickLogType('OUT_FULL'); setQuickLogOpen(true); }}>
                   <ArrowUpRight className="h-4 w-4" /> Issue Cylinder
                 </Button>
@@ -717,20 +756,24 @@ export default function CustomerProfile(props: {
 
       <Dialog open={quickLogOpen} onOpenChange={setQuickLogOpen}>
         <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader><DialogTitle className="flex items-center gap-2">Quick Log {quickLogType.replace('_', ' ')}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="flex items-center gap-2 text-xl font-bold font-headline">Confirm Quick Log: {quickLogType.replace('_', ' ')}</DialogTitle></DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label>Quantity (PCS)</Label>
-              <Input type="number" value={quickQty} onChange={e => setQuickQty(e.target.value)} className="font-headline font-bold text-lg" />
+            <div className="p-3 bg-muted/20 rounded-lg border border-border/50 text-xs flex items-center justify-between">
+              <span className="text-muted-foreground font-bold uppercase tracking-widest">Selected Date</span>
+              <span className="font-bold text-primary">{quickBSDate.year}-{quickBSDate.month}-{quickBSDate.day} BS</span>
             </div>
             <div className="space-y-2">
-              <Label>Remark (Optional)</Label>
-              <Textarea value={quickRemark} onChange={e => setQuickRemark(e.target.value)} placeholder="Notes..." className="resize-none" />
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Quantity (PCS)</Label>
+              <Input type="number" value={quickQty} onChange={e => setQuickQty(e.target.value)} className="font-headline font-bold text-lg h-12" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Remark (Optional)</Label>
+              <Textarea value={quickRemark} onChange={e => setQuickRemark(e.target.value)} placeholder="e.g. Regular delivery..." className="resize-none h-24" />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setQuickLogOpen(false)}>Cancel</Button>
-            <Button onClick={handleQuickLog} className="bg-primary text-primary-foreground font-bold">Confirm Log</Button>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="ghost" onClick={() => setQuickLogOpen(false)} className="font-bold">Cancel</Button>
+            <Button onClick={handleQuickLog} className="bg-primary text-primary-foreground font-bold h-12 px-6">Log Movement</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -738,7 +781,7 @@ export default function CustomerProfile(props: {
       <Dialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-destructive"><Trash2 className="h-5 w-5" /> Soft Delete Record</DialogTitle>
+            <DialogTitle className="flex items-center gap-2 text-destructive font-headline font-bold"><Trash2 className="h-5 w-5" /> Soft Delete Record</DialogTitle>
             <DialogDescription>This will remove the record from ledger balances but keep it in audit history.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -748,7 +791,7 @@ export default function CustomerProfile(props: {
                 value={deleteReason} 
                 onChange={e => setDeleteReason(e.target.value)} 
                 placeholder="Required for audit compliance..." 
-                className="resize-none bg-muted/50" 
+                className="resize-none bg-muted/50 h-24" 
               />
             </div>
           </div>
@@ -762,7 +805,7 @@ export default function CustomerProfile(props: {
       <AlertDialog open={isConfirmSaveOpen} onOpenChange={setIsConfirmSaveOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Changes?</AlertDialogTitle>
+            <AlertDialogTitle className="font-headline font-bold">Confirm Changes?</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to update this ledger entry? This will modify the transaction record and adjust global inventory stock levels accordingly.
             </AlertDialogDescription>
@@ -774,7 +817,7 @@ export default function CustomerProfile(props: {
                 e.preventDefault();
                 saveInlineEdit();
               }} 
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
               disabled={isSaving}
             >
               {isSaving ? "Saving..." : "Save Changes"}
