@@ -160,7 +160,7 @@ export default function Dashboard() {
       </header>
 
       {/* Primary Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <StatCard 
           title="To Receive" 
           value={`${toReceiveTotal} PCS`} 
@@ -176,14 +176,6 @@ export default function Dashboard() {
           description="Cylinders owed to customers"
           variant="warning"
           href="/customers?filter=TO_GIVE"
-        />
-        <StatCard 
-          title="Total Transactions" 
-          value={transactions.length} 
-          icon={Activity} 
-          description="Lifetime movement logs"
-          variant="accent"
-          href="/reports"
         />
       </div>
 
