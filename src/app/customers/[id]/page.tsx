@@ -31,7 +31,9 @@ import {
   X,
   User,
   Calendar,
-  Hash
+  Hash,
+  FileText,
+  Loader2
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -91,7 +93,9 @@ import { getCurrentADDate, adToBs, bsToAd, toMillis, BS_MONTHS, getBSYears } fro
 import { useToast } from "@/hooks/use-toast";
 import { useUser, useFirestore } from "@/firebase";
 import { getUserProfile } from "@/lib/services/user-service";
-import { UserProfile, TransactionType, Transaction } from "@/lib/types";
+import { getSettings } from "@/lib/services/settings-service";
+import { generateCustomerLedgerPDF, sharePDF } from "@/lib/services/pdf-service";
+import { UserProfile, TransactionType, Transaction, Setting } from "@/lib/types";
 
 const getTransactionLabel = (type: TransactionType) => {
   const t = type.toUpperCase();
@@ -149,6 +153,8 @@ export default function CustomerProfile(props: {
   const isInactive = customer?.status === 'inactive';
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [settings, setSettings] = useState<Setting | null>(null);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   // Inline Editing State
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -175,6 +181,7 @@ export default function CustomerProfile(props: {
   useEffect(() => {
     if (user && db) {
       getUserProfile(db, user.uid).then(setProfile);
+      getSettings(db).then(setSettings);
     }
   }, [user, db]);
 
@@ -189,8 +196,34 @@ export default function CustomerProfile(props: {
     return withRunning.reverse();
   }, [transactions]);
 
-  const [isShareOpen, setIsShareOpen] = useState(false);
-  const [shareType, setShareType] = useState<'balance' | 'statement'>('balance');
+  const handleSharePDF = async () => {
+    if (!customer) return;
+    setIsGeneratingPDF(true);
+    try {
+      const totalOut = transactions.filter(t => getTransactionImpact(t.type) === 1).reduce((s, t) => s + t.quantity, 0);
+      const totalIn = transactions.filter(t => getTransactionImpact(t.type) === -1).reduce((s, t) => s + t.quantity, 0);
+      
+      const doc = await generateCustomerLedgerPDF(
+        customer,
+        transactionsWithBalance,
+        settings,
+        {
+          totalIn,
+          totalOut,
+          balance
+        }
+      );
+      
+      const filename = `${customer.name.replace(/\s+/g, '_')}_Ledger_${adToBs(getCurrentADDate())}.pdf`;
+      await sharePDF(doc, filename);
+      
+      toast({ title: "Statement Shared" });
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "PDF Generation Failed", description: err.message });
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
 
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
   const [deleteReason, setDeleteReason] = useState("");
@@ -219,44 +252,6 @@ export default function CustomerProfile(props: {
       });
     }
   }, [customer]);
-  
-  const generateWhatsAppMessage = () => {
-    if (!customer) return "";
-    
-    const todayBS = adToBs(getCurrentADDate());
-    const header = `📦 *CYLINDERA CUSTOMER STATEMENT*\n📅 Date: ${todayBS}\n👤 Customer: ${customer.name}\n-----------------------------\n`;
-    
-    if (shareType === 'balance') {
-      const statusText = balance > 0 
-        ? `🔴 *To Receive: ${balance} PCS*` 
-        : balance < 0 
-          ? `🟢 *To Give: ${Math.abs(balance)} PCS*` 
-          : `✅ *Account Settled*`;
-          
-      return `${header}\n📊 *Account Summary:* ${statusText}\n\n📍 Address: ${customer.address}\n📞 Contact: ${customer.phone}\n\n_Thank you for your business!_`;
-    } else {
-      let ledgerText = `📝 *Recent Activity (Last 5):*\n`;
-      transactions.slice(0, 5).forEach(t => {
-        const type = getTransactionLabel(t.type);
-        ledgerText += `• ${t.bsDate}: ${type} [${t.quantity} PCS]\n`;
-      });
-      
-      const balanceText = balance > 0 
-        ? `\n💰 *Total To Receive: ${balance} PCS*` 
-        : balance < 0 
-          ? `\n💰 *Total To Give: ${Math.abs(balance)} PCS*`
-          : `\n💰 *Status: Settled*`;
-
-      return `${header}\n${ledgerText}${balanceText}\n\n📍 Address: ${customer.address}\n\n_Generated via Cylindera Pro_`;
-    }
-  };
-
-  const shareOnWhatsApp = () => {
-    const text = generateWhatsAppMessage();
-    if (!text || !customer) return;
-    window.open(`https://wa.me/${customer.phone.replace(/\D/g, '')}?text=${encodeURIComponent(text)}`, '_blank');
-    setIsShareOpen(false);
-  };
 
   const handleQuickLog = () => {
     if (!customer || isInactive) return;
@@ -417,8 +412,15 @@ export default function CustomerProfile(props: {
           </div>
         </div>
         <div className="flex flex-wrap gap-2 md:gap-3">
-          <Button variant="outline" size="sm" className="gap-2 font-bold h-10 md:h-12 flex-1 md:flex-none" onClick={() => setIsShareOpen(true)}>
-            <MessageSquare className="h-4 w-4" /> Share
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="gap-2 font-bold h-10 md:h-12 flex-1 md:flex-none" 
+            onClick={handleSharePDF}
+            disabled={isGeneratingPDF}
+          >
+            {isGeneratingPDF ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+            {isGeneratingPDF ? "Generating..." : "Share PDF"}
           </Button>
           <Button size="sm" className="bg-primary text-primary-foreground gap-2 font-bold h-10 md:h-12 flex-1 md:flex-none" onClick={() => setIsEditSheetOpen(true)}>
             <Edit2 className="h-4 w-4" /> Edit
@@ -662,54 +664,6 @@ export default function CustomerProfile(props: {
           </Card>
         </div>
       </div>
-
-      {/* Share Statement Dialog */}
-      <Dialog open={isShareOpen} onOpenChange={setIsShareOpen}>
-        <DialogContent className="sm:max-w-[450px]">
-          <DialogHeader>
-            <DialogTitle className="font-headline text-2xl font-bold flex items-center gap-2 text-primary">
-              <MessageSquare className="h-6 w-6" /> Share Statement
-            </DialogTitle>
-            <DialogDescription>Select statement format for WhatsApp sharing.</DialogDescription>
-          </DialogHeader>
-          <div className="py-6 space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <div 
-                className={cn(
-                  "p-4 rounded-xl border-2 cursor-pointer transition-all space-y-2 text-center",
-                  shareType === 'balance' ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
-                )}
-                onClick={() => setShareType('balance')}
-              >
-                <Package className={cn("mx-auto h-6 w-6", shareType === 'balance' ? "text-primary" : "text-muted-foreground")} />
-                <h4 className="font-bold text-sm">Summary Only</h4>
-              </div>
-              <div 
-                className={cn(
-                  "p-4 rounded-xl border-2 cursor-pointer transition-all space-y-2 text-center",
-                  shareType === 'statement' ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
-                )}
-                onClick={() => setShareType('statement')}
-              >
-                <History className={cn("mx-auto h-6 w-6", shareType === 'statement' ? "text-primary" : "text-muted-foreground")} />
-                <h4 className="font-bold text-sm">Full Statement</h4>
-              </div>
-            </div>
-
-            <div className="bg-muted/50 p-4 rounded-lg space-y-2">
-              <h5 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Message Preview</h5>
-              <div className="bg-background p-3 rounded border text-xs whitespace-pre-wrap max-h-[150px] overflow-y-auto font-mono">
-                {generateWhatsAppMessage()}
-              </div>
-            </div>
-          </div>
-          <DialogFooter className="flex-col gap-3 sm:flex-col">
-            <Button onClick={shareOnWhatsApp} className="w-full h-12 bg-primary text-primary-foreground font-bold gap-2">
-              <Share2 className="h-4 w-4" /> Send WhatsApp
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <Sheet open={isEditSheetOpen} onOpenChange={setIsEditSheetOpen}>
         <SheetContent className="sm:max-w-[450px] bg-card border-l border-border overflow-y-auto">
