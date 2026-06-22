@@ -179,7 +179,7 @@ export default function TransactionsPage() {
         bsDate: bsDateStr,
         type: formData.type,
         quantity: formData.quantity,
-        remark: formData.remark || ""
+        remark: formData.remark || "" // Strictly only user typed text
       });
       
       const isPositiveImpact = formData.type === 'OUT_FULL' || formData.type === 'OUT';
@@ -190,7 +190,7 @@ export default function TransactionsPage() {
           bsDate: bsDateStr,
           type: 'IN_EMPTY',
           quantity: formData.returnQuantity,
-          remark: '',
+          remark: '', // Explicitly empty
         });
       }
 

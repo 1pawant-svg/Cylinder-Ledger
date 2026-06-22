@@ -207,11 +207,12 @@ export default function CustomersPage() {
     const toReceive = parseInt(newCust.openingToReceive) || 0;
     const toGive = parseInt(newCust.openingToGive) || 0;
 
+    // No auto-generated remarks like "Opening Balance" to comply with user's request
     if (toReceive > 0) {
-      addTransaction({ customerId, date: openingAD, bsDate: openingBSStr, type: 'OUT_FULL', quantity: toReceive, remark: 'Opening Balance' });
+      addTransaction({ customerId, date: openingAD, bsDate: openingBSStr, type: 'OUT_FULL', quantity: toReceive, remark: '' });
     }
     if (toGive > 0) {
-      addTransaction({ customerId, date: openingAD, bsDate: openingBSStr, type: 'IN_EMPTY', quantity: toGive, remark: 'Opening Balance' });
+      addTransaction({ customerId, date: openingAD, bsDate: openingBSStr, type: 'IN_EMPTY', quantity: toGive, remark: '' });
     }
 
     setNewCust({ name: '', address: '', phone: '', notes: '', openingToReceive: '', openingToGive: '' });

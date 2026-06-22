@@ -262,6 +262,7 @@ export default function CustomerProfile(props: {
     const logAD = bsToAd(quickBSDate.year, quickBSDate.month, quickBSDate.day);
     const logBS = `${quickBSDate.year}-${quickBSDate.month}-${quickBSDate.day}`;
 
+    // Ensure remark strictly contains only what the user explicitly typed
     addTransaction({ 
       customerId: customer.id, 
       date: logAD, 
