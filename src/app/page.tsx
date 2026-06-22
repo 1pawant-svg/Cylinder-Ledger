@@ -16,6 +16,7 @@ import {
   PhoneCall,
   History,
   TrendingUp,
+  TrendingDown,
   XCircle,
   AlertTriangle,
   Clock,
@@ -89,6 +90,24 @@ export default function Dashboard() {
     customers.reduce((sum, c) => sum + Math.max(0, -getCustomerBalance(c.id)), 0),
     [customers, getCustomerBalance]
   );
+
+  // Top 5 To Receive
+  const topToReceive = useMemo(() => {
+    return customers
+      .map(c => ({ ...c, balance: getCustomerBalance(c.id) }))
+      .filter(c => c.balance > 0)
+      .sort((a, b) => b.balance - a.balance)
+      .slice(0, 5);
+  }, [customers, getCustomerBalance]);
+
+  // Top 5 To Give
+  const topToGive = useMemo(() => {
+    return customers
+      .map(c => ({ ...c, balance: getCustomerBalance(c.id) }))
+      .filter(c => c.balance < 0)
+      .sort((a, b) => a.balance - b.balance)
+      .slice(0, 5);
+  }, [customers, getCustomerBalance]);
 
   // Collection logic filtered by balance > 0
   const collectionData = useMemo(() => {
@@ -177,6 +196,69 @@ export default function Dashboard() {
           variant="warning"
           href="/customers?filter=TO_GIVE"
         />
+      </div>
+
+      {/* Top Lists */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Top To Receive */}
+        <Card className="border-none shadow-xl bg-card">
+          <CardHeader className="pb-3 px-4 md:px-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="font-headline text-lg font-bold flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-primary" /> Top To Receive
+                </CardTitle>
+                <CardDescription className="text-xs">Highest outstanding balances</CardDescription>
+              </div>
+              <Button variant="ghost" size="sm" className="text-[10px] uppercase font-bold tracking-widest" asChild>
+                <Link href="/customers?filter=TO_RECEIVE">Full List</Link>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="px-4 md:px-6 space-y-2">
+            {topToReceive.map((c) => (
+              <Link key={c.id} href={`/customers/${c.id}`} className="flex items-center justify-between p-3 rounded-xl bg-muted/20 hover:bg-muted/40 transition-colors group">
+                <span className="font-bold text-xs truncate group-hover:text-primary pr-2">{c.name}</span>
+                <Badge className="bg-primary/10 text-primary border-none font-bold shrink-0">{c.balance} PCS</Badge>
+              </Link>
+            ))}
+            {topToReceive.length === 0 && (
+              <div className="py-8 text-center text-muted-foreground text-xs italic">
+                No outstanding balances found.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Top To Give */}
+        <Card className="border-none shadow-xl bg-card">
+          <CardHeader className="pb-3 px-4 md:px-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="font-headline text-lg font-bold flex items-center gap-2">
+                  <TrendingDown className="h-5 w-5 text-accent" /> Top To Give
+                </CardTitle>
+                <CardDescription className="text-xs">Cylinders owed to customers</CardDescription>
+              </div>
+              <Button variant="ghost" size="sm" className="text-[10px] uppercase font-bold tracking-widest" asChild>
+                <Link href="/customers?filter=TO_GIVE">Full List</Link>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="px-4 md:px-6 space-y-2">
+            {topToGive.map((c) => (
+              <Link key={c.id} href={`/customers/${c.id}`} className="flex items-center justify-between p-3 rounded-xl bg-muted/20 hover:bg-muted/40 transition-colors group">
+                <span className="font-bold text-xs truncate group-hover:text-primary pr-2">{c.name}</span>
+                <Badge className="bg-accent/10 text-accent border-none font-bold shrink-0">{Math.abs(c.balance)} PCS</Badge>
+              </Link>
+            ))}
+            {topToGive.length === 0 && (
+              <div className="py-8 text-center text-muted-foreground text-xs italic">
+                No cylinders currently owed to customers.
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Unified Collection Schedule Widget */}
