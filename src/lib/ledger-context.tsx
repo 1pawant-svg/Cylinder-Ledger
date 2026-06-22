@@ -9,6 +9,7 @@ import {
   updateCustomer as fsUpdateCustomer, 
   updateCustomerStatus as fsUpdateCustomerStatus,
   deleteCustomer as fsDeleteCustomer,
+  recalculateCustomerBalance as fsRecalculateCustomerBalance,
   getCustomersQuery 
 } from './services/customer-service';
 import { 
@@ -33,6 +34,7 @@ interface LedgerContextType {
   addTransaction: (transaction: Omit<Transaction, 'id' | 'createdAt' | 'status'>) => void;
   updateTransaction: (id: string, data: Partial<Transaction>) => void;
   deleteTransaction: (id: string, reason?: string) => void;
+  recalculateBalance: (customerId: string) => Promise<number>;
   getCustomerBalance: (customerId: string) => number;
   getCustomerTransactions: (customerId: string) => Transaction[];
   getStaffActivity: () => Array<{ name: string; count: number; volume: number }>;
@@ -70,14 +72,12 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const activeCustomers = useMemo(() => customers.filter(c => c.status === 'active' || !c.status), [customers]);
   const inactiveCustomers = useMemo(() => customers.filter(c => c.status === 'inactive'), [customers]);
 
-  // Efficient indexing of transactions by customer ID
   const customerTransactionsMap = useMemo(() => {
     const map: Record<string, Transaction[]> = {};
     transactions.forEach(t => {
       if (!map[t.customerId]) map[t.customerId] = [];
       map[t.customerId].push(t);
     });
-    // Sort each customer's transactions by date
     Object.keys(map).forEach(cid => {
       map[cid].sort((a, b) => toMillis(b.date) - toMillis(a.date));
     });
@@ -120,6 +120,11 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     fsDeleteTransaction(db, id, user.uid, userProfile.fullName || user.email || "User", reason);
   }, [db, user, userProfile]);
 
+  const recalculateBalance = useCallback(async (customerId: string) => {
+    if (!db || !user || !userProfile) return 0;
+    return fsRecalculateCustomerBalance(db, customerId, allTransactions, user.uid, userProfile.fullName || user.email || "User");
+  }, [db, user, userProfile, allTransactions]);
+
   const getCustomerTransactions = useCallback((customerId: string) => {
     return customerTransactionsMap[customerId] || [];
   }, [customerTransactionsMap]);
@@ -158,6 +163,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     addTransaction,
     updateTransaction,
     deleteTransaction,
+    recalculateBalance,
     getCustomerBalance,
     getCustomerTransactions,
     getStaffActivity
@@ -174,6 +180,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     addTransaction,
     updateTransaction,
     deleteTransaction,
+    recalculateBalance,
     getCustomerBalance, 
     getCustomerTransactions,
     getStaffActivity

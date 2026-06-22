@@ -8,9 +8,10 @@ import {
   deleteDoc, 
   serverTimestamp,
   query,
-  orderBy
+  orderBy,
+  runTransaction
 } from 'firebase/firestore';
-import { Customer, CustomerStatus } from '@/lib/types';
+import { Customer, CustomerStatus, Transaction } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { logAction } from './audit-service';
@@ -119,6 +120,38 @@ export function deleteCustomer(db: Firestore, id: string, userId?: string, userN
       operation: 'delete',
     }));
   });
+}
+
+/**
+ * Re-calculates and fixes the denormalized balance of a customer based on all their transactions.
+ */
+export async function recalculateCustomerBalance(db: Firestore, customerId: string, transactions: Transaction[], userId: string, userName: string) {
+  const activeTransactions = transactions.filter(t => t.customerId === customerId && t.status !== 'deleted');
+  
+  let calculatedBalance = 0;
+  activeTransactions.forEach(t => {
+    const type = t.type.toUpperCase();
+    if (type === 'OUT' || type === 'OUT_FULL') calculatedBalance += t.quantity;
+    else if (type === 'IN' || type === 'IN_EMPTY' || type === 'LEAKAGE' || type === 'LOST' || type === 'ADJUSTMENT') calculatedBalance -= t.quantity;
+  });
+
+  const customerRef = doc(db, 'customers', customerId);
+  
+  try {
+    await updateDoc(customerRef, { balance: calculatedBalance });
+    logAction(db, {
+      userId,
+      userName,
+      action: 'RECALCULATE_BALANCE',
+      entityType: 'CUSTOMER',
+      entityId: customerId,
+      details: `Manually recalculated balance to ${calculatedBalance} PCS.`,
+    });
+    return calculatedBalance;
+  } catch (error) {
+    console.error("Failed to recalculate balance:", error);
+    throw error;
+  }
 }
 
 export const getCustomersQuery = (db: Firestore) => query(collection(db, 'customers'), orderBy('name', 'asc'));

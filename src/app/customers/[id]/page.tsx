@@ -7,7 +7,7 @@ import { useLedger } from "@/lib/ledger-context";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { 
-  ArrowLeft, MapPin, Phone, Share2, Edit2, Trash2, MoreVertical, History, Info, MessageSquare, ArrowUpRight, ArrowDownLeft, StickyNote, ClipboardList, AlertTriangle, UserX, UserCheck, Save, X, Hash, Loader2, Plus, Calendar, FileText
+  ArrowLeft, MapPin, Phone, Share2, Edit2, Trash2, MoreVertical, History, Info, MessageSquare, ArrowUpRight, ArrowDownLeft, StickyNote, ClipboardList, AlertTriangle, UserX, UserCheck, Save, X, Hash, Loader2, Plus, Calendar, FileText, RefreshCw
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -63,7 +63,16 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
   const { toast } = useToast();
   const db = useFirestore();
   const { user } = useUser();
-  const { customers, getCustomerTransactions, addTransaction, deleteTransaction, updateCustomer, updateCustomerStatus, updateTransaction } = useLedger();
+  const { 
+    customers, 
+    getCustomerTransactions, 
+    addTransaction, 
+    deleteTransaction, 
+    updateCustomer, 
+    updateCustomerStatus, 
+    updateTransaction,
+    recalculateBalance 
+  } = useLedger();
   
   const customer = customers.find(c => c.id === id);
   const transactions = getCustomerTransactions(id);
@@ -72,6 +81,7 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
 
   const [settings, setSettings] = useState<Setting | null>(null);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [isRecalculating, setIsRecalculating] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editFields, setEditFields] = useState<any>({});
   const [isConfirmSaveOpen, setIsConfirmSaveOpen] = useState(false);
@@ -98,6 +108,26 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
       return { ...txn, runningBalance: currentBalance };
     }).reverse();
   }, [transactions]);
+
+  // Check for discrepancy between stored balance and calculated total
+  const calculatedTotal = useMemo(() => {
+    return transactions.reduce((acc, t) => acc + (t.quantity * getTransactionImpact(t.type)), 0);
+  }, [transactions]);
+
+  const hasBalanceDiscrepancy = Math.abs(calculatedTotal - balance) > 0.001;
+
+  const handleRecalculate = async () => {
+    if (!customer) return;
+    setIsRecalculating(true);
+    try {
+      await recalculateBalance(customer.id);
+      toast({ title: "Balance Fixed", description: `Synced to ${calculatedTotal} PCS` });
+    } catch (err) {
+      toast({ variant: "destructive", title: "Fix Failed" });
+    } finally {
+      setIsRecalculating(false);
+    }
+  };
 
   const handleSharePDF = async () => {
     if (!customer) return;
@@ -158,33 +188,61 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
       <div className="flex flex-col md:flex-row md:items-center gap-4 border-b pb-6">
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full"><ArrowLeft className="h-6 w-6" /></Button>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-3"><h1 className="font-headline text-2xl md:text-3xl font-bold truncate">{customer.name}</h1><Badge variant={isInactive ? "secondary" : "default"}>{(customer.status || 'active').toUpperCase()}</Badge></div>
-          <div className="text-muted-foreground flex gap-4 text-xs mt-1"><span><MapPin className="h-3 w-3 inline mr-1" />{customer.address}</span><span><Phone className="h-3 w-3 inline mr-1" />{customer.phone}</span>{customer.pan && <span><Hash className="h-3 w-3 inline mr-1" />PAN: {customer.pan}</span>}</div>
+          <div className="flex items-center gap-3">
+            <h1 className="font-headline text-2xl md:text-3xl font-bold truncate">{customer.name}</h1>
+            <Badge variant={isInactive ? "secondary" : "default"}>{(customer.status || 'active').toUpperCase()}</Badge>
+          </div>
+          <div className="text-muted-foreground flex gap-4 text-xs mt-1">
+            <span><MapPin className="h-3 w-3 inline mr-1" />{customer.address}</span>
+            <span><Phone className="h-3 w-3 inline mr-1" />{customer.phone}</span>
+            {customer.pan && <span><Hash className="h-3 w-3 inline mr-1" />PAN: {customer.pan}</span>}
+          </div>
         </div>
         <div className="flex flex-wrap gap-2">
+          {hasBalanceDiscrepancy && (
+            <Button size="sm" variant="destructive" onClick={handleRecalculate} disabled={isRecalculating} className="animate-pulse">
+              {isRecalculating ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <RefreshCw className="h-4 w-4 mr-1" />}
+              Fix Balance
+            </Button>
+          )}
           <Button size="sm" className="bg-emerald-600 font-bold" onClick={() => router.push(`/transactions?customerId=${id}`)}><Plus className="h-4 w-4 mr-1" /> New Entry</Button>
           <Button variant="outline" size="sm" className="font-bold" onClick={handleSharePDF} disabled={isGeneratingPDF}>{isGeneratingPDF ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4 mr-1" />}Share PDF</Button>
           <Button size="sm" variant="outline" onClick={() => updateCustomerStatus(customer.id, isInactive ? 'active' : 'inactive')}>{isInactive ? <UserCheck className="h-4 w-4 mr-1" /> : <UserX className="h-4 w-4 mr-1" />}{isInactive ? "Activate" : "Deactivate"}</Button>
         </div>
       </div>
 
+      {hasBalanceDiscrepancy && (
+        <div className="bg-accent/10 border border-accent/20 p-3 rounded-lg flex items-center justify-between">
+          <div className="flex items-center gap-2 text-accent text-xs font-bold">
+            <AlertTriangle className="h-4 w-4" />
+            Account balance is out of sync with transactions.
+          </div>
+          <Button variant="link" size="sm" onClick={handleRecalculate} className="text-accent h-auto p-0 font-bold text-xs underline">Recalculate Now</Button>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
           <Card className="border-none shadow-xl">
              <CardHeader className="flex flex-row items-center justify-between px-6">
                 <div><CardTitle className="text-xl font-bold">Ledger</CardTitle><CardDescription>Transaction timeline</CardDescription></div>
-                <div className="text-right"><p className="text-[10px] uppercase font-bold text-muted-foreground">Balance</p><Badge className={cn(balance > 0 ? "bg-primary" : balance < 0 ? "bg-accent" : "bg-emerald-500")}>{balance === 0 ? "SETTLED" : `${Math.abs(balance)} ${balance > 0 ? 'To Receive' : 'To Give'}`}</Badge></div>
+                <div className="text-right">
+                  <p className="text-[10px] uppercase font-bold text-muted-foreground">Stated Balance</p>
+                  <Badge className={cn(balance > 0 ? "bg-primary" : balance < 0 ? "bg-accent" : "bg-emerald-500")}>
+                    {balance === 0 ? "SETTLED" : `${Math.abs(balance)} ${balance > 0 ? 'To Receive' : 'To Give'}`}
+                  </Badge>
+                </div>
              </CardHeader>
              <CardContent className="p-0">
                 <Table>
-                  <TableHeader className="bg-muted/30"><TableRow><TableHead className="pl-6 text-[10px] font-bold">DATE (BS)</TableHead><TableHead className="text-[10px] font-bold">TYPE</TableHead><TableHead className="text-[10px] font-bold">QTY</TableHead><TableHead className="text-[10px] font-bold">BALANCE</TableHead><TableHead className="text-right pr-6 text-[10px] font-bold">ACTIONS</TableHead></TableRow></TableHeader>
+                  <TableHeader className="bg-muted/30"><TableRow><TableHead className="pl-6 text-[10px] font-bold">DATE (BS)</TableHead><TableHead className="text-[10px] font-bold">TYPE</TableHead><TableHead className="text-[10px] font-bold">QTY</TableHead><TableHead className="text-[10px] font-bold">RUNNING</TableHead><TableHead className="text-right pr-6 text-[10px] font-bold">ACTIONS</TableHead></TableRow></TableHeader>
                   <TableBody>
                     {transactionsWithBalance.map((txn) => (
                       <TableRow key={txn.id} className={cn(editingId === txn.id && "bg-primary/5")}>
                         <TableCell className="pl-6 font-medium text-xs">{txn.bsDate}</TableCell>
                         <TableCell><Badge variant="outline" className={cn("text-[9px] font-bold", getTransactionColor(txn.type))}>{getTransactionLabel(txn.type)}</Badge></TableCell>
                         <TableCell className={cn("font-bold text-xs", getTransactionImpact(txn.type) > 0 ? "text-primary" : "text-emerald-500")}>{getTransactionImpact(txn.type) > 0 ? '+' : '-'}{txn.quantity}</TableCell>
-                        <TableCell className="font-bold text-xs">{txn.runningBalance === 0 ? "Settled" : `${Math.abs(txn.runningBalance)} ${txn.runningBalance > 0 ? 'To Rcv' : 'To Give'}`}</TableCell>
+                        <TableCell className="font-bold text-xs">{txn.runningBalance === 0 ? "Settled" : `${Math.abs(txn.runningBalance)} ${txn.runningBalance > 0 ? 'R' : 'G'}`}</TableCell>
                         <TableCell className="text-right pr-6"><DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onClick={() => startInlineEdit(txn)}><Edit2 className="h-3 w-3 mr-2" />Edit</DropdownMenuItem><DropdownMenuItem className="text-destructive" onClick={() => deleteTransaction(txn.id, "User requested delete")}><Trash2 className="h-3 w-3 mr-2" />Delete</DropdownMenuItem></DropdownMenuContent></DropdownMenu></TableCell>
                       </TableRow>
                     ))}
