@@ -23,12 +23,14 @@ import {
   CalendarDays,
   ChevronRight,
   ExternalLink,
-  Activity
+  Activity,
+  Phone
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
 import { formatFullDate, adToBs, getCurrentADDate, toMillis, getDifferenceInDays } from "@/lib/date-utils";
 import { cn } from "@/lib/utils";
@@ -185,146 +187,148 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Due Management Section */}
-      <section className="space-y-6">
+      {/* Unified Collection Schedule Widget */}
+      <section className="space-y-4">
         <div className="flex items-center gap-2 px-1">
           <Bell className="h-5 w-5 text-primary" />
-          <h2 className="font-headline text-xl font-bold">Due Management</h2>
+          <h2 className="font-headline text-xl font-bold">Collection Schedule</h2>
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Due Today */}
-          <Card className="border-none shadow-xl bg-card border-t-4 border-t-orange-500 overflow-hidden flex flex-col">
-            <CardHeader className="pb-4">
-              <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle className="text-lg font-bold flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-orange-500" /> Due Today
-                  </CardTitle>
-                  <CardDescription className="text-xs">Pending collections for today</CardDescription>
-                </div>
-                <div className="text-right">
-                  <p className="text-xl font-headline font-bold text-orange-500">{collectionData.dueToday.length}</p>
-                  <p className="text-[10px] text-muted-foreground uppercase font-bold">{collectionData.dueToday.reduce((s, c) => s + c.balance, 0)} To Receive</p>
+        <Card className="border-none shadow-xl bg-card overflow-hidden">
+          <Tabs defaultValue="overdue" className="w-full">
+            <CardHeader className="pb-2">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <TabsList className="grid grid-cols-3 w-full md:w-[400px] h-11 bg-muted/50 p-1">
+                  <TabsTrigger value="overdue" className="data-[state=active]:bg-background data-[state=active]:text-destructive font-bold text-xs gap-2">
+                    Overdue <Badge variant="destructive" className="h-5 px-1.5 min-w-5 flex items-center justify-center">{collectionData.overdue.length}</Badge>
+                  </TabsTrigger>
+                  <TabsTrigger value="today" className="data-[state=active]:bg-background data-[state=active]:text-orange-500 font-bold text-xs gap-2">
+                    Today <Badge className="h-5 px-1.5 min-w-5 flex items-center justify-center bg-orange-500">{collectionData.dueToday.length}</Badge>
+                  </TabsTrigger>
+                  <TabsTrigger value="weekly" className="data-[state=active]:bg-background data-[state=active]:text-yellow-500 font-bold text-xs gap-2">
+                    Weekly <Badge className="h-5 px-1.5 min-w-5 flex items-center justify-center bg-yellow-500">{collectionData.dueThisWeek.length}</Badge>
+                  </TabsTrigger>
+                </TabsList>
+                <div className="hidden md:block text-right">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Priority Status</p>
+                  <p className="text-xs font-medium text-muted-foreground">Updated in real-time</p>
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="flex-1 space-y-3">
-              {collectionData.dueToday.slice(0, 5).map((item) => {
-                const customer = customers.find(c => c.id === item.customerId);
-                return (
-                  <div key={item.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/20 border border-border/50 group hover:bg-muted/40 transition-colors">
-                    <div className="min-w-0 flex-1">
-                      <Link href={`/customers/${customer?.id}`} className="font-bold text-xs truncate block group-hover:text-primary transition-colors">
-                        {customer?.name}
-                      </Link>
-                      <p className="text-[9px] text-muted-foreground">{customer?.phone}</p>
-                    </div>
-                    <div className="text-right flex items-center gap-2 shrink-0">
-                      <span className="text-xs font-bold text-orange-500">{item.balance} To Receive</span>
-                      {getOverdueBadge(item.daysDiff)}
-                    </div>
-                  </div>
-                );
-              })}
-              {collectionData.dueToday.length === 0 && (
-                <div className="py-8 text-center text-muted-foreground text-xs italic">No collections due today.</div>
-              )}
-            </CardContent>
-            <CardFooter className="pt-2 border-t border-border/50">
-              <Button variant="ghost" className="w-full text-xs gap-2 font-bold h-10 hover:bg-muted" asChild>
-                <Link href="/customers?filter=SETTLED">View All Due Today <ExternalLink className="h-3 w-3" /></Link>
-              </Button>
-            </CardFooter>
-          </Card>
 
-          {/* Due This Week */}
-          <Card className="border-none shadow-xl bg-card border-t-4 border-t-yellow-500 overflow-hidden flex flex-col">
-            <CardHeader className="pb-4">
-              <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle className="text-lg font-bold flex items-center gap-2">
-                    <CalendarDays className="h-4 w-4 text-yellow-500" /> Due This Week
-                  </CardTitle>
-                  <CardDescription className="text-xs">Next 7 days timeline</CardDescription>
-                </div>
-                <div className="text-right">
-                  <p className="text-xl font-headline font-bold text-yellow-500">{collectionData.dueThisWeek.length}</p>
-                  <p className="text-[10px] text-muted-foreground uppercase font-bold">{collectionData.dueThisWeek.reduce((s, c) => s + c.balance, 0)} To Receive</p>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="flex-1 space-y-3">
-              {collectionData.dueThisWeek.slice(0, 5).map((item) => {
-                const customer = customers.find(c => c.id === item.customerId);
-                return (
-                  <div key={item.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/20 border border-border/50 group hover:bg-muted/40 transition-colors">
-                    <div className="min-w-0 flex-1">
-                      <Link href={`/customers/${customer?.id}`} className="font-bold text-xs truncate block group-hover:text-primary transition-colors">
-                        {customer?.name}
-                      </Link>
-                      <p className="text-[9px] text-muted-foreground">Due in {item.daysDiff} days</p>
+            <div className="px-6 pb-6">
+              <TabsContent value="overdue" className="mt-4 space-y-4 animate-in fade-in slide-in-from-left-2 duration-300">
+                <div className="flex items-center justify-between p-3 rounded-xl bg-destructive/5 border border-destructive/10">
+                  <div className="flex items-center gap-3">
+                    <AlertCircle className="h-5 w-5 text-destructive" />
+                    <div>
+                      <p className="text-sm font-bold text-destructive">Critical Collections</p>
+                      <p className="text-[10px] text-muted-foreground uppercase font-bold">{collectionData.overdue.reduce((s, c) => s + c.balance, 0)} Total PCS to Recover</p>
                     </div>
-                    <span className="text-xs font-bold text-yellow-500 whitespace-nowrap shrink-0">{item.balance} To Receive</span>
                   </div>
-                );
-              })}
-              {collectionData.dueThisWeek.length === 0 && (
-                <div className="py-8 text-center text-muted-foreground text-xs italic">No collections due this week.</div>
-              )}
-            </CardContent>
-            <CardFooter className="pt-2 border-t border-border/50">
-              <Button variant="ghost" className="w-full text-xs gap-2 font-bold h-10 hover:bg-muted" asChild>
-                <Link href="/customers?filter=TO_RECEIVE">View Weekly Schedule <ExternalLink className="h-3 w-3" /></Link>
-              </Button>
-            </CardFooter>
-          </Card>
+                  <Button variant="ghost" size="sm" className="text-destructive font-bold gap-1 text-[10px]" asChild>
+                    <Link href="/customers?filter=OVERDUE">View All <ChevronRight className="h-3 w-3" /></Link>
+                  </Button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {collectionData.overdue.slice(0, 6).map((item) => {
+                    const customer = customers.find(c => c.id === item.customerId);
+                    return (
+                      <div key={item.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/20 border border-border/50 group hover:bg-muted/40 transition-colors">
+                        <div className="min-w-0 flex-1">
+                          <Link href={`/customers/${customer?.id}`} className="font-bold text-xs truncate block group-hover:text-primary transition-colors">
+                            {customer?.name}
+                          </Link>
+                          <p className="text-[10px] text-destructive font-bold uppercase">{Math.abs(item.daysDiff)}d Overdue</p>
+                        </div>
+                        <div className="text-right shrink-0 ml-3">
+                          <p className="text-xs font-bold text-destructive">{item.balance} PCS</p>
+                          <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-primary" onClick={() => window.open(`tel:${customer?.phone}`)}>
+                            <Phone className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {collectionData.overdue.length === 0 && (
+                  <div className="py-12 text-center text-emerald-500 font-bold text-sm italic">All accounts are up to date!</div>
+                )}
+              </TabsContent>
 
-          {/* Overdue Customers */}
-          <Card className="border-none shadow-xl bg-card border-t-4 border-t-destructive overflow-hidden flex flex-col">
-            <CardHeader className="pb-4">
-              <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle className="text-lg font-bold flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4 text-destructive" /> Overdue Customers
-                  </CardTitle>
-                  <CardDescription className="text-xs">Immediate action required</CardDescription>
-                </div>
-                <div className="text-right">
-                  <p className="text-xl font-headline font-bold text-destructive">{collectionData.overdue.length}</p>
-                  <p className="text-[10px] text-muted-foreground uppercase font-bold">{collectionData.overdue.reduce((s, c) => s + c.balance, 0)} To Receive</p>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="flex-1 space-y-3">
-              {collectionData.overdue.slice(0, 5).map((item) => {
-                const customer = customers.find(c => c.id === item.customerId);
-                return (
-                  <div key={item.id} className="flex items-center justify-between p-2 rounded-lg bg-destructive/5 border border-destructive/10 group hover:bg-destructive/10 transition-colors">
-                    <div className="min-w-0 flex-1">
-                      <Link href={`/customers/${customer?.id}`} className="font-bold text-sm hover:text-destructive transition-colors block truncate">
-                        {customer?.name}
-                      </Link>
-                      <p className="text-[9px] text-destructive font-medium uppercase">{Math.abs(item.daysDiff)}d Overdue</p>
-                    </div>
-                    <div className="text-right flex items-center gap-2 shrink-0">
-                      <span className="text-xs font-bold text-destructive">{item.balance} To Receive</span>
-                      {getOverdueBadge(item.daysDiff)}
+              <TabsContent value="today" className="mt-4 space-y-4 animate-in fade-in slide-in-from-left-2 duration-300">
+                <div className="flex items-center justify-between p-3 rounded-xl bg-orange-500/5 border border-orange-500/10">
+                  <div className="flex items-center gap-3">
+                    <Clock className="h-5 w-5 text-orange-500" />
+                    <div>
+                      <p className="text-sm font-bold text-orange-500">Scheduled for Today</p>
+                      <p className="text-[10px] text-muted-foreground uppercase font-bold">{collectionData.dueToday.reduce((s, c) => s + c.balance, 0)} Expected PCS Today</p>
                     </div>
                   </div>
-                );
-              })}
-              {collectionData.overdue.length === 0 && (
-                <div className="py-8 text-center text-emerald-500 text-xs italic font-bold">No overdue accounts! Great job.</div>
-              )}
-            </CardContent>
-            <CardFooter className="pt-2 border-t border-border/50">
-              <Button variant="ghost" className="w-full text-xs gap-2 font-bold h-10 hover:bg-muted text-destructive hover:text-destructive" asChild>
-                <Link href="/customers?filter=OVERDUE">View All Overdue <ExternalLink className="h-3 w-3" /></Link>
-              </Button>
-            </CardFooter>
-          </Card>
-        </div>
+                  <Button variant="ghost" size="sm" className="text-orange-500 font-bold gap-1 text-[10px]" asChild>
+                    <Link href="/customers?filter=SETTLED">View Daily Log <ChevronRight className="h-3 w-3" /></Link>
+                  </Button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {collectionData.dueToday.slice(0, 6).map((item) => {
+                    const customer = customers.find(c => c.id === item.customerId);
+                    return (
+                      <div key={item.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/20 border border-border/50 group hover:bg-muted/40 transition-colors">
+                        <div className="min-w-0 flex-1">
+                          <Link href={`/customers/${customer?.id}`} className="font-bold text-xs truncate block group-hover:text-primary transition-colors">
+                            {customer?.name}
+                          </Link>
+                          <p className="text-[10px] text-muted-foreground">{customer?.phone}</p>
+                        </div>
+                        <div className="text-right shrink-0 ml-3">
+                          <p className="text-xs font-bold text-orange-500">{item.balance} PCS</p>
+                          {getOverdueBadge(item.daysDiff)}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {collectionData.dueToday.length === 0 && (
+                  <div className="py-12 text-center text-muted-foreground text-sm italic">No collections scheduled for today.</div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="weekly" className="mt-4 space-y-4 animate-in fade-in slide-in-from-left-2 duration-300">
+                <div className="flex items-center justify-between p-3 rounded-xl bg-yellow-500/5 border border-yellow-500/10">
+                  <div className="flex items-center gap-3">
+                    <CalendarDays className="h-5 w-5 text-yellow-500" />
+                    <div>
+                      <p className="text-sm font-bold text-yellow-500">Upcoming This Week</p>
+                      <p className="text-[10px] text-muted-foreground uppercase font-bold">{collectionData.dueThisWeek.reduce((s, c) => s + c.balance, 0)} Total PCS Pipeline</p>
+                    </div>
+                  </div>
+                  <Button variant="ghost" size="sm" className="text-yellow-500 font-bold gap-1 text-[10px]" asChild>
+                    <Link href="/customers?filter=TO_RECEIVE">View Schedule <ChevronRight className="h-3 w-3" /></Link>
+                  </Button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {collectionData.dueThisWeek.slice(0, 6).map((item) => {
+                    const customer = customers.find(c => c.id === item.customerId);
+                    return (
+                      <div key={item.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/20 border border-border/50 group hover:bg-muted/40 transition-colors">
+                        <div className="min-w-0 flex-1">
+                          <Link href={`/customers/${customer?.id}`} className="font-bold text-xs truncate block group-hover:text-primary transition-colors">
+                            {customer?.name}
+                          </Link>
+                          <p className="text-[10px] text-muted-foreground">Due in {item.daysDiff} days</p>
+                        </div>
+                        <span className="text-xs font-bold text-yellow-500 shrink-0 ml-3">{item.balance} PCS</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                {collectionData.dueThisWeek.length === 0 && (
+                  <div className="py-12 text-center text-muted-foreground text-sm italic">No upcoming collections this week.</div>
+                )}
+              </TabsContent>
+            </div>
+          </Tabs>
+        </Card>
       </section>
 
       {/* Activity and History */}
