@@ -32,7 +32,8 @@ import {
   Calendar,
   Hash,
   FileText,
-  Loader2
+  Loader2,
+  Download
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -224,6 +225,41 @@ export default function CustomerProfile(props: {
     }
   };
 
+  const handleShareText = () => {
+    if (!customer) return;
+    
+    const businessName = settings?.businessName || "Cylindera LPG Pro";
+    const todayBS = adToBs(getCurrentADDate());
+    
+    let text = `*Statement from ${businessName}*\n`;
+    text += `----------------------------\n`;
+    text += `*Customer:* ${customer.name}\n`;
+    text += `*Address:* ${customer.address}\n`;
+    text += `*Date:* ${todayBS}\n\n`;
+    
+    text += `*Summary:*\n`;
+    text += `Balance: *${balance === 0 ? "Settled" : balance > 0 ? `${balance} To Receive` : `${Math.abs(balance)} To Give`}*\n`;
+    text += `----------------------------\n`;
+    text += `*Recent Activity (Last 10):*\n`;
+    
+    // Sort transactions by date descending
+    const chronological = [...transactions].sort((a, b) => toMillis(b.date) - toMillis(a.date));
+    const recent = chronological.slice(0, 10);
+    
+    recent.forEach(t => {
+      const impact = getTransactionImpact(t.type);
+      const qtyStr = impact > 0 ? `+${t.quantity}` : `-${t.quantity}`;
+      text += `• ${t.bsDate}: ${qtyStr} PCS (${getTransactionLabel(t.type)})${t.remark ? ` - ${t.remark}` : ""}\n`;
+    });
+    
+    text += `\n_Generated via Cylindera_`;
+    
+    const cleanPhone = customer.phone.replace(/\D/g, '');
+    const phoneWithCountry = cleanPhone.length === 10 ? `977${cleanPhone}` : cleanPhone;
+    const waUrl = `https://wa.me/${phoneWithCountry}?text=${encodeURIComponent(text)}`;
+    window.open(waUrl, '_blank');
+  };
+
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
   const [deleteReason, setDeleteReason] = useState("");
 
@@ -411,16 +447,28 @@ export default function CustomerProfile(props: {
           </div>
         </div>
         <div className="flex flex-wrap gap-2 md:gap-3">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="gap-2 font-bold h-10 md:h-12 flex-1 md:flex-none" 
-            onClick={handleSharePDF}
-            disabled={isGeneratingPDF}
-          >
-            {isGeneratingPDF ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
-            {isGeneratingPDF ? "Preparing..." : "Share PDF"}
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="gap-2 font-bold h-10 md:h-12 flex-1 md:flex-none" 
+                disabled={isGeneratingPDF}
+              >
+                {isGeneratingPDF ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" />}
+                {isGeneratingPDF ? "Preparing..." : "Share Statement"}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem className="cursor-pointer gap-2 py-3" onClick={handleSharePDF}>
+                <FileText className="h-4 w-4 text-primary" /> Share as PDF
+              </DropdownMenuItem>
+              <DropdownMenuItem className="cursor-pointer gap-2 py-3" onClick={handleShareText}>
+                <MessageSquare className="h-4 w-4 text-emerald-500" /> Share as Text
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <Button size="sm" className="bg-primary text-primary-foreground gap-2 font-bold h-10 md:h-12 flex-1 md:flex-none" onClick={() => setIsEditSheetOpen(true)}>
             <Edit2 className="h-4 w-4" /> Edit
           </Button>
