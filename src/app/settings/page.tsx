@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -9,6 +8,7 @@ import { logAction } from "@/lib/services/audit-service";
 import { exportBackup, restoreBackup, BackupData } from "@/lib/services/backup-service";
 import { Setting, UserProfile } from "@/lib/types";
 import { getUserProfile } from "@/lib/services/user-service";
+import { useI18n } from "@/lib/i18n-context";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,7 +27,8 @@ import {
   Upload, 
   Database,
   AlertTriangle,
-  History
+  History,
+  Languages
 } from "lucide-react";
 import {
   AlertDialog,
@@ -40,11 +41,19 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
 
 export default function SettingsPage() {
   const db = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
+  const { t, language, setLanguage } = useI18n();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [loading, setLoading] = useState(true);
@@ -93,7 +102,7 @@ export default function SettingsPage() {
       });
 
       toast({
-        title: "Settings Saved",
+        title: t('settingsSaved'),
         description: "Business configuration has been updated successfully.",
       });
     } catch (error: any) {
@@ -120,9 +129,9 @@ export default function SettingsPage() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      toast({ title: "Backup Successful", description: "JSON backup file has been downloaded." });
+      toast({ title: t('success'), description: "JSON backup file has been downloaded." });
     } catch (error: any) {
-      toast({ variant: "destructive", title: "Backup Failed", description: error.message });
+      toast({ variant: "destructive", title: t('error'), description: error.message });
     } finally {
       setBackingUp(false);
     }
@@ -148,10 +157,10 @@ export default function SettingsPage() {
         }
 
         await restoreBackup(db, backupData, user.uid, profile.fullName || 'User');
-        toast({ title: "Restore Successful", description: "Database has been synchronized with the backup." });
+        toast({ title: t('success'), description: "Database has been synchronized with the backup." });
         setTimeout(() => window.location.reload(), 1500);
       } catch (error: any) {
-        toast({ variant: "destructive", title: "Restore Failed", description: error.message });
+        toast({ variant: "destructive", title: t('error'), description: error.message });
       } finally {
         setRestoring(false);
         if (fileInputRef.current) fileInputRef.current.value = '';
@@ -171,14 +180,38 @@ export default function SettingsPage() {
   return (
     <div className="p-8 space-y-8 animate-in fade-in duration-500 max-w-4xl mx-auto pb-24 md:pb-8">
       <header className="border-b border-border pb-6">
-        <h1 className="font-headline text-4xl font-bold text-foreground">Settings & Maintenance</h1>
+        <h1 className="font-headline text-4xl font-bold text-foreground">{t('settings')} & {t('restore')}</h1>
         <p className="text-muted-foreground mt-1 font-medium">Configure business identity and manage system data</p>
       </header>
+
+      {/* Language Selection Card */}
+      <Card className="border-none shadow-2xl bg-card border-l-4 border-l-primary">
+        <CardHeader>
+          <CardTitle className="font-headline text-2xl font-bold flex items-center gap-2 text-primary">
+            <Languages className="h-6 w-6" /> {t('language')}
+          </CardTitle>
+          <CardDescription>Select your preferred language for the application interface.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="max-w-xs space-y-2">
+            <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{t('language')}</Label>
+            <Select value={language} onValueChange={(v: any) => setLanguage(v)}>
+              <SelectTrigger className="h-12 bg-background border-border">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="en">{t('english')}</SelectItem>
+                <SelectItem value="ne">{t('nepali')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card className="border-none shadow-2xl bg-card">
         <CardHeader>
           <CardTitle className="font-headline text-2xl font-bold flex items-center gap-2 text-primary">
-            <Building2 className="h-6 w-6" /> Business Identity
+            <Building2 className="h-6 w-6" /> {t('businessIdentity')}
           </CardTitle>
           <CardDescription>
             This information appears on WhatsApp statements, generated PDF reports, and determines your shop's identity in the system.
@@ -187,8 +220,8 @@ export default function SettingsPage() {
         <CardContent className="grid gap-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label className="flex items-center gap-2 text-muted-foreground uppercase text-[10px] tracking-widest font-bold">
-                Business Name
+              <Label className="flex items-center gap-2 text-muted-foreground uppercase text-[10px] tracking-widest font-bold mb-1">
+                {t('company')}
               </Label>
               <Input 
                 value={settings.businessName}
@@ -198,8 +231,8 @@ export default function SettingsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label className="flex items-center gap-2 text-muted-foreground uppercase text-[10px] tracking-widest font-bold">
-                <Phone className="h-3 w-3" /> Contact Phone
+              <Label className="flex items-center gap-2 text-muted-foreground uppercase text-[10px] tracking-widest font-bold mb-1">
+                <Phone className="h-3 w-3" /> {t('phone')}
               </Label>
               <Input 
                 value={settings.phone}
@@ -211,8 +244,8 @@ export default function SettingsPage() {
           </div>
 
           <div className="space-y-2">
-            <Label className="flex items-center gap-2 text-muted-foreground uppercase text-[10px] tracking-widest font-bold">
-              <MapPin className="h-3 w-3" /> Address
+            <Label className="flex items-center gap-2 text-muted-foreground uppercase text-[10px] tracking-widest font-bold mb-1">
+              <MapPin className="h-3 w-3" /> {t('address')}
             </Label>
             <Input 
               value={settings.address}
@@ -224,8 +257,8 @@ export default function SettingsPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label className="flex items-center gap-2 text-muted-foreground uppercase text-[10px] tracking-widest font-bold">
-                <Hash className="h-3 w-3" /> PAN / VAT Number
+              <Label className="flex items-center gap-2 text-muted-foreground uppercase text-[10px] tracking-widest font-bold mb-1">
+                <Hash className="h-3 w-3" /> {t('pan')}
               </Label>
               <Input 
                 value={settings.panNumber}
@@ -235,7 +268,7 @@ export default function SettingsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label className="flex items-center gap-2 text-muted-foreground uppercase text-[10px] tracking-widest font-bold">
+              <Label className="flex items-center gap-2 text-muted-foreground uppercase text-[10px] tracking-widest font-bold mb-1">
                 <Percent className="h-3 w-3" /> Default VAT (%)
               </Label>
               <Input 
@@ -258,7 +291,7 @@ export default function SettingsPage() {
             className="bg-primary text-primary-foreground font-bold h-12 px-8 flex items-center gap-2 shadow-lg shadow-primary/20"
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            Save Configuration
+            {t('saveConfiguration')}
           </Button>
         </CardFooter>
       </Card>
@@ -266,7 +299,7 @@ export default function SettingsPage() {
       <Card className="border-none shadow-2xl bg-card border-l-4 border-l-accent">
         <CardHeader>
           <CardTitle className="font-headline text-2xl font-bold flex items-center gap-2 text-accent">
-            <Database className="h-6 w-6" /> Data Management
+            <Database className="h-6 w-6" /> {t('systemMaintenance')}
           </CardTitle>
           <CardDescription>Export backups or restore data from a local JSON file.</CardDescription>
         </CardHeader>
@@ -276,7 +309,7 @@ export default function SettingsPage() {
               <div className="p-2 rounded-lg bg-primary/10 text-primary">
                 <Download className="h-5 w-5" />
               </div>
-              <h3 className="font-bold">System Backup</h3>
+              <h3 className="font-bold">{t('backup')}</h3>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
               Downloads a complete snapshot of your customers, transactions, and settings. Recommended weekly for safety.
@@ -288,7 +321,7 @@ export default function SettingsPage() {
               disabled={backingUp}
             >
               {backingUp ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Download className="h-4 w-4 mr-2" />}
-              Export as JSON
+              {t('backup')} (JSON)
             </Button>
           </div>
 
@@ -297,7 +330,7 @@ export default function SettingsPage() {
               <div className="p-2 rounded-lg bg-accent/10 text-accent">
                 <Upload className="h-5 w-5" />
               </div>
-              <h3 className="font-bold">Database Restore</h3>
+              <h3 className="font-bold">{t('restore')}</h3>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
               Upload a previous backup file to restore your system. <span className="text-accent font-bold">Warning:</span> This will overwrite existing data matches.
@@ -312,7 +345,7 @@ export default function SettingsPage() {
                   disabled={restoring}
                 >
                   {restoring ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
-                  Restore from File
+                  {t('restore')}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>

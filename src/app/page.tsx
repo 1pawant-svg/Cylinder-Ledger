@@ -1,10 +1,10 @@
-
 "use client";
 
 import * as React from "react";
 import { useState, useEffect, useMemo } from "react";
 import { useLedger } from "@/lib/ledger-context";
 import { StatCard } from "@/components/dashboard/stat-card";
+import { useI18n } from "@/lib/i18n-context";
 import { 
   Package, 
   ArrowUpRight, 
@@ -52,24 +52,24 @@ const getTransactionColor = (type: TransactionType) => {
   return "bg-muted text-muted-foreground";
 };
 
-const getOverdueBadge = (daysDiff: number) => {
-  if (daysDiff === 0) return <Badge className="bg-orange-500 text-white text-[10px] font-bold">Today</Badge>;
+const getOverdueBadge = (daysDiff: number, t: any) => {
+  if (daysDiff === 0) return <Badge className="bg-orange-500 text-white text-[10px] font-bold">{t('today')}</Badge>;
   const absDays = Math.abs(daysDiff);
-  if (absDays >= 30) return <Badge variant="destructive" className="text-[10px] font-bold">Overdue 30+ Days</Badge>;
-  if (absDays >= 10) return <Badge variant="destructive" className="bg-red-600 text-white text-[10px] font-bold">Overdue 10 Days</Badge>;
-  if (absDays >= 3) return <Badge variant="destructive" className="bg-red-400 text-white text-[10px] font-bold">Overdue 3 Days</Badge>;
-  return <Badge variant="destructive" className="bg-red-300 text-white text-[10px] font-bold">Overdue</Badge>;
+  if (absDays >= 30) return <Badge variant="destructive" className="text-[10px] font-bold">{t('overdue')} 30+ Days</Badge>;
+  if (absDays >= 10) return <Badge variant="destructive" className="bg-red-600 text-white text-[10px] font-bold">{t('overdue')} 10 Days</Badge>;
+  if (absDays >= 3) return <Badge variant="destructive" className="bg-red-400 text-white text-[10px] font-bold">{t('overdue')} 3 Days</Badge>;
+  return <Badge variant="destructive" className="bg-red-300 text-white text-[10px] font-bold">{t('overdue')}</Badge>;
 };
 
 export default function Dashboard() {
   const { customers, transactions, loading } = useLedger();
+  const { t } = useI18n();
   const [todayLabel, setTodayLabel] = useState("");
 
   useEffect(() => {
     setTodayLabel(formatFullDate(getCurrentADDate()));
   }, []);
 
-  // Performance optimized pass for core metrics
   const coreStats = useMemo(() => {
     let toReceiveTotal = 0;
     let toGiveTotal = 0;
@@ -87,7 +87,6 @@ export default function Dashboard() {
     return { toReceiveTotal, toGiveTotal, topToReceive, topToGive };
   }, [customers]);
 
-  // Collection logic filtered by balance > 0
   const collectionData = useMemo(() => {
     const today = getCurrentADDate();
     
@@ -116,7 +115,7 @@ export default function Dashboard() {
   const recentActivity = useMemo(() => {
     return [...transactions]
       .filter(t => t.status !== 'deleted')
-      .slice(0, 8); // transactions already sorted by date in provider
+      .slice(0, 8);
   }, [transactions]);
 
   if (loading) {
@@ -135,14 +134,14 @@ export default function Dashboard() {
             <LayoutDashboard className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="font-headline text-2xl md:text-4xl font-bold text-primary">Overview</h1>
+            <h1 className="font-headline text-2xl md:text-4xl font-bold text-primary">{t('overview')}</h1>
             <p className="text-muted-foreground text-xs md:text-sm font-medium">{todayLabel || "Loading date..."}</p>
           </div>
         </div>
         <div className="flex gap-3">
           <Link href="/transactions">
             <Button className="bg-primary text-primary-foreground font-bold px-6 py-2.5 rounded-lg shadow-lg shadow-primary/20 hover:scale-105 transition-transform">
-              New Transaction
+              {t('newTransaction')}
             </Button>
           </Link>
         </div>
@@ -150,18 +149,18 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <StatCard 
-          title="To Receive" 
-          value={`${coreStats.toReceiveTotal} PCS`} 
+          title={t('toReceive')} 
+          value={`${coreStats.toReceiveTotal} ${t('pcs')}`} 
           icon={Package} 
-          description="Total outstanding cylinders"
+          description={t('totalOutstanding')}
           variant="primary"
           href="/customers?filter=TO_RECEIVE"
         />
         <StatCard 
-          title="To Give" 
-          value={`${coreStats.toGiveTotal} PCS`} 
+          title={t('toGive')} 
+          value={`${coreStats.toGiveTotal} ${t('pcs')}`} 
           icon={ArrowDownLeft} 
-          description="Cylinders owed to customers"
+          description={t('owedToCustomers')}
           variant="warning"
           href="/customers?filter=TO_GIVE"
         />
@@ -173,12 +172,12 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="font-headline text-lg font-bold flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-primary" /> Top To Receive
+                  <TrendingUp className="h-5 w-5 text-primary" /> {t('topToReceive')}
                 </CardTitle>
-                <CardDescription className="text-xs">Highest outstanding balances</CardDescription>
+                <CardDescription className="text-xs">{t('highestOutstanding')}</CardDescription>
               </div>
               <Button variant="ghost" size="sm" className="text-[10px] uppercase font-bold tracking-widest" asChild>
-                <Link href="/customers?filter=TO_RECEIVE">Full List</Link>
+                <Link href="/customers?filter=TO_RECEIVE">{t('fullList')}</Link>
               </Button>
             </div>
           </CardHeader>
@@ -186,7 +185,7 @@ export default function Dashboard() {
             {coreStats.topToReceive.map((c) => (
               <Link key={c.id} href={`/customers/${c.id}`} className="flex items-center justify-between p-3 rounded-xl bg-muted/20 hover:bg-muted/40 transition-colors group">
                 <span className="font-bold text-xs truncate group-hover:text-primary pr-2">{c.name}</span>
-                <Badge className="bg-primary/10 text-primary border-none font-bold shrink-0">{c.balance} PCS</Badge>
+                <Badge className="bg-primary/10 text-primary border-none font-bold shrink-0">{c.balance} {t('pcs')}</Badge>
               </Link>
             ))}
             {coreStats.topToReceive.length === 0 && (
@@ -200,12 +199,12 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="font-headline text-lg font-bold flex items-center gap-2">
-                  <TrendingDown className="h-5 w-5 text-accent" /> Top To Give
+                  <TrendingDown className="h-5 w-5 text-accent" /> {t('topToGive')}
                 </CardTitle>
-                <CardDescription className="text-xs">Cylinders owed to customers</CardDescription>
+                <CardDescription className="text-xs">{t('owedToCustomers')}</CardDescription>
               </div>
               <Button variant="ghost" size="sm" className="text-[10px] uppercase font-bold tracking-widest" asChild>
-                <Link href="/customers?filter=TO_GIVE">Full List</Link>
+                <Link href="/customers?filter=TO_GIVE">{t('fullList')}</Link>
               </Button>
             </div>
           </CardHeader>
@@ -213,7 +212,7 @@ export default function Dashboard() {
             {coreStats.topToGive.map((c) => (
               <Link key={c.id} href={`/customers/${c.id}`} className="flex items-center justify-between p-3 rounded-xl bg-muted/20 hover:bg-muted/40 transition-colors group">
                 <span className="font-bold text-xs truncate group-hover:text-primary pr-2">{c.name}</span>
-                <Badge className="bg-accent/10 text-accent border-none font-bold shrink-0">{Math.abs(c.balance)} PCS</Badge>
+                <Badge className="bg-accent/10 text-accent border-none font-bold shrink-0">{Math.abs(c.balance)} {t('pcs')}</Badge>
               </Link>
             ))}
             {coreStats.topToGive.length === 0 && (
@@ -226,22 +225,22 @@ export default function Dashboard() {
       <section className="space-y-4">
         <div className="flex items-center gap-2 px-1">
           <Bell className="h-5 w-5 text-primary" />
-          <h2 className="font-headline text-xl font-bold">Collection Schedule</h2>
+          <h2 className="font-headline text-xl font-bold">{t('collectionSchedule')}</h2>
         </div>
         
         <Card className="border-none shadow-xl bg-card overflow-hidden">
           <Tabs defaultValue="overdue" className="w-full">
             <CardHeader className="pb-2">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <TabsList className="grid grid-cols-3 w-full md:w-[400px] h-11 bg-muted/50 p-1">
+                <TabsList className="grid grid-cols-3 w-full md:w-[450px] h-11 bg-muted/50 p-1">
                   <TabsTrigger value="overdue" className="data-[state=active]:bg-background data-[state=active]:text-destructive font-bold text-xs gap-2">
-                    Overdue <Badge variant="destructive" className="h-5 px-1.5 min-w-5 flex items-center justify-center">{collectionData.overdue.length}</Badge>
+                    {t('overdue')} <Badge variant="destructive" className="h-5 px-1.5 min-w-5 flex items-center justify-center">{collectionData.overdue.length}</Badge>
                   </TabsTrigger>
                   <TabsTrigger value="today" className="data-[state=active]:bg-background data-[state=active]:text-orange-500 font-bold text-xs gap-2">
-                    Today <Badge className="h-5 px-1.5 min-w-5 flex items-center justify-center bg-orange-500">{collectionData.dueToday.length}</Badge>
+                    {t('today')} <Badge className="h-5 px-1.5 min-w-5 flex items-center justify-center bg-orange-500">{collectionData.dueToday.length}</Badge>
                   </TabsTrigger>
                   <TabsTrigger value="weekly" className="data-[state=active]:bg-background data-[state=active]:text-yellow-500 font-bold text-xs gap-2">
-                    Weekly <Badge className="h-5 px-1.5 min-w-5 flex items-center justify-center bg-yellow-500">{collectionData.dueThisWeek.length}</Badge>
+                    {t('weekly')} <Badge className="h-5 px-1.5 min-w-5 flex items-center justify-center bg-yellow-500">{collectionData.dueThisWeek.length}</Badge>
                   </TabsTrigger>
                 </TabsList>
               </div>
@@ -256,17 +255,17 @@ export default function Dashboard() {
                       <div key={item.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/20 border border-border/50 group hover:bg-muted/40 transition-colors">
                         <div className="min-w-0 flex-1">
                           <Link href={`/customers/${customer?.id}`} className="font-bold text-xs truncate block group-hover:text-primary transition-colors">{customer?.name}</Link>
-                          <p className="text-[10px] text-destructive font-bold uppercase">{Math.abs(item.daysDiff)}d Overdue</p>
+                          <p className="text-[10px] text-destructive font-bold uppercase">{Math.abs(item.daysDiff)}d {t('overdue')}</p>
                         </div>
                         <div className="text-right ml-3">
-                          <p className="text-xs font-bold text-destructive">{item.balance} PCS</p>
+                          <p className="text-xs font-bold text-destructive">{item.balance} {t('pcs')}</p>
                           <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => window.open(`tel:${customer?.phone}`)}><Phone className="h-3 w-3" /></Button>
                         </div>
                       </div>
                     );
                   })}
                 </div>
-                {collectionData.overdue.length === 0 && <div className="py-12 text-center text-emerald-500 font-bold text-sm italic">All up to date!</div>}
+                {collectionData.overdue.length === 0 && <div className="py-12 text-center text-emerald-500 font-bold text-sm italic">{t('allUpToDate')}</div>}
               </TabsContent>
 
               <TabsContent value="today" className="mt-4 space-y-4 animate-in fade-in slide-in-from-left-2 duration-300">
@@ -280,13 +279,13 @@ export default function Dashboard() {
                           <p className="text-[10px] text-muted-foreground">{customer?.phone}</p>
                         </div>
                         <div className="text-right ml-3">
-                          <p className="text-xs font-bold text-orange-500">{item.balance} PCS</p>
+                          <p className="text-xs font-bold text-orange-500">{item.balance} {t('pcs')}</p>
                         </div>
                       </div>
                     );
                   })}
                 </div>
-                {collectionData.dueToday.length === 0 && <div className="py-12 text-center text-muted-foreground text-sm italic">No collections today.</div>}
+                {collectionData.dueToday.length === 0 && <div className="py-12 text-center text-muted-foreground text-sm italic">{t('noCollectionsToday')}</div>}
               </TabsContent>
 
               <TabsContent value="weekly" className="mt-4 space-y-4 animate-in fade-in slide-in-from-left-2 duration-300">
@@ -299,12 +298,12 @@ export default function Dashboard() {
                           <Link href={`/customers/${customer?.id}`} className="font-bold text-xs truncate block group-hover:text-primary transition-colors">{customer?.name}</Link>
                           <p className="text-[10px] text-muted-foreground">Due in {item.daysDiff} days</p>
                         </div>
-                        <span className="text-xs font-bold text-yellow-500 shrink-0 ml-3">{item.balance} PCS</span>
+                        <span className="text-xs font-bold text-yellow-500 shrink-0 ml-3">{item.balance} {t('pcs')}</span>
                       </div>
                     );
                   })}
                 </div>
-                {collectionData.dueThisWeek.length === 0 && <div className="py-12 text-center text-muted-foreground text-sm italic">No upcoming collections this week.</div>}
+                {collectionData.dueThisWeek.length === 0 && <div className="py-12 text-center text-muted-foreground text-sm italic">{t('noUpcomingCollections')}</div>}
               </TabsContent>
             </div>
           </Tabs>
@@ -315,9 +314,9 @@ export default function Dashboard() {
         <Card className="lg:col-span-2 border-none shadow-xl bg-card/50 backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between border-b border-border/50 pb-6 px-4 md:px-6">
             <div>
-              <CardTitle className="font-headline text-lg md:text-xl font-bold flex items-center gap-2"><History className="h-5 w-5" /> Recent Logs</CardTitle>
+              <CardTitle className="font-headline text-lg md:text-xl font-bold flex items-center gap-2"><History className="h-5 w-5" /> {t('recentLogs')}</CardTitle>
             </div>
-            <Link href="/reports"><Button variant="ghost" size="sm" className="text-xs">View All</Button></Link>
+            <Link href="/reports"><Button variant="ghost" size="sm" className="text-xs">{t('viewAll')}</Button></Link>
           </CardHeader>
           <CardContent className="pt-6 p-0">
             <ScrollArea className="h-[400px]">
@@ -337,7 +336,7 @@ export default function Dashboard() {
                         </div>
                       </div>
                       <div className="text-right shrink-0">
-                        <p className={cn("font-headline font-bold text-sm", bal > 0 ? "text-primary" : "text-emerald-500")}>{txn.quantity} PCS</p>
+                        <p className={cn("font-headline font-bold text-sm", bal > 0 ? "text-primary" : "text-emerald-500")}>{txn.quantity} {t('pcs')}</p>
                       </div>
                     </div>
                   );
@@ -348,7 +347,7 @@ export default function Dashboard() {
         </Card>
 
         <Card className="border-none shadow-xl bg-card border-t-4 border-accent overflow-hidden">
-          <CardHeader className="px-4 md:px-6"><CardTitle className="font-headline text-lg font-bold flex items-center gap-2"><PhoneCall className="h-5 w-5 text-accent" /> Contact Center</CardTitle></CardHeader>
+          <CardHeader className="px-4 md:px-6"><CardTitle className="font-headline text-lg font-bold flex items-center gap-2"><PhoneCall className="h-5 w-5 text-accent" /> {t('contactCenter')}</CardTitle></CardHeader>
           <CardContent className="p-0">
             <ScrollArea className="h-[400px]">
               <div className="space-y-4 px-4 md:px-6 pb-6 pt-2">
@@ -359,11 +358,11 @@ export default function Dashboard() {
                     <div key={txn.id} className="p-4 rounded-xl bg-muted/30 border border-border/50 space-y-4 hover:bg-muted/50 transition-colors">
                       <div className="flex justify-between items-start">
                         <div className="min-w-0 flex-1"><Link href={`/customers/${customer.id}`} className="font-bold text-sm truncate block">{customer.name}</Link>
-                          <p className="text-[10px] text-muted-foreground">Owed: <span className="font-bold text-primary">{customer.balance} PCS</span></p>
+                          <p className="text-[10px] text-muted-foreground">{t('owed')}: <span className="font-bold text-primary">{customer.balance} {t('pcs')}</span></p>
                         </div>
-                        {getOverdueBadge(txn.daysDiff)}
+                        {getOverdueBadge(txn.daysDiff, t)}
                       </div>
-                      <Button size="sm" variant="outline" className="w-full h-9 text-[10px] gap-2" onClick={() => window.open(`tel:${customer.phone}`)}><PhoneCall className="h-3 w-3" /> Call {customer.phone}</Button>
+                      <Button size="sm" variant="outline" className="w-full h-9 text-[10px] gap-2" onClick={() => window.open(`tel:${customer.phone}`)}><PhoneCall className="h-3 w-3" /> {t('call')} {customer.phone}</Button>
                     </div>
                   );
                 })}

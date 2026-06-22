@@ -8,6 +8,7 @@ import { getSettings } from "@/lib/services/settings-service";
 import { getUserProfile } from "@/lib/services/user-service";
 import { exportBackup, restoreBackup, BackupData } from "@/lib/services/backup-service";
 import { Setting, UserProfile } from "@/lib/types";
+import { useI18n } from "@/lib/i18n-context";
 import { useRouter } from "next/navigation";
 import { 
   Building2, 
@@ -22,7 +23,8 @@ import {
   MapPin,
   Phone,
   Loader2,
-  AlertTriangle
+  AlertTriangle,
+  Languages
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,11 +41,19 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
 
 export default function MorePage() {
   const db = useFirestore();
   const auth = useAuth();
   const { user } = useUser();
+  const { t, language, setLanguage } = useI18n();
   const router = useRouter();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -87,9 +97,9 @@ export default function MorePage() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      toast({ title: "Backup Successful" });
+      toast({ title: t('success') });
     } catch (error: any) {
-      toast({ variant: "destructive", title: "Backup Failed", description: error.message });
+      toast({ variant: "destructive", title: t('error'), description: error.message });
     } finally {
       setBackingUp(false);
     }
@@ -106,10 +116,10 @@ export default function MorePage() {
         const content = e.target?.result as string;
         const backupData: BackupData = JSON.parse(content);
         await restoreBackup(db, backupData, user.uid, profile.fullName || 'User');
-        toast({ title: "Restore Successful" });
+        toast({ title: t('success') });
         setTimeout(() => window.location.reload(), 1500);
       } catch (error: any) {
-        toast({ variant: "destructive", title: "Restore Failed", description: error.message });
+        toast({ variant: "destructive", title: t('error'), description: error.message });
       } finally {
         setRestoring(false);
       }
@@ -128,9 +138,28 @@ export default function MorePage() {
   return (
     <div className="p-4 space-y-6 pb-24 md:hidden animate-in fade-in duration-500">
       <header className="py-2">
-        <h1 className="font-headline text-3xl font-bold text-primary">Menu</h1>
-        <p className="text-muted-foreground text-xs uppercase tracking-widest font-bold">System Options</p>
+        <h1 className="font-headline text-3xl font-bold text-primary">{t('menu')}</h1>
+        <p className="text-muted-foreground text-xs uppercase tracking-widest font-bold">{t('systemOptions')}</p>
       </header>
+
+      {/* Language Section */}
+      <section className="space-y-3">
+        <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground px-1">{t('language')}</h2>
+        <Card className="border-none shadow-md bg-card p-4">
+          <div className="flex items-center gap-4">
+            <Languages className="h-5 w-5 text-primary" />
+            <Select value={language} onValueChange={(v: any) => setLanguage(v)}>
+              <SelectTrigger className="flex-1 h-11 bg-muted/20 border-none">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="en">{t('english')}</SelectItem>
+                <SelectItem value="ne">{t('nepali')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </Card>
+      </section>
 
       {/* User Profile Section */}
       <Card className="border-none shadow-lg bg-card overflow-hidden">
@@ -152,13 +181,13 @@ export default function MorePage() {
 
       {/* Business Info Section */}
       <section className="space-y-3">
-        <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground px-1">Business Identity</h2>
+        <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground px-1">{t('businessIdentity')}</h2>
         <Card className="border-none shadow-md bg-card">
           <CardContent className="p-0 divide-y divide-border/50">
             <div className="p-4 flex items-start gap-4" onClick={() => router.push('/settings')}>
               <Building2 className="h-5 w-5 text-primary mt-0.5" />
               <div className="flex-1">
-                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">Company</p>
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">{t('company')}</p>
                 <p className="text-sm font-bold">{settings?.businessName || "No Business Name Set"}</p>
                 <div className="mt-2 space-y-1">
                   <p className="text-xs text-muted-foreground flex items-center gap-1.5">
@@ -177,7 +206,7 @@ export default function MorePage() {
 
       {/* Data Management */}
       <section className="space-y-3">
-        <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground px-1">System Maintenance</h2>
+        <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground px-1">{t('systemMaintenance')}</h2>
         <div className="grid grid-cols-2 gap-3">
           <Button 
             variant="outline" 
@@ -186,7 +215,7 @@ export default function MorePage() {
             disabled={backingUp}
           >
             {backingUp ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5 text-primary" />}
-            <span className="text-[10px] font-bold uppercase tracking-widest">Backup</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest">{t('backup')}</span>
           </Button>
 
           <AlertDialog>
@@ -197,7 +226,7 @@ export default function MorePage() {
                 disabled={restoring}
               >
                 {restoring ? <Loader2 className="h-5 w-5 animate-spin" /> : <Upload className="h-5 w-5 text-accent" />}
-                <span className="text-[10px] font-bold uppercase tracking-widest">Restore</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest">{t('restore')}</span>
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent className="w-[90vw] max-w-sm rounded-xl">
@@ -259,7 +288,7 @@ export default function MorePage() {
           className="w-full h-14 gap-2 font-headline text-lg font-bold shadow-lg shadow-destructive/20"
           onClick={handleLogout}
         >
-          <LogOut className="h-5 w-5" /> Logout
+          <LogOut className="h-5 w-5" /> {t('logout')}
         </Button>
         <p className="text-center text-[10px] text-muted-foreground mt-4 uppercase tracking-[0.3em] font-bold opacity-50">
           Cylindera Pro • Version 1.2

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { 
@@ -29,14 +28,7 @@ import { signOut } from "firebase/auth";
 import { useEffect, useState } from "react";
 import { getUserProfile } from "@/lib/services/user-service";
 import { UserProfile } from "@/lib/types";
-
-const items = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Customers", url: "/customers", icon: Users },
-  { title: "Transactions", url: "/transactions", icon: ArrowLeftRight },
-  { title: "Reports", url: "/reports", icon: FileText },
-  { title: "Settings", url: "/settings", icon: Settings },
-];
+import { useI18n } from "@/lib/i18n-context";
 
 export function AppSidebar() {
   const pathname = usePathname();
@@ -44,7 +36,16 @@ export function AppSidebar() {
   const db = useFirestore();
   const { user } = useUser();
   const router = useRouter();
+  const { t } = useI18n();
   const [profile, setProfile] = useState<UserProfile | null>(null);
+
+  const items = [
+    { title: t('dashboard'), url: "/", icon: LayoutDashboard },
+    { title: t('customers'), url: "/customers", icon: Users },
+    { title: t('transactions'), url: "/transactions", icon: ArrowLeftRight },
+    { title: t('reports'), url: "/reports", icon: FileText },
+    { title: t('settings'), url: "/settings", icon: Settings },
+  ];
 
   useEffect(() => {
     async function fetchProfile() {
@@ -77,7 +78,7 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent className="pt-4">
         <SidebarGroup>
-          <SidebarGroupLabel className="px-4 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50 mb-2">Main Menu</SidebarGroupLabel>
+          <SidebarGroupLabel className="px-4 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50 mb-2">{t('menu')}</SidebarGroupLabel>
           <SidebarMenu>
             {items.map((item) => (
               <SidebarMenuItem key={item.title}>
@@ -111,9 +112,9 @@ export function AppSidebar() {
         )}
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={handleLogout} tooltip="Logout" className="px-4 py-6 text-destructive hover:text-destructive">
+            <SidebarMenuButton onClick={handleLogout} tooltip={t('logout')} className="px-4 py-6 text-destructive hover:text-destructive">
               <LogOut className="h-5 w-5" />
-              <span className="font-medium text-base ml-2">Logout</span>
+              <span className="font-medium text-base ml-2">{t('logout')}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

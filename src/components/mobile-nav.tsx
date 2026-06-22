@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -12,19 +11,21 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n-context";
 
 export function MobileNav() {
   const pathname = usePathname();
+  const { t } = useI18n();
 
   // Don't show on login page
   if (pathname === "/login") return null;
 
   const navItems = [
-    { label: "Home", href: "/", icon: Home },
-    { label: "Customers", href: "/customers", icon: Users },
-    { label: "New Log", href: "/transactions", icon: Plus, isAction: true },
-    { label: "Reports", href: "/reports", icon: FileText },
-    { label: "More", href: "/more", icon: MoreHorizontal },
+    { label: t('dashboard'), href: "/", icon: Home },
+    { label: t('customers'), href: "/customers", icon: Users },
+    { label: t('newTransaction'), href: "/transactions", icon: Plus, isAction: true },
+    { label: t('reports'), href: "/reports", icon: FileText },
+    { label: t('more'), href: "/more", icon: MoreHorizontal },
   ];
 
   return (
@@ -38,7 +39,7 @@ export function MobileNav() {
               <div className="bg-primary text-primary-foreground h-14 w-14 rounded-full flex items-center justify-center shadow-lg shadow-primary/40 border-4 border-background ring-2 ring-primary/20 animate-in zoom-in duration-300">
                 <Plus className="h-8 w-8" />
               </div>
-              <span className="mt-1 text-[10px] font-black uppercase tracking-tighter text-primary">
+              <span className="mt-1 text-[8px] font-black uppercase tracking-tighter text-primary whitespace-nowrap">
                 {item.label}
               </span>
             </Link>
@@ -55,7 +56,7 @@ export function MobileNav() {
             )}
           >
             <item.icon className={cn("h-5 w-5", isActive && "animate-in fade-in zoom-in duration-300")} />
-            <span className="text-[10px] font-bold uppercase tracking-tight">
+            <span className="text-[8px] font-bold uppercase tracking-tight whitespace-nowrap">
               {item.label}
             </span>
           </Link>

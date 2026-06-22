@@ -8,6 +8,7 @@ import {FirebaseClientProvider} from '@/firebase';
 import {FirebaseErrorListener} from '@/components/FirebaseErrorListener';
 import {AuthGuard} from '@/components/auth-guard';
 import {MobileNav} from '@/components/mobile-nav';
+import {I18nProvider} from '@/lib/i18n-context';
 
 export const metadata: Metadata = {
   title: 'Cylindera - LPG Cylinder Ledger',
@@ -31,20 +32,22 @@ export default function RootLayout({
         <FirebaseClientProvider>
           <FirebaseErrorListener />
           <AuthGuard>
-            <LedgerProvider>
-              <SidebarProvider>
-                <div className="flex min-h-screen w-full">
-                  <AppSidebar />
-                  <SidebarInset className="flex-1 bg-background relative">
-                    <main className="flex-1 w-full">
-                      {children}
-                    </main>
-                  </SidebarInset>
-                </div>
-              </SidebarProvider>
-              <MobileNav />
-              <Toaster />
-            </LedgerProvider>
+            <I18nProvider>
+              <LedgerProvider>
+                <SidebarProvider>
+                  <div className="flex min-h-screen w-full">
+                    <AppSidebar />
+                    <SidebarInset className="flex-1 bg-background relative">
+                      <main className="flex-1 w-full">
+                        {children}
+                      </main>
+                    </SidebarInset>
+                  </div>
+                </SidebarProvider>
+                <MobileNav />
+                <Toaster />
+              </LedgerProvider>
+            </I18nProvider>
           </AuthGuard>
         </FirebaseClientProvider>
       </body>
