@@ -179,7 +179,7 @@ export default function TransactionsPage() {
         bsDate: bsDateStr,
         type: formData.type,
         quantity: formData.quantity,
-        remark: formData.remark
+        remark: formData.remark || ""
       });
       
       const isPositiveImpact = formData.type === 'OUT_FULL' || formData.type === 'OUT';

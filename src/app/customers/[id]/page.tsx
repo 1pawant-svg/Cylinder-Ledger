@@ -458,21 +458,9 @@ export default function CustomerProfile(props: {
                             />
                           </TableCell>
                           <TableCell>
-                            <Select 
-                              value={editFields.type} 
-                              onValueChange={(v: TransactionType) => setEditFields({...editFields, type: v})}
-                            >
-                              <SelectTrigger className="h-8 text-[10px]">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="OUT_FULL">OUT</SelectItem>
-                                <SelectItem value="IN_EMPTY">IN</SelectItem>
-                                <SelectItem value="LEAKAGE">LEAK</SelectItem>
-                                <SelectItem value="LOST">LOST</SelectItem>
-                                <SelectItem value="ADJUSTMENT">ADJ</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <Badge variant="outline" className={cn("text-[8px] md:text-[9px] font-bold uppercase", getTransactionColor(txn.type))}>
+                              {getTransactionLabel(txn.type)}
+                            </Badge>
                           </TableCell>
                           <TableCell>
                             <Input 
@@ -518,7 +506,7 @@ export default function CustomerProfile(props: {
                           {impact > 0 ? `+${txn.quantity}` : `-${txn.quantity}`}
                         </TableCell>
                         <TableCell className="text-[10px] md:text-xs text-muted-foreground max-w-[150px] truncate">
-                          {txn.remark || "-"}
+                          {txn.remark || ""}
                         </TableCell>
                         <TableCell className="font-bold text-xs">
                            <span className={cn(txn.runningBalance > 0 ? "text-primary" : txn.runningBalance < 0 ? "text-accent" : "text-emerald-500")}>
