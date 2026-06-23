@@ -287,62 +287,70 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
   const daysList = Array.from({ length: 32 }, (_, i) => safePad(i + 1));
 
   return (
-    <div className="p-4 md:p-8 space-y-6 animate-in fade-in duration-700 pb-24">
-      <div className="flex flex-col md:flex-row md:items-center gap-4 border-b pb-6">
-        <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full"><ArrowLeft className="h-6 w-6" /></Button>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-3">
-            <h1 className="font-headline text-2xl md:text-3xl font-bold truncate">{customer.name}</h1>
-            <Badge variant={isInactive ? "secondary" : "default"}>{(customer.status || 'active').toUpperCase()}</Badge>
-          </div>
-          <div className="text-muted-foreground flex gap-4 text-xs mt-1">
-            <span><MapPin className="h-3 w-3 inline mr-1" />{customer.address}</span>
-            <span><Phone className="h-3 w-3 inline mr-1" />{customer.phone}</span>
-            {customer.pan && <span><Hash className="h-3 w-3 inline mr-1" />PAN: {customer.pan}</span>}
-          </div>
+    <div className="p-4 md:p-8 space-y-6 animate-in fade-in duration-700 pb-28">
+      <div className="flex flex-col gap-4 border-b pb-6">
+        <div className="flex items-center gap-2">
+           <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full -ml-2"><ArrowLeft className="h-5 w-5" /></Button>
+           <h1 className="font-headline text-xl md:text-3xl font-bold truncate flex-1">{customer.name}</h1>
+           <Badge variant={isInactive ? "secondary" : "default"} className="shrink-0">{(customer.status || 'active').toUpperCase()}</Badge>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {hasBalanceDiscrepancy && (
-            <Button size="sm" variant="destructive" onClick={handleRecalculate} disabled={isRecalculating} className="animate-pulse">
-              {isRecalculating ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <RefreshCw className="h-4 w-4 mr-1" />}
-              {t('fixBalance')}
+        
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-xs">
+            <span className="flex items-center"><MapPin className="h-3 w-3 mr-1" />{customer.address}</span>
+            <span className="flex items-center"><Phone className="h-3 w-3 mr-1" />{customer.phone}</span>
+            {customer.pan && <span className="flex items-center"><Hash className="h-3 w-3 mr-1" />PAN: {customer.pan}</span>}
+          </div>
+          
+          <div className="flex flex-wrap gap-2">
+            {hasBalanceDiscrepancy && (
+              <Button size="sm" variant="destructive" onClick={handleRecalculate} disabled={isRecalculating} className="h-8 text-[10px] uppercase font-bold">
+                {isRecalculating ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" />}
+                {t('fixBalance')}
+              </Button>
+            )}
+            <Button variant="outline" size="sm" onClick={() => setIsEditProfileOpen(true)} className="h-8 text-[10px] uppercase font-bold">
+              <Edit2 className="h-3 w-3 mr-1" /> Edit
             </Button>
-          )}
-          <Button variant="outline" size="sm" onClick={() => setIsEditProfileOpen(true)}>
-            <Edit2 className="h-4 w-4 mr-1" /> Edit
-          </Button>
-          <Button variant="outline" size="sm" className="font-bold" onClick={handleSharePDF} disabled={isGeneratingPDF}>{isGeneratingPDF ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4 mr-1" />}{t('shareStatement')}</Button>
-          <Button size="sm" variant="outline" onClick={() => updateCustomerStatus(customer.id, isInactive ? 'active' : 'inactive')}>{isInactive ? <UserCheck className="h-4 w-4 mr-1" /> : <UserX className="h-4 w-4 mr-1" />}{isInactive ? t('activate') : t('deactivate')}</Button>
+            <Button variant="outline" size="sm" className="h-8 text-[10px] uppercase font-bold" onClick={handleSharePDF} disabled={isGeneratingPDF}>
+              {isGeneratingPDF ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Share2 className="h-3 w-3 mr-1" />}
+              {t('shareStatement')}
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => updateCustomerStatus(customer.id, isInactive ? 'active' : 'inactive')} className="h-8 text-[10px] uppercase font-bold">
+              {isInactive ? <UserCheck className="h-3 w-3 mr-1" /> : <UserX className="h-3 w-3 mr-1" />}
+              {isInactive ? t('activate') : t('deactivate')}
+            </Button>
+          </div>
         </div>
       </div>
 
       {hasBalanceDiscrepancy && (
         <div className="bg-accent/10 border border-accent/20 p-3 rounded-lg flex items-center justify-between">
-          <div className="flex items-center gap-2 text-accent text-xs font-bold">
+          <div className="flex items-center gap-2 text-accent text-[10px] font-bold uppercase tracking-wider">
             <AlertTriangle className="h-4 w-4" />
-            Account balance is out of sync with transactions.
+            Sync Required
           </div>
-          <Button variant="link" size="sm" onClick={handleRecalculate} className="text-accent h-auto p-0 font-bold text-xs underline">{t('fixBalance')}</Button>
+          <Button variant="link" size="sm" onClick={handleRecalculate} className="text-accent h-auto p-0 font-bold text-[10px] underline">{t('fixBalance')}</Button>
         </div>
       )}
 
       {/* Date Filter Bar */}
       <Card className="border-none shadow-md bg-card/50">
-        <CardContent className="p-4 flex flex-col lg:flex-row items-end gap-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 w-full">
+        <CardContent className="p-4 flex flex-col gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-[10px] uppercase font-bold text-muted-foreground">{t('fromDate')} (BS)</Label>
               <div className="grid grid-cols-3 gap-1">
                 <Select value={filterDates.from.year} onValueChange={(v) => setFilterDates(prev => ({...prev, from: {...prev.from, year: v}}))}>
-                  <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Year" /></SelectTrigger>
+                  <SelectTrigger className="h-9 text-[10px]"><SelectValue placeholder="Year" /></SelectTrigger>
                   <SelectContent className="max-h-[300px]">{bsYears.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
                 </Select>
                 <Select value={filterDates.from.month} onValueChange={(v) => setFilterDates(prev => ({...prev, from: {...prev.from, month: v}}))}>
-                  <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Month" /></SelectTrigger>
+                  <SelectTrigger className="h-9 text-[10px]"><SelectValue placeholder="Month" /></SelectTrigger>
                   <SelectContent>{BS_MONTHS.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
                 </Select>
                 <Select value={filterDates.from.day} onValueChange={(v) => setFilterDates(prev => ({...prev, from: {...prev.from, day: v}}))}>
-                  <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Day" /></SelectTrigger>
+                  <SelectTrigger className="h-9 text-[10px]"><SelectValue placeholder="Day" /></SelectTrigger>
                   <SelectContent className="max-h-[300px]">{daysList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
@@ -351,83 +359,85 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
               <Label className="text-[10px] uppercase font-bold text-muted-foreground">{t('toDate')} (BS)</Label>
               <div className="grid grid-cols-3 gap-1">
                 <Select value={filterDates.to.year} onValueChange={(v) => setFilterDates(prev => ({...prev, to: {...prev.to, year: v}}))}>
-                  <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Year" /></SelectTrigger>
+                  <SelectTrigger className="h-9 text-[10px]"><SelectValue placeholder="Year" /></SelectTrigger>
                   <SelectContent className="max-h-[300px]">{bsYears.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
                 </Select>
                 <Select value={filterDates.to.month} onValueChange={(v) => setFilterDates(prev => ({...prev, to: {...prev.to, month: v}}))}>
-                  <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Month" /></SelectTrigger>
+                  <SelectTrigger className="h-9 text-[10px]"><SelectValue placeholder="Month" /></SelectTrigger>
                   <SelectContent>{BS_MONTHS.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
                 </Select>
                 <Select value={filterDates.to.day} onValueChange={(v) => setFilterDates(prev => ({...prev, to: {...prev.to, day: v}}))}>
-                  <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Day" /></SelectTrigger>
+                  <SelectTrigger className="h-9 text-[10px]"><SelectValue placeholder="Day" /></SelectTrigger>
                   <SelectContent className="max-h-[300px]">{daysList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
             </div>
           </div>
-          <div className="flex gap-2 w-full lg:w-auto">
-            <Button variant="outline" size="sm" onClick={handleClearFilter} className="flex-1 lg:flex-none"><Eraser className="h-4 w-4 mr-2" /> {t('clear')}</Button>
-            <Button size="sm" onClick={handleApplyFilter} className="flex-1 lg:flex-none"><Filter className="h-4 w-4 mr-2" /> {t('filter')}</Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={handleClearFilter} className="flex-1 h-9 text-[10px] font-bold uppercase"><Eraser className="h-3 w-3 mr-2" /> {t('clear')}</Button>
+            <Button size="sm" onClick={handleApplyFilter} className="flex-1 h-9 text-[10px] font-bold uppercase"><Filter className="h-3 w-3 mr-2" /> {t('filter')}</Button>
           </div>
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <Card className="border-none shadow-xl">
-             <CardHeader className="flex flex-row items-center justify-between px-6">
+             <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-6">
                 <div className="min-w-0">
-                  <CardTitle className="text-xl font-bold flex items-center gap-2">
+                  <CardTitle className="text-lg font-bold flex items-center gap-2">
                     {t('ledger')} 
                     {activeFilter && <Badge variant="outline" className="text-[9px]">{activeFilter.from} - {activeFilter.to}</Badge>}
                   </CardTitle>
-                  <CardDescription>{t('transactionTimeline')}</CardDescription>
+                  <CardDescription className="text-xs">{t('transactionTimeline')}</CardDescription>
                 </div>
-                <div className="text-right">
+                <div className="flex flex-row md:flex-col items-center md:items-end justify-between gap-2">
                   <p className="text-[10px] uppercase font-bold text-muted-foreground">{t('statedBalance')}</p>
-                  <Badge className={cn(balance > 0 ? "bg-primary" : balance < 0 ? "bg-accent" : "bg-emerald-500")}>
+                  <Badge className={cn("text-[10px] font-bold", balance > 0 ? "bg-primary" : balance < 0 ? "bg-accent" : "bg-emerald-500")}>
                     {balance === 0 ? t('settled') : `${Math.abs(balance)} ${balance > 0 ? t('toReceiveSuffix') : t('toGiveSuffix')}`}
                   </Badge>
                 </div>
              </CardHeader>
-             <CardContent className="p-0">
+             <CardContent className="p-0 overflow-hidden">
                 {activeFilter && (
                   <div className="px-6 py-2 bg-muted/20 border-b flex justify-between items-center text-xs font-bold">
-                    <span className="text-muted-foreground uppercase">{t('openingBalance')}</span>
+                    <span className="text-muted-foreground uppercase text-[10px]">{t('openingBalance')}</span>
                     <span className={cn(openingBalance >= 0 ? "text-primary" : "text-accent")}>
                       {openingBalance} PCS
                     </span>
                   </div>
                 )}
-                <Table>
-                  <TableHeader className="bg-muted/30">
-                    <TableRow>
-                      <TableHead className="pl-6 text-[10px] font-bold">{t('dateBs')}</TableHead>
-                      <TableHead className="text-[10px] font-bold">{t('type')}</TableHead>
-                      <TableHead className="text-[10px] font-bold">{t('qty')}</TableHead>
-                      <TableHead className="text-[10px] font-bold">{t('running')}</TableHead>
-                      <TableHead className="text-[10px] font-bold">{t('remarks')}</TableHead>
-                      <TableHead className="text-right pr-6 text-[10px] font-bold">{t('actions')}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {transactionsWithBalance.map((txn) => (
-                      <TableRow key={txn.id} className={cn(editingId === txn.id && "bg-primary/5")}>
-                        <TableCell className="pl-6 font-medium text-xs">{txn.bsDate}</TableCell>
-                        <TableCell><Badge variant="outline" className={cn("text-[9px] font-bold", getTransactionColor(txn.type))}>{getTransactionLabel(txn.type)}</Badge></TableCell>
-                        <TableCell className={cn("font-bold text-xs", getTransactionImpact(txn.type) > 0 ? "text-primary" : "text-emerald-500")}>{getTransactionImpact(txn.type) > 0 ? '+' : '-'}{txn.quantity}</TableCell>
-                        <TableCell className="font-bold text-xs">{txn.runningBalance === 0 ? t('settled') : `${Math.abs(txn.runningBalance)} ${txn.runningBalance > 0 ? 'R' : 'G'}`}</TableCell>
-                        <TableCell className="text-[10px] text-muted-foreground italic truncate max-w-[150px]">{txn.remark || "-"}</TableCell>
-                        <TableCell className="text-right pr-6"><DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onClick={() => startInlineEdit(txn)}><Edit2 className="h-3 w-3 mr-2" />Edit</DropdownMenuItem><DropdownMenuItem className="text-destructive" onClick={() => deleteTransaction(txn.id, "User requested delete")}><Trash2 className="h-3 w-3 mr-2" />Delete</DropdownMenuItem></DropdownMenuContent></DropdownMenu></TableCell>
-                      </TableRow>
-                    ))}
-                    {transactionsWithBalance.length === 0 && (
+                <div className="overflow-x-auto">
+                  <Table className="min-w-[600px]">
+                    <TableHeader className="bg-muted/30">
                       <TableRow>
-                        <TableCell colSpan={6} className="h-24 text-center text-muted-foreground italic">No transactions found for this selection.</TableCell>
+                        <TableHead className="pl-6 text-[10px] font-bold uppercase tracking-wider">{t('dateBs')}</TableHead>
+                        <TableHead className="text-[10px] font-bold uppercase tracking-wider">{t('type')}</TableHead>
+                        <TableHead className="text-[10px] font-bold uppercase tracking-wider">{t('qty')}</TableHead>
+                        <TableHead className="text-[10px] font-bold uppercase tracking-wider">{t('running')}</TableHead>
+                        <TableHead className="text-[10px] font-bold uppercase tracking-wider">{t('remarks')}</TableHead>
+                        <TableHead className="text-right pr-6 text-[10px] font-bold uppercase tracking-wider">{t('actions')}</TableHead>
                       </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {transactionsWithBalance.map((txn) => (
+                        <TableRow key={txn.id} className={cn(editingId === txn.id && "bg-primary/5")}>
+                          <TableCell className="pl-6 font-medium text-xs whitespace-nowrap">{txn.bsDate}</TableCell>
+                          <TableCell><Badge variant="outline" className={cn("text-[9px] font-bold", getTransactionColor(txn.type))}>{getTransactionLabel(txn.type)}</Badge></TableCell>
+                          <TableCell className={cn("font-bold text-xs", getTransactionImpact(txn.type) > 0 ? "text-primary" : "text-emerald-500")}>{getTransactionImpact(txn.type) > 0 ? '+' : '-'}{txn.quantity}</TableCell>
+                          <TableCell className="font-bold text-xs whitespace-nowrap">{txn.runningBalance === 0 ? t('settled') : `${Math.abs(txn.runningBalance)} ${txn.runningBalance > 0 ? 'R' : 'G'}`}</TableCell>
+                          <TableCell className="text-[10px] text-muted-foreground italic truncate max-w-[150px]">{txn.remark || "-"}</TableCell>
+                          <TableCell className="text-right pr-6"><DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onClick={() => startInlineEdit(txn)}><Edit2 className="h-3 w-3 mr-2" />Edit</DropdownMenuItem><DropdownMenuItem className="text-destructive" onClick={() => deleteTransaction(txn.id, "User requested delete")}><Trash2 className="h-3 w-3 mr-2" />Delete</DropdownMenuItem></DropdownMenuContent></DropdownMenu></TableCell>
+                        </TableRow>
+                      ))}
+                      {transactionsWithBalance.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={6} className="h-24 text-center text-muted-foreground italic text-xs">No transactions found for this selection.</TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
              </CardContent>
           </Card>
         </div>
@@ -435,16 +445,28 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
         <div className="space-y-6">
           {!isInactive && (
             <Card className="border-none shadow-xl">
-              <CardHeader><CardTitle className="text-lg font-bold">{t('newEntry')}</CardTitle></CardHeader>
+              <CardHeader className="pb-2"><CardTitle className="text-sm font-bold uppercase tracking-widest text-muted-foreground">{t('newEntry')}</CardTitle></CardHeader>
               <CardContent className="space-y-4">
-                <Button className="w-full h-12 bg-primary text-primary-foreground font-bold text-lg" onClick={() => router.push(`/transactions?customerId=${id}`)}>
+                <Button className="w-full h-12 bg-primary text-primary-foreground font-bold" onClick={() => router.push(`/transactions?customerId=${id}`)}>
                   <Plus className="h-5 w-5 mr-2" /> {t('newTransaction')}
                 </Button>
-                <p className="text-[10px] text-muted-foreground text-center">Log new cylinder movements for this customer</p>
+                <p className="text-[10px] text-muted-foreground text-center italic">Record movements like issues, returns, or adjustments</p>
               </CardContent>
             </Card>
           )}
-          <Card className="bg-muted/20 border-none shadow-xl"><CardHeader><CardTitle className="text-sm font-bold flex gap-2 items-center"><ClipboardList className="h-4 w-4" /> {t('documentation')}</CardTitle></CardHeader><CardContent className="space-y-4 text-xs"><div><p className="text-[10px] font-bold uppercase text-muted-foreground mb-1">{t('generalNotes')}</p><div className="bg-card p-2 rounded border">{customer.remarks || "N/A"}</div></div><div><p className="text-[10px] font-bold uppercase text-primary mb-1">{t('instructions')}</p><div className="bg-card p-2 rounded border">{customer.specialInstructions || "None"}</div></div></CardContent></Card>
+          <Card className="bg-muted/20 border-none shadow-xl">
+            <CardHeader className="pb-2"><CardTitle className="text-[10px] font-bold uppercase tracking-widest flex gap-2 items-center text-muted-foreground"><ClipboardList className="h-4 w-4" /> {t('documentation')}</CardTitle></CardHeader>
+            <CardContent className="space-y-4 text-xs">
+              <div>
+                <p className="text-[9px] font-bold uppercase text-muted-foreground mb-1">{t('generalNotes')}</p>
+                <div className="bg-card p-2 rounded border border-border/50 text-muted-foreground">{customer.remarks || "N/A"}</div>
+              </div>
+              <div>
+                <p className="text-[9px] font-bold uppercase text-primary mb-1">{t('instructions')}</p>
+                <div className="bg-card p-2 rounded border border-primary/20 text-muted-foreground">{customer.specialInstructions || "None"}</div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
 
