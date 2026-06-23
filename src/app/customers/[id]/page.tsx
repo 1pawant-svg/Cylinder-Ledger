@@ -287,11 +287,11 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
   const daysList = Array.from({ length: 32 }, (_, i) => safePad(i + 1));
 
   return (
-    <div className="p-4 md:p-8 space-y-6 animate-in fade-in duration-700 pb-32">
+    <div className="p-4 md:p-8 space-y-6 animate-in fade-in duration-700 pb-32 w-full max-w-full overflow-x-hidden">
       <div className="flex flex-col gap-4 border-b pb-6">
-        <div className="flex items-center gap-2">
-           <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full -ml-2"><ArrowLeft className="h-5 w-5" /></Button>
-           <h1 className="font-headline text-lg md:text-3xl font-bold truncate flex-1">{customer.name}</h1>
+        <div className="flex items-center gap-2 min-w-0">
+           <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full -ml-2 shrink-0"><ArrowLeft className="h-5 w-5" /></Button>
+           <h1 className="font-headline text-lg md:text-3xl font-bold truncate flex-1 min-w-0">{customer.name}</h1>
            <Badge variant={isInactive ? "secondary" : "default"} className="shrink-0 text-[10px] uppercase">{(customer.status || 'active').toUpperCase()}</Badge>
         </div>
         
@@ -381,11 +381,11 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <Card className="border-none shadow-xl">
-             <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-6 pb-2">
-                <div className="min-w-0">
-                  <CardTitle className="text-lg font-bold flex items-center gap-2">
+        <div className="lg:col-span-2 min-w-0">
+          <Card className="border-none shadow-xl overflow-hidden">
+             <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-4 md:px-6 pb-2">
+                <div className="min-w-0 flex-1">
+                  <CardTitle className="text-lg font-bold flex items-center gap-2 flex-wrap">
                     {t('ledger')} 
                     {activeFilter && <Badge variant="outline" className="text-[9px]">{activeFilter.from} - {activeFilter.to}</Badge>}
                   </CardTitle>
@@ -400,34 +400,34 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
              </CardHeader>
              <CardContent className="p-0 overflow-hidden">
                 {activeFilter && (
-                  <div className="px-6 py-2 bg-muted/20 border-b flex justify-between items-center text-xs font-bold">
+                  <div className="px-4 md:px-6 py-2 bg-muted/20 border-b flex justify-between items-center text-xs font-bold">
                     <span className="text-muted-foreground uppercase text-[10px]">{t('openingBalance')}</span>
                     <span className={cn(openingBalance >= 0 ? "text-primary" : "text-accent")}>
                       {openingBalance} PCS
                     </span>
                   </div>
                 )}
-                <div className="overflow-x-auto">
-                  <Table className="min-w-[650px]">
+                <div className="overflow-x-auto w-full">
+                  <Table className="min-w-[650px] w-full">
                     <TableHeader className="bg-muted/30">
                       <TableRow>
-                        <TableHead className="pl-6 text-[10px] font-bold uppercase tracking-wider w-[120px]">{t('dateBs')}</TableHead>
+                        <TableHead className="pl-4 md:pl-6 text-[10px] font-bold uppercase tracking-wider w-[120px]">{t('dateBs')}</TableHead>
                         <TableHead className="text-[10px] font-bold uppercase tracking-wider w-[80px]">{t('type')}</TableHead>
                         <TableHead className="text-[10px] font-bold uppercase tracking-wider w-[70px]">{t('qty')}</TableHead>
                         <TableHead className="text-[10px] font-bold uppercase tracking-wider w-[100px]">{t('running')}</TableHead>
                         <TableHead className="text-[10px] font-bold uppercase tracking-wider">{t('remarks')}</TableHead>
-                        <TableHead className="text-right pr-6 text-[10px] font-bold uppercase tracking-wider w-[60px]">{t('actions')}</TableHead>
+                        <TableHead className="text-right pr-4 md:pr-6 text-[10px] font-bold uppercase tracking-wider w-[60px]">{t('actions')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {transactionsWithBalance.map((txn) => (
                         <TableRow key={txn.id} className={cn(editingId === txn.id && "bg-primary/5")}>
-                          <TableCell className="pl-6 font-medium text-xs whitespace-nowrap">{txn.bsDate}</TableCell>
+                          <TableCell className="pl-4 md:pl-6 font-medium text-xs whitespace-nowrap">{txn.bsDate}</TableCell>
                           <TableCell><Badge variant="outline" className={cn("text-[9px] font-bold", getTransactionColor(txn.type))}>{getTransactionLabel(txn.type)}</Badge></TableCell>
                           <TableCell className={cn("font-bold text-xs", getTransactionImpact(txn.type) > 0 ? "text-primary" : "text-emerald-500")}>{getTransactionImpact(txn.type) > 0 ? '+' : '-'}{txn.quantity}</TableCell>
                           <TableCell className="font-bold text-xs whitespace-nowrap">{txn.runningBalance === 0 ? t('settled') : `${Math.abs(txn.runningBalance)} ${txn.runningBalance > 0 ? 'R' : 'G'}`}</TableCell>
                           <TableCell className="text-[10px] text-muted-foreground italic truncate max-w-[120px]">{txn.remark || "-"}</TableCell>
-                          <TableCell className="text-right pr-6"><DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onClick={() => startInlineEdit(txn)}><Edit2 className="h-3 w-3 mr-2" />Edit</DropdownMenuItem><DropdownMenuItem className="text-destructive" onClick={() => deleteTransaction(txn.id, "User requested delete")}><Trash2 className="h-3 w-3 mr-2" />Delete</DropdownMenuItem></DropdownMenuContent></DropdownMenu></TableCell>
+                          <TableCell className="text-right pr-4 md:pr-6"><DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onClick={() => startInlineEdit(txn)}><Edit2 className="h-3 w-3 mr-2" />Edit</DropdownMenuItem><DropdownMenuItem className="text-destructive" onClick={() => deleteTransaction(txn.id, "User requested delete")}><Trash2 className="h-3 w-3 mr-2" />Delete</DropdownMenuItem></DropdownMenuContent></DropdownMenu></TableCell>
                         </TableRow>
                       ))}
                       {transactionsWithBalance.length === 0 && (

@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -137,11 +136,11 @@ export default function ReportsPage() {
   return (
     <div className="p-4 md:p-8 space-y-6 md:space-y-8 animate-in slide-in-from-top-4 duration-500 print:p-0 print:space-y-4 pb-24 md:pb-8 w-full max-w-full overflow-x-hidden">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-border pb-6 print:hidden">
-        <div>
-          <h1 className="font-headline text-2xl md:text-4xl font-bold text-primary">Advanced Analytics</h1>
-          <p className="text-muted-foreground mt-1 font-medium text-[10px] md:text-sm">Production and operational performance module</p>
+        <div className="min-w-0">
+          <h1 className="font-headline text-2xl md:text-4xl font-bold text-primary truncate">Advanced Analytics</h1>
+          <p className="text-muted-foreground mt-1 font-medium text-[10px] md:text-sm truncate">Production and operational performance module</p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full md:w-auto">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full md:w-auto shrink-0">
           <Button variant="outline" className="gap-2 font-bold h-11 md:h-12 flex-1 sm:flex-none" onClick={handlePrint}>
             <Printer className="h-4 w-4" /> Print PDF
           </Button>
@@ -274,7 +273,7 @@ export default function ReportsPage() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto w-full">
             <Table>
               <TableHeader className="bg-muted/30">
                 <TableRow className="border-border/50">
