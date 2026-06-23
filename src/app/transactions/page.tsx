@@ -41,7 +41,8 @@ import { doc, getDoc } from "firebase/firestore";
 
 const safePad = (val: string | number): string => {
   const s = String(val || "");
-  return s.length >= 2 ? s : ('0' + s).slice(-2);
+  if (s.length >= 2) return s;
+  return ('0' + s).slice(-2);
 };
 
 export default function TransactionsPage() {

@@ -61,6 +61,12 @@ const getTransactionImpact = (type: TransactionType): number => {
   return 0;
 };
 
+const safePad = (val: string | number): string => {
+  const s = String(val || "");
+  if (s.length >= 2) return s;
+  return ('0' + s).slice(-2);
+};
+
 export default function CustomerProfile(props: { params: Promise<{ id: string }> }) {
   const { id } = React.use(props.params);
   const router = useRouter();
@@ -286,7 +292,7 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
   if (!customer) return <div className="p-20 text-center">Not found</div>;
 
   const bsYears = getBSYears();
-  const daysList = Array.from({ length: 32 }, (_, i) => (i + 1).toString().padStart(2, '0'));
+  const daysList = Array.from({ length: 32 }, (_, i) => safePad(i + 1));
 
   return (
     <div className="p-4 md:p-8 space-y-6 animate-in fade-in duration-700 pb-24">

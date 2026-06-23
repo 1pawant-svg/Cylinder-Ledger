@@ -7,8 +7,9 @@ import NepaliDate from 'nepali-date-converter';
  * Robust padding that avoids String.padStart for better environment compatibility.
  */
 const pad2 = (val: string | number): string => {
-  const s = String(val);
-  return s.length >= 2 ? s : ('0' + s).slice(-2);
+  const s = String(val || "");
+  if (s.length >= 2) return s;
+  return ('0' + s).slice(-2);
 };
 
 /**
@@ -26,6 +27,7 @@ export const getCurrentADDate = () => {
     
     return `${year}-${month}-${day}`;
   } catch (e) {
+    // Fallback to local ISO date if nepalTime calculation fails
     return new Date().toISOString().split('T')[0];
   }
 };
