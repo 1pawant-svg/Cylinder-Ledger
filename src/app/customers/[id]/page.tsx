@@ -287,7 +287,7 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
   const daysList = Array.from({ length: 32 }, (_, i) => safePad(i + 1));
 
   return (
-    <div className="p-4 md:p-8 space-y-6 animate-in fade-in duration-700 pb-32 w-full max-w-full overflow-x-hidden">
+    <div className="p-4 md:p-8 space-y-6 animate-in fade-in duration-700 pb-32 w-full max-w-full">
       <div className="flex flex-col gap-4 border-b pb-6">
         <div className="flex items-center gap-2 min-w-0">
            <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full -ml-2 shrink-0"><ArrowLeft className="h-5 w-5" /></Button>
@@ -296,13 +296,13 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
         </div>
         
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-xs">
-            <span className="flex items-center"><MapPin className="h-3 w-3 mr-1" />{customer.address}</span>
-            <span className="flex items-center"><Phone className="h-3 w-3 mr-1" />{customer.phone}</span>
-            {customer.pan && <span className="flex items-center"><Hash className="h-3 w-3 mr-1" />PAN: {customer.pan}</span>}
+          <div className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-xs min-w-0">
+            <span className="flex items-center truncate max-w-[200px]"><MapPin className="h-3 w-3 mr-1 shrink-0" />{customer.address}</span>
+            <span className="flex items-center"><Phone className="h-3 w-3 mr-1 shrink-0" />{customer.phone}</span>
+            {customer.pan && <span className="flex items-center"><Hash className="h-3 w-3 mr-1 shrink-0" />PAN: {customer.pan}</span>}
           </div>
           
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 shrink-0">
             {hasBalanceDiscrepancy && (
               <Button size="sm" variant="destructive" onClick={handleRecalculate} disabled={isRecalculating} className="h-8 text-[9px] px-2 uppercase font-bold">
                 {isRecalculating ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" />}
@@ -335,7 +335,7 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
       )}
 
       {/* Date Filter Bar */}
-      <Card className="border-none shadow-md bg-card/50">
+      <Card className="border-none shadow-md bg-card/50 w-full overflow-hidden">
         <CardContent className="p-3 md:p-4 flex flex-col gap-3">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="space-y-1.5">
@@ -382,18 +382,18 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 min-w-0">
-          <Card className="border-none shadow-xl overflow-hidden">
-             <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-4 md:px-6 pb-2">
+          <Card className="border-none shadow-xl overflow-hidden w-full">
+             <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-4 md:px-6 pb-2 min-w-0">
                 <div className="min-w-0 flex-1">
-                  <CardTitle className="text-lg font-bold flex items-center gap-2 flex-wrap">
-                    {t('ledger')} 
-                    {activeFilter && <Badge variant="outline" className="text-[9px]">{activeFilter.from} - {activeFilter.to}</Badge>}
+                  <CardTitle className="text-lg font-bold flex items-center gap-2 flex-wrap min-w-0">
+                    <span className="truncate">{t('ledger')}</span>
+                    {activeFilter && <Badge variant="outline" className="text-[9px] shrink-0">{activeFilter.from} - {activeFilter.to}</Badge>}
                   </CardTitle>
-                  <CardDescription className="text-xs">{t('transactionTimeline')}</CardDescription>
+                  <CardDescription className="text-xs truncate">{t('transactionTimeline')}</CardDescription>
                 </div>
-                <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-2 border-t md:border-t-0 pt-3 md:pt-0 mt-2 md:mt-0 w-full md:w-auto">
+                <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-2 border-t md:border-t-0 pt-3 md:pt-0 mt-2 md:mt-0 w-full md:w-auto shrink-0">
                   <p className="text-[10px] uppercase font-bold text-muted-foreground">{t('statedBalance')}</p>
-                  <Badge className={cn("text-[10px] font-bold", balance > 0 ? "bg-primary" : balance < 0 ? "bg-accent" : "bg-emerald-500")}>
+                  <Badge className={cn("text-[10px] font-bold shrink-0", balance > 0 ? "bg-primary" : balance < 0 ? "bg-accent" : "bg-emerald-500")}>
                     {balance === 0 ? t('settled') : `${Math.abs(balance)} ${balance > 0 ? t('toReceiveSuffix') : t('toGiveSuffix')}`}
                   </Badge>
                 </div>
@@ -408,24 +408,24 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
                   </div>
                 )}
                 <div className="overflow-x-auto w-full">
-                  <Table className="min-w-[650px] w-full">
+                  <Table className="min-w-[600px] w-full">
                     <TableHeader className="bg-muted/30">
                       <TableRow>
-                        <TableHead className="pl-4 md:pl-6 text-[10px] font-bold uppercase tracking-wider w-[120px]">{t('dateBs')}</TableHead>
-                        <TableHead className="text-[10px] font-bold uppercase tracking-wider w-[80px]">{t('type')}</TableHead>
-                        <TableHead className="text-[10px] font-bold uppercase tracking-wider w-[70px]">{t('qty')}</TableHead>
-                        <TableHead className="text-[10px] font-bold uppercase tracking-wider w-[100px]">{t('running')}</TableHead>
-                        <TableHead className="text-[10px] font-bold uppercase tracking-wider">{t('remarks')}</TableHead>
+                        <TableHead className="pl-4 md:pl-6 text-[10px] font-bold uppercase tracking-wider w-[100px]">{t('dateBs')}</TableHead>
+                        <TableHead className="text-[10px] font-bold uppercase tracking-wider w-[70px]">{t('type')}</TableHead>
+                        <TableHead className="text-[10px] font-bold uppercase tracking-wider w-[60px]">{t('qty')}</TableHead>
+                        <TableHead className="text-[10px] font-bold uppercase tracking-wider w-[90px]">{t('running')}</TableHead>
+                        <TableHead className="text-[10px] font-bold uppercase tracking-wider min-w-[100px]">{t('remarks')}</TableHead>
                         <TableHead className="text-right pr-4 md:pr-6 text-[10px] font-bold uppercase tracking-wider w-[60px]">{t('actions')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {transactionsWithBalance.map((txn) => (
                         <TableRow key={txn.id} className={cn(editingId === txn.id && "bg-primary/5")}>
-                          <TableCell className="pl-4 md:pl-6 font-medium text-xs whitespace-nowrap">{txn.bsDate}</TableCell>
+                          <TableCell className="pl-4 md:pl-6 font-medium text-xs">{txn.bsDate}</TableCell>
                           <TableCell><Badge variant="outline" className={cn("text-[9px] font-bold", getTransactionColor(txn.type))}>{getTransactionLabel(txn.type)}</Badge></TableCell>
                           <TableCell className={cn("font-bold text-xs", getTransactionImpact(txn.type) > 0 ? "text-primary" : "text-emerald-500")}>{getTransactionImpact(txn.type) > 0 ? '+' : '-'}{txn.quantity}</TableCell>
-                          <TableCell className="font-bold text-xs whitespace-nowrap">{txn.runningBalance === 0 ? t('settled') : `${Math.abs(txn.runningBalance)} ${txn.runningBalance > 0 ? 'R' : 'G'}`}</TableCell>
+                          <TableCell className="font-bold text-xs">{txn.runningBalance === 0 ? t('settled') : `${Math.abs(txn.runningBalance)} ${txn.runningBalance > 0 ? 'R' : 'G'}`}</TableCell>
                           <TableCell className="text-[10px] text-muted-foreground italic truncate max-w-[120px]">{txn.remark || "-"}</TableCell>
                           <TableCell className="text-right pr-4 md:pr-6"><DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onClick={() => startInlineEdit(txn)}><Edit2 className="h-3 w-3 mr-2" />Edit</DropdownMenuItem><DropdownMenuItem className="text-destructive" onClick={() => deleteTransaction(txn.id, "User requested delete")}><Trash2 className="h-3 w-3 mr-2" />Delete</DropdownMenuItem></DropdownMenuContent></DropdownMenu></TableCell>
                         </TableRow>
@@ -442,9 +442,9 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
           </Card>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-6 min-w-0">
           {!isInactive && (
-            <Card className="border-none shadow-xl">
+            <Card className="border-none shadow-xl w-full">
               <CardHeader className="pb-2"><CardTitle className="text-sm font-bold uppercase tracking-widest text-muted-foreground">{t('newEntry')}</CardTitle></CardHeader>
               <CardContent className="space-y-4">
                 <Button className="w-full h-12 bg-primary text-primary-foreground font-bold shadow-lg shadow-primary/20" onClick={() => router.push(`/transactions?customerId=${id}`)}>
@@ -454,16 +454,16 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
               </CardContent>
             </Card>
           )}
-          <Card className="bg-muted/20 border-none shadow-xl">
+          <Card className="bg-muted/20 border-none shadow-xl w-full">
             <CardHeader className="pb-2"><CardTitle className="text-[10px] font-bold uppercase tracking-widest flex gap-2 items-center text-muted-foreground"><ClipboardList className="h-4 w-4" /> {t('documentation')}</CardTitle></CardHeader>
             <CardContent className="space-y-4 text-xs">
               <div>
                 <p className="text-[9px] font-bold uppercase text-muted-foreground mb-1">{t('generalNotes')}</p>
-                <div className="bg-card p-2 rounded border border-border/50 text-muted-foreground min-h-[40px] leading-relaxed">{customer.remarks || "N/A"}</div>
+                <div className="bg-card p-2 rounded border border-border/50 text-muted-foreground min-h-[40px] leading-relaxed break-words">{customer.remarks || "N/A"}</div>
               </div>
               <div>
                 <p className="text-[9px] font-bold uppercase text-primary mb-1">{t('instructions')}</p>
-                <div className="bg-card p-2 rounded border border-primary/20 text-muted-foreground min-h-[40px] leading-relaxed">{customer.specialInstructions || "None"}</div>
+                <div className="bg-card p-2 rounded border border-primary/20 text-muted-foreground min-h-[40px] leading-relaxed break-words">{customer.specialInstructions || "None"}</div>
               </div>
             </CardContent>
           </Card>
@@ -471,30 +471,30 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
       </div>
 
       <Dialog open={isEditProfileOpen} onOpenChange={setIsEditProfileOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px] w-[95vw] rounded-lg">
           <DialogHeader>
             <DialogTitle>Edit Profile</DialogTitle>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-             <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto px-1">
+             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2"><Label>Name</Label><Input value={editProfileData.name} onChange={e => setEditProfileData({...editProfileData, name: e.target.value})} /></div>
                 <div className="space-y-2"><Label>Phone</Label><Input value={editProfileData.phone} onChange={e => setEditProfileData({...editProfileData, phone: e.target.value})} /></div>
              </div>
-             <div className="grid grid-cols-2 gap-4">
+             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2"><Label>Address</Label><Input value={editProfileData.address} onChange={e => setEditProfileData({...editProfileData, address: e.target.value})} /></div>
                 <div className="space-y-2"><Label>PAN</Label><Input value={editProfileData.pan} onChange={e => setEditProfileData({...editProfileData, pan: e.target.value})} /></div>
              </div>
              <div className="space-y-2"><Label>General Notes</Label><Textarea value={editProfileData.remarks} onChange={e => setEditProfileData({...editProfileData, remarks: e.target.value})} /></div>
              <div className="space-y-2"><Label>Special Instructions</Label><Textarea value={editProfileData.specialInstructions} onChange={e => setEditProfileData({...editProfileData, specialInstructions: e.target.value})} /></div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => setIsEditProfileOpen(false)}>Cancel</Button>
             <Button onClick={handleEditProfileSave}>Save Changes</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={editingId !== null && isConfirmSaveOpen} onOpenChange={setIsConfirmSaveOpen}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Save Changes?</AlertDialogTitle><AlertDialogDescription>This will update the ledger entry and adjust denormalized balances.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel onClick={() => setEditingId(null)}>Cancel</AlertDialogCancel><AlertDialogAction onClick={saveInlineEdit} className="bg-emerald-600">Save</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+      <AlertDialog open={editingId !== null && isConfirmSaveOpen} onOpenChange={setIsConfirmSaveOpen}><AlertDialogContent className="w-[90vw] rounded-lg"><AlertDialogHeader><AlertDialogTitle>Save Changes?</AlertDialogTitle><AlertDialogDescription>This will update the ledger entry and adjust denormalized balances.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel onClick={() => setEditingId(null)}>Cancel</AlertDialogCancel><AlertDialogAction onClick={saveInlineEdit} className="bg-emerald-600 text-white">Save</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
     </div>
   );
 }
