@@ -10,7 +10,8 @@ import {
   Loader2,
   ArrowLeft,
   X,
-  History
+  History,
+  BellRing
 } from "lucide-react";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -69,7 +70,25 @@ export default function TransactionsPage() {
     return { year: '2081', month: '01', day: '01' };
   };
 
+  const getFutureBSParts = (days: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    const adStr = d.toISOString().split('T')[0];
+    const bsDateStr = adToBs(adStr);
+    const parts = bsDateStr.split(/[-/]/);
+    if (parts.length === 3) {
+      return { 
+        year: parts[0], 
+        month: safePad(parts[1]), 
+        day: safePad(parts[2]) 
+      };
+    }
+    return getTodayBSParts();
+  };
+
   const [bsParts, setBsParts] = useState(getTodayBSParts);
+  const [dueBsParts, setDueBsParts] = useState(() => getFutureBSParts(7));
+  const [useDueDate, setUseDueDate] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(!!editTransactionId);
 
@@ -102,6 +121,21 @@ export default function TransactionsPage() {
             });
           }
 
+          if (data.dueDate) {
+            const dbsStr = adToBs(data.dueDate);
+            const dparts = dbsStr.split(/[-/]/);
+            if (dparts.length === 3) {
+              setDueBsParts({
+                year: dparts[0],
+                month: safePad(dparts[1]),
+                day: safePad(dparts[2])
+              });
+              setUseDueDate(true);
+            }
+          } else {
+            setUseDueDate(false);
+          }
+
           let mappedType = data.type as TransactionType;
           if (mappedType === 'IN' as any) mappedType = 'IN_EMPTY';
           if (mappedType === 'OUT' as any) mappedType = 'OUT_FULL';
@@ -131,6 +165,10 @@ export default function TransactionsPage() {
       const adDate = bsToAd(newBS.year, newBS.month, newBS.day);
       setFormData(prev => ({ ...prev, date: adDate }));
     }
+  };
+
+  const handleDueBSChange = (field: 'year' | 'month' | 'day', value: string) => {
+    setDueBsParts(prev => ({ ...prev, [field]: value }));
   };
 
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
@@ -167,6 +205,11 @@ export default function TransactionsPage() {
     setSubmitting(true);
     const transactionDate = formData.date || getCurrentADDate();
     const bsDateStr = `${bsParts.year}-${bsParts.month}-${bsParts.day}`;
+    
+    let dueDateStr: string | undefined = undefined;
+    if (useDueDate && (formData.type === 'OUT_FULL' || formData.type === 'OUT')) {
+      dueDateStr = bsToAd(dueBsParts.year, dueBsParts.month, dueBsParts.day);
+    }
 
     try {
       if (editTransactionId) {
@@ -177,6 +220,7 @@ export default function TransactionsPage() {
         customerId: formData.customerId,
         date: transactionDate,
         bsDate: bsDateStr,
+        dueDate: dueDateStr,
         type: formData.type,
         quantity: formData.quantity,
         remark: formData.remark || ""
@@ -294,8 +338,8 @@ export default function TransactionsPage() {
                   <Select value={formData.type} onValueChange={(v: TransactionType) => setFormData({...formData, type: v})}>
                     <SelectTrigger className="h-12 bg-background border-border font-bold text-sm w-full"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="OUT_FULL">To Receive (Full Issue)</SelectItem>
-                      <SelectItem value="IN_EMPTY">To Give (Empty Return)</SelectItem>
+                      <SelectItem value="OUT_FULL"> Out Full</SelectItem>
+                      <SelectItem value="IN_EMPTY"> In Empty</SelectItem>
                       <SelectItem value="LEAKAGE">Leakage Return</SelectItem>
                       <SelectItem value="LOST">Cylinder Lost</SelectItem>
                       <SelectItem value="ADJUSTMENT">Balance Adjustment</SelectItem>
@@ -307,6 +351,31 @@ export default function TransactionsPage() {
                   <Label className="flex items-center gap-2 text-muted-foreground uppercase text-[10px] tracking-widest font-bold mb-1">Quantity (PCS)</Label>
                   <Input type="number" min="1" className="h-12 bg-background font-headline font-bold text-lg" value={formData.quantity} onChange={e => setFormData({...formData, quantity: parseInt(e.target.value) || 0})} />
                 </div>
+
+                {isPositiveImpact && (
+                  <div className="md:col-span-2 p-4 rounded-xl bg-primary/5 border border-primary/20 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <Label className="flex items-center gap-2 text-primary uppercase text-[10px] tracking-widest font-bold">
+                        <BellRing className="h-3.5 w-3.5" /> Collection Reminder (Due Date)
+                      </Label>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <Select value={dueBsParts.year} onValueChange={(v) => handleDueBSChange('year', v)}>
+                        <SelectTrigger className="h-12 bg-background border-border text-xs px-2"><SelectValue /></SelectTrigger>
+                        <SelectContent className="max-h-[300px]">{years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
+                      </Select>
+                      <Select value={dueBsParts.month} onValueChange={(v) => handleDueBSChange('month', v)}>
+                        <SelectTrigger className="h-12 bg-background border-border text-xs px-2"><SelectValue /></SelectTrigger>
+                        <SelectContent>{BS_MONTHS.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
+                      </Select>
+                      <Select value={dueBsParts.day} onValueChange={(v) => handleDueBSChange('day', v)}>
+                        <SelectTrigger className="h-12 bg-background border-border text-xs px-2"><SelectValue /></SelectTrigger>
+                        <SelectContent className="max-h-[300px]">{daysList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                    <p className="text-[9px] text-muted-foreground italic">Sets when you expect to receive the return empty cylinders.</p>
+                  </div>
+                )}
 
                 {isPositiveImpact && !editTransactionId && (
                   <div className="space-y-2 md:col-span-2 p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
