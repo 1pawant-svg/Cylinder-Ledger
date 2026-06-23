@@ -86,16 +86,6 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
   const [editFields, setEditFields] = useState<any>({});
   const [isConfirmSaveOpen, setIsConfirmSaveOpen] = useState(false);
 
-  // Quick Log State
-  const [quickLogOpen, setQuickLogOpen] = useState(false);
-  const [quickLogType, setQuickLogType] = useState<TransactionType>('OUT_FULL');
-  const [quickQty, setQuickQty] = useState("1");
-  const [quickRemark, setQuickRemark] = useState("");
-  const [quickBSDate, setQuickBSDate] = useState(() => {
-    const parts = adToBs(getCurrentADDate()).split('-');
-    return { year: parts[0] || '2081', month: parts[1] || '01', day: parts[2] || '01' };
-  });
-
   useEffect(() => {
     if (db) getSettings(db).then(setSettings);
   }, [db]);
@@ -145,19 +135,6 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
     }
   };
 
-  const handleQuickLog = () => {
-    if (!customer || isInactive) return;
-    const qty = parseInt(quickQty);
-    if (isNaN(qty) || qty <= 0) return;
-    const logAD = bsToAd(quickBSDate.year, quickBSDate.month, quickBSDate.day);
-    const logBS = `${quickBSDate.year}-${quickBSDate.month}-${quickBSDate.day}`;
-    addTransaction({ customerId: customer.id, date: logAD, bsDate: logBS, type: quickLogType, quantity: qty, remark: quickRemark || "" });
-    setQuickLogOpen(false);
-    setQuickQty("1");
-    setQuickRemark("");
-    toast({ title: "Movement Logged" });
-  };
-
   const startInlineEdit = (txn: Transaction) => {
     setEditingId(txn.id);
     setEditFields({ bsDate: txn.bsDate, type: txn.type, quantity: txn.quantity, remark: txn.remark || '', customerId: txn.customerId });
@@ -179,9 +156,6 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
   };
 
   if (!customer) return <div className="p-20 text-center">Not found</div>;
-
-  const bsYears = getBSYears();
-  const daysList = Array.from({ length: 32 }, (_, i) => (i + 1).toString().padStart(2, '0'));
 
   return (
     <div className="p-4 md:p-8 space-y-6 animate-in fade-in duration-700 pb-24">
@@ -255,29 +229,18 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
         <div className="space-y-6">
           {!isInactive && (
             <Card className="border-none shadow-xl">
-              <CardHeader><CardTitle className="text-lg font-bold">Quick Log</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-lg font-bold">Quick Entry</CardTitle></CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-3 gap-1">
-                  <Select value={quickBSDate.year} onValueChange={v => setQuickBSDate({...quickBSDate, year: v})}><SelectTrigger className="h-9 text-[10px]"><SelectValue /></SelectTrigger><SelectContent className="max-h-[300px]">{bsYears.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent></Select>
-                  <Select value={quickBSDate.month} onValueChange={v => setQuickBSDate({...quickBSDate, month: v})}><SelectTrigger className="h-9 text-[10px]"><SelectValue /></SelectTrigger><SelectContent>{BS_MONTHS.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent></Select>
-                  <Select value={quickBSDate.day} onValueChange={v => setQuickBSDate({...quickBSDate, day: v})}><SelectTrigger className="h-9 text-[10px]"><SelectValue /></SelectTrigger><SelectContent className="max-h-[300px]">{daysList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent></Select>
-                </div>
-                <Button className="w-full h-11 bg-primary font-bold" onClick={() => { setQuickLogType('OUT_FULL'); setQuickLogOpen(true); }}><ArrowUpRight className="h-4 w-4 mr-2" /> Issue Cylinder</Button>
-                <Button variant="outline" className="w-full h-11 text-emerald-500 font-bold" onClick={() => { setQuickLogType('IN_EMPTY'); setQuickLogOpen(true); }}><ArrowDownLeft className="h-4 w-4 mr-2" /> Return Cylinder</Button>
+                <Button className="w-full h-12 bg-primary font-bold text-lg" onClick={() => router.push(`/transactions?customerId=${id}`)}>
+                  <Plus className="h-5 w-5 mr-2" /> New Transaction
+                </Button>
+                <p className="text-[10px] text-muted-foreground text-center">Log new cylinder movements for this customer</p>
               </CardContent>
             </Card>
           )}
           <Card className="bg-muted/20 border-none shadow-xl"><CardHeader><CardTitle className="text-sm font-bold flex gap-2 items-center"><ClipboardList className="h-4 w-4" /> Documentation</CardTitle></CardHeader><CardContent className="space-y-4 text-xs"><div><p className="text-[10px] font-bold uppercase text-muted-foreground mb-1">General Notes</p><div className="bg-card p-2 rounded border">{customer.remarks || "N/A"}</div></div><div><p className="text-[10px] font-bold uppercase text-primary mb-1">Instructions</p><div className="bg-card p-2 rounded border">{customer.specialInstructions || "None"}</div></div></CardContent></Card>
         </div>
       </div>
-
-      <Dialog open={quickLogOpen} onOpenChange={setQuickLogOpen}>
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader><DialogTitle>Log {quickLogType.replace('_', ' ')}</DialogTitle></DialogHeader>
-          <div className="grid gap-4 py-4"><div className="space-y-2"><Label className="text-xs font-bold uppercase">Quantity</Label><Input type="number" value={quickQty} onChange={e => setQuickQty(e.target.value)} className="h-12 text-lg font-bold" /></div><div className="space-y-2"><Label className="text-xs font-bold uppercase">Remark (User Typed Only)</Label><Textarea value={quickRemark} onChange={e => setQuickRemark(e.target.value)} placeholder="Notes..." /></div></div>
-          <DialogFooter><Button onClick={handleQuickLog} className="w-full h-12 font-bold">Confirm Log</Button></DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <AlertDialog open={editingId !== null && isConfirmSaveOpen} onOpenChange={setIsConfirmSaveOpen}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Save Changes?</AlertDialogTitle><AlertDialogDescription>This will update the ledger entry and adjust denormalized balances.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel onClick={() => setEditingId(null)}>Cancel</AlertDialogCancel><AlertDialogAction onClick={saveInlineEdit} className="bg-emerald-600">Save</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
     </div>
