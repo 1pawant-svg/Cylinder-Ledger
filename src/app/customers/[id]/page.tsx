@@ -122,6 +122,25 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
     }
   }, [customer]);
 
+  // Pre-populate date filters on mount
+  useEffect(() => {
+    const todayStr = getCurrentADDate();
+    const todayBS = adToBs(todayStr).split('-');
+    
+    // Calculate one month ago
+    const d = new Date(todayStr);
+    d.setMonth(d.getMonth() - 1);
+    const agoStr = d.toISOString().split('T')[0];
+    const agoBS = adToBs(agoStr).split('-');
+
+    if (todayBS.length === 3 && agoBS.length === 3) {
+      setFilterDates({
+        from: { year: agoBS[0], month: agoBS[1], day: agoBS[2] },
+        to: { year: todayBS[0], month: todayBS[1], day: todayBS[2] }
+      });
+    }
+  }, []);
+
   const transactionsWithBalance = useMemo(() => {
     // Chronological order (oldest first) to calculate running balance correctly
     const chronological = [...transactions].sort((a, b) => toMillis(a.date) - toMillis(b.date));
