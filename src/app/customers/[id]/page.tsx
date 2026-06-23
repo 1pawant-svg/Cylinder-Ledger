@@ -6,7 +6,7 @@ import { useLedger } from "@/lib/ledger-context";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { 
-  ArrowLeft, MapPin, Phone, Share2, Edit2, Trash2, MoreVertical, History, Info, MessageSquare, ArrowUpRight, ArrowDownLeft, StickyNote, ClipboardList, AlertTriangle, UserX, UserCheck, Save, X, Hash, Loader2, Plus, Calendar, FileText, RefreshCw, Filter, Eraser, Download
+  ArrowLeft, MapPin, Phone, Share2, Edit2, Trash2, MoreVertical, History, Info, MessageSquare, ArrowUpRight, ArrowDownLeft, StickyNote, ClipboardList, AlertTriangle, UserX, UserCheck, Save, X, Hash, Loader2, Plus, Calendar, FileText, RefreshCw, Filter, Eraser, Download, MessageCircle
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,7 @@ import { getSettings } from "@/lib/services/settings-service";
 import { generateCustomerLedgerPDF, sharePDF } from "@/lib/services/pdf-service";
 import { TransactionType, Transaction, Setting } from "@/lib/types";
 import { useI18n } from "@/lib/i18n-context";
+import { ReminderDialog } from "@/components/reminder-dialog";
 
 const getTransactionLabel = (type: TransactionType) => {
   const t = type.toUpperCase();
@@ -53,7 +54,10 @@ const getTransactionColor = (type: TransactionType) => {
 const getTransactionImpact = (type: TransactionType): number => {
   const t = type.toUpperCase();
   if (t === 'OUT' || t === 'OUT_FULL') return 1;
-  if (t === 'IN' || t === 'IN_EMPTY' || t === 'LEAKAGE' || t === 'LOST' || t === 'ADJUSTMENT') return -1;
+  if (t === 'IN' || t === 'IN_EMPTY') return -1;
+  if (t === 'LEAKAGE') return -1;
+  if (t === 'LOST') return -1;
+  if (t === 'ADJUSTMENT') return -1;
   return 0;
 };
 
@@ -86,6 +90,7 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editFields, setEditFields] = useState<any>({});
   const [isConfirmSaveOpen, setIsConfirmSaveOpen] = useState(false);
+  const [isReminderOpen, setIsReminderOpen] = useState(false);
   
   // Date Filter State (BS)
   const [filterDates, setFilterDates] = useState({
@@ -308,6 +313,9 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
           <Button variant="outline" size="sm" onClick={() => setIsEditProfileOpen(true)}>
             <Edit2 className="h-4 w-4 mr-1" /> Edit
           </Button>
+          <Button variant="outline" size="sm" onClick={() => setIsReminderOpen(true)}>
+            <MessageSquare className="h-4 w-4 mr-1" /> {t('remind')}
+          </Button>
           <Button variant="outline" size="sm" className="font-bold" onClick={handleSharePDF} disabled={isGeneratingPDF}>{isGeneratingPDF ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4 mr-1" />}{t('shareStatement')}</Button>
           <Button size="sm" variant="outline" onClick={() => updateCustomerStatus(customer.id, isInactive ? 'active' : 'inactive')}>{isInactive ? <UserCheck className="h-4 w-4 mr-1" /> : <UserX className="h-4 w-4 mr-1" />}{isInactive ? t('activate') : t('deactivate')}</Button>
         </div>
@@ -432,7 +440,7 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
         <div className="space-y-6">
           {!isInactive && (
             <Card className="border-none shadow-xl">
-              <CardHeader><CardTitle className="text-lg font-bold">Quick Entry</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-lg font-bold">{t('newEntry')}</CardTitle></CardHeader>
               <CardContent className="space-y-4">
                 <Button className="w-full h-12 bg-primary text-primary-foreground font-bold text-lg" onClick={() => router.push(`/transactions?customerId=${id}`)}>
                   <Plus className="h-5 w-5 mr-2" /> {t('newTransaction')}
@@ -468,6 +476,13 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ReminderDialog 
+        customer={customer} 
+        settings={settings} 
+        open={isReminderOpen} 
+        onOpenChange={setIsReminderOpen} 
+      />
 
       <AlertDialog open={editingId !== null && isConfirmSaveOpen} onOpenChange={setIsConfirmSaveOpen}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Save Changes?</AlertDialogTitle><AlertDialogDescription>This will update the ledger entry and adjust denormalized balances.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel onClick={() => setEditingId(null)}>Cancel</AlertDialogCancel><AlertDialogAction onClick={saveInlineEdit} className="bg-emerald-600">Save</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
     </div>

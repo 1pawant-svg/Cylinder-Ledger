@@ -1,12 +1,11 @@
-
 "use client";
 
 import * as React from "react";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useLedger } from "@/lib/ledger-context";
 import { useToast } from "@/hooks/use-toast";
 import { 
-  Plus, Search, MoreHorizontal, Eye, Phone, MapPin, History, Filter, ArrowUpDown, Loader2, UserPlus, Calendar, Hash
+  Plus, Search, MoreHorizontal, Eye, Phone, MapPin, History, Filter, ArrowUpDown, Loader2, UserPlus, Calendar, Hash, MessageSquare
 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
@@ -21,19 +20,32 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { getCurrentADDate, adToBs, bsToAd, BS_MONTHS, getBSYears, toMillis } from "@/lib/date-utils";
+import { useI18n } from "@/lib/i18n-context";
+import { ReminderDialog } from "@/components/reminder-dialog";
+import { useFirestore } from "@/firebase";
+import { getSettings } from "@/lib/services/settings-service";
+import { Customer, Setting } from "@/lib/types";
 
 type StatusFilter = 'ALL' | 'ACTIVE' | 'INACTIVE' | 'TO_RECEIVE' | 'TO_GIVE' | 'SETTLED' | 'OVERDUE';
 type SortOption = 'NAME_ASC' | 'NAME_DESC' | 'BALANCE_HIGH_TO_LOW' | 'BALANCE_LOW_TO_HIGH' | 'LATEST_ACTIVITY';
 
 export default function CustomersPage() {
   const searchParams = useSearchParams();
+  const db = useFirestore();
   const { customers, transactions, addCustomer, addTransaction, getCustomerTransactions, loading } = useLedger();
   const { toast } = useToast();
+  const { t } = useI18n();
   
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ACTIVE');
   const [sortBy, setSortBy] = useState<SortOption>('NAME_ASC');
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [settings, setSettings] = useState<Setting | null>(null);
+  const [reminderCustomer, setReminderCustomer] = useState<Customer | null>(null);
+
+  useEffect(() => {
+    if (db) getSettings(db).then(setSettings);
+  }, [db]);
 
   const getTodayBSParts = useCallback(() => {
     const todayAD = getCurrentADDate();
@@ -117,56 +129,53 @@ export default function CustomersPage() {
     setNewCust({ name: '', address: '', phone: '', pan: '', notes: '', openingToReceive: '', openingToGive: '' });
     setOpeningDateBS(getTodayBSParts());
     setIsAddOpen(false);
-    toast({ title: "Profile Added" });
-  }, [newCust, openingDateBS, addCustomer, addTransaction, getTodayBSParts, toast]);
+    toast({ title: t('profileAdded') });
+  }, [newCust, openingDateBS, addCustomer, addTransaction, getTodayBSParts, toast, t]);
 
   if (loading) return <div className="flex h-full w-full items-center justify-center p-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
-
-  const bsYears = getBSYears();
-  const daysList = Array.from({ length: 32 }, (_, i) => (i + 1).toString().padStart(2, '0'));
 
   return (
     <div className="p-4 md:p-8 space-y-8 animate-in slide-in-from-bottom-4 duration-500 pb-24">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-border pb-6">
         <div>
-          <h1 className="font-headline text-2xl md:text-4xl font-bold text-primary">Customer Ledger</h1>
-          <p className="text-muted-foreground text-xs font-medium">Manage accounts and balances efficiently</p>
+          <h1 className="font-headline text-2xl md:text-4xl font-bold text-primary">{t('customerLedger')}</h1>
+          <p className="text-muted-foreground text-xs font-medium">{t('manageAccounts')}</p>
         </div>
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-          <DialogTrigger asChild><Button className="bg-primary font-bold shadow-lg"><Plus className="h-4 w-4 mr-2" /> New Profile</Button></DialogTrigger>
+          <DialogTrigger asChild><Button className="bg-primary font-bold shadow-lg"><Plus className="h-4 w-4 mr-2" /> {t('newProfile')}</Button></DialogTrigger>
           <DialogContent className="sm:max-w-[500px] overflow-y-auto max-h-[90vh]">
-            <DialogHeader><DialogTitle className="font-headline text-2xl font-bold">Create Profile</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle className="font-headline text-2xl font-bold">{t('createProfile')}</DialogTitle></DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2"><Label className="text-[10px] uppercase font-bold">Name</Label><Input value={newCust.name} onChange={e => setNewCust({...newCust, name: e.target.value})} /></div>
-                <div className="space-y-2"><Label className="text-[10px] uppercase font-bold">Phone</Label><Input value={newCust.phone} maxLength={10} onChange={e => setNewCust({...newCust, phone: e.target.value.replace(/\D/g, '')})} /></div>
+                <div className="space-y-2"><Label className="text-[10px] uppercase font-bold">{t('name')}</Label><Input value={newCust.name} onChange={e => setNewCust({...newCust, name: e.target.value})} /></div>
+                <div className="space-y-2"><Label className="text-[10px] uppercase font-bold">{t('phone')}</Label><Input value={newCust.phone} maxLength={10} onChange={e => setNewCust({...newCust, phone: e.target.value.replace(/\D/g, '')})} /></div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2"><Label className="text-[10px] uppercase font-bold">Address</Label><Input value={newCust.address} onChange={e => setNewCust({...newCust, address: e.target.value})} /></div>
-                <div className="space-y-2"><Label className="text-[10px] uppercase font-bold">PAN</Label><Input value={newCust.pan} maxLength={9} onChange={e => setNewCust({...newCust, pan: e.target.value.replace(/\D/g, '')})} /></div>
+                <div className="space-y-2"><Label className="text-[10px] uppercase font-bold">{t('address')}</Label><Input value={newCust.address} onChange={e => setNewCust({...newCust, address: e.target.value})} /></div>
+                <div className="space-y-2"><Label className="text-[10px] uppercase font-bold">{t('pan')}</Label><Input value={newCust.pan} maxLength={9} onChange={e => setNewCust({...newCust, pan: e.target.value.replace(/\D/g, '')})} /></div>
               </div>
               <div className="p-4 rounded-xl bg-muted/20 border border-border/50 space-y-4">
-                 <Label className="text-primary font-bold text-xs">Initial Balances</Label>
+                 <Label className="text-primary font-bold text-xs">{t('initialBalances')}</Label>
                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2"><Label className="text-[9px] uppercase font-bold">To Receive</Label><Input type="number" value={newCust.openingToReceive} onChange={e => setNewCust({...newCust, openingToReceive: e.target.value})} /></div>
-                    <div className="space-y-2"><Label className="text-[9px] uppercase font-bold">To Give</Label><Input type="number" value={newCust.openingToGive} onChange={e => setNewCust({...newCust, openingToGive: e.target.value})} /></div>
+                    <div className="space-y-2"><Label className="text-[9px] uppercase font-bold">{t('toReceiveSuffix')}</Label><Input type="number" value={newCust.openingToReceive} onChange={e => setNewCust({...newCust, openingToReceive: e.target.value})} /></div>
+                    <div className="space-y-2"><Label className="text-[9px] uppercase font-bold">{t('toGiveSuffix')}</Label><Input type="number" value={newCust.openingToGive} onChange={e => setNewCust({...newCust, openingToGive: e.target.value})} /></div>
                  </div>
               </div>
             </div>
-            <DialogFooter><Button onClick={handleAdd} className="w-full h-12 font-bold">Save Profile</Button></DialogFooter>
+            <DialogFooter><Button onClick={handleAdd} className="w-full h-12 font-bold">{t('saveProfile')}</Button></DialogFooter>
           </DialogContent>
         </Dialog>
       </header>
 
       <div className="flex flex-col md:flex-row gap-3">
-        <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" /><Input placeholder="Search..." className="pl-10 h-12" value={search} onChange={e => setSearch(e.target.value)} /></div>
-        <div className="grid grid-cols-2 gap-2"><Select value={statusFilter} onValueChange={(v: any) => setStatusFilter(v)}><SelectTrigger className="h-12 w-full md:w-[150px]"><SelectValue placeholder="Status" /></SelectTrigger><SelectContent><SelectItem value="ACTIVE">Active Only</SelectItem><SelectItem value="INACTIVE">Inactive Only</SelectItem><SelectItem value="ALL">All Customers</SelectItem><SelectItem value="TO_RECEIVE">To Receive</SelectItem><SelectItem value="TO_GIVE">To Give</SelectItem><SelectItem value="SETTLED">Settled</SelectItem><SelectItem value="OVERDUE">Overdue</SelectItem></SelectContent></Select><Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}><SelectTrigger className="h-12 w-full md:w-[160px]"><SelectValue placeholder="Sort" /></SelectTrigger><SelectContent><SelectItem value="NAME_ASC">Name (A-Z)</SelectItem><SelectItem value="NAME_DESC">Name (Z-A)</SelectItem><SelectItem value="BALANCE_HIGH_TO_LOW">High Balance</SelectItem><SelectItem value="BALANCE_LOW_TO_HIGH">Low Balance</SelectItem><SelectItem value="LATEST_ACTIVITY">Latest Activity</SelectItem></SelectContent></Select></div>
+        <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" /><Input placeholder={t('search')} className="pl-10 h-12" value={search} onChange={e => setSearch(e.target.value)} /></div>
+        <div className="grid grid-cols-2 gap-2"><Select value={statusFilter} onValueChange={(v: any) => setStatusFilter(v)}><SelectTrigger className="h-12 w-full md:w-[150px]"><SelectValue placeholder={t('activeOnly')} /></SelectTrigger><SelectContent><SelectItem value="ACTIVE">{t('activeOnly')}</SelectItem><SelectItem value="INACTIVE">{t('inactiveOnly')}</SelectItem><SelectItem value="ALL">{t('allCustomers')}</SelectItem><SelectItem value="TO_RECEIVE">{t('toReceive')}</SelectItem><SelectItem value="TO_GIVE">{t('toGive')}</SelectItem><SelectItem value="SETTLED">{t('settled')}</SelectItem><SelectItem value="OVERDUE">{t('overdue')}</SelectItem></SelectContent></Select><Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}><SelectTrigger className="h-12 w-full md:w-[160px]"><SelectValue placeholder="Sort" /></SelectTrigger><SelectContent><SelectItem value="NAME_ASC">Name (A-Z)</SelectItem><SelectItem value="NAME_DESC">Name (Z-A)</SelectItem><SelectItem value="BALANCE_HIGH_TO_LOW">High Balance</SelectItem><SelectItem value="BALANCE_LOW_TO_HIGH">Low Balance</SelectItem><SelectItem value="LATEST_ACTIVITY">Latest Activity</SelectItem></SelectContent></Select></div>
       </div>
 
       <div className="bg-card border rounded-xl overflow-hidden shadow-xl">
         <Table>
           <TableHeader className="bg-muted/30">
-            <TableRow><TableHead className="pl-6 font-bold text-[10px] uppercase">Profile</TableHead><TableHead className="font-bold text-[10px] uppercase">Net Balance</TableHead><TableHead className="text-right pr-6 font-bold text-[10px] uppercase">Actions</TableHead></TableRow>
+            <TableRow><TableHead className="pl-6 font-bold text-[10px] uppercase">{t('name')}</TableHead><TableHead className="font-bold text-[10px] uppercase">{t('netBalance')}</TableHead><TableHead className="text-right pr-6 font-bold text-[10px] uppercase">{t('actions')}</TableHead></TableRow>
           </TableHeader>
           <TableBody>
             {processedCustomers.map((customer) => {
@@ -177,14 +186,21 @@ export default function CustomersPage() {
                     <Link href={`/customers/${customer.id}`} className="font-bold hover:text-primary transition-colors block">{customer.name}</Link>
                     <div className="flex items-center gap-2 text-[10px] text-muted-foreground"><MapPin className="h-3 w-3" /> {customer.address} • {customer.phone}</div>
                   </TableCell>
-                  <TableCell><span className={cn("font-headline font-bold text-sm", bal > 0 ? "text-primary" : bal < 0 ? "text-accent" : "text-emerald-500")}>{bal === 0 ? "Settled" : bal > 0 ? `${bal} To Receive` : `${Math.abs(bal)} To Give`}</span></TableCell>
-                  <TableCell className="text-right pr-6"><DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem asChild><Link href={`/customers/${customer.id}`} className="cursor-pointer gap-2"><Eye className="h-4 w-4" /> View Profile</Link></DropdownMenuItem><DropdownMenuItem asChild><Link href={`/transactions?customerId=${customer.id}`} className="cursor-pointer gap-2 text-primary"><Plus className="h-4 w-4" /> New Entry</Link></DropdownMenuItem></DropdownMenuContent></DropdownMenu></TableCell>
+                  <TableCell><span className={cn("font-headline font-bold text-sm", bal > 0 ? "text-primary" : bal < 0 ? "text-accent" : "text-emerald-500")}>{bal === 0 ? t('settled') : bal > 0 ? `${bal} ${t('toReceiveSuffix')}` : `${Math.abs(bal)} ${t('toGiveSuffix')}`}</span></TableCell>
+                  <TableCell className="text-right pr-6"><DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem asChild><Link href={`/customers/${customer.id}`} className="cursor-pointer gap-2"><Eye className="h-4 w-4" /> {t('viewProfile')}</Link></DropdownMenuItem><DropdownMenuItem asChild><Link href={`/transactions?customerId=${customer.id}`} className="cursor-pointer gap-2 text-primary"><Plus className="h-4 w-4" /> {t('newEntry')}</Link></DropdownMenuItem><DropdownMenuItem className="cursor-pointer gap-2 text-emerald-600" onClick={() => setReminderCustomer(customer)}><MessageSquare className="h-4 w-4" /> {t('remind')}</DropdownMenuItem></DropdownMenuContent></DropdownMenu></TableCell>
                 </TableRow>
               );
             })}
           </TableBody>
         </Table>
       </div>
+
+      <ReminderDialog 
+        customer={reminderCustomer} 
+        settings={settings} 
+        open={!!reminderCustomer} 
+        onOpenChange={(open) => !open && setReminderCustomer(null)} 
+      />
     </div>
   );
 }
