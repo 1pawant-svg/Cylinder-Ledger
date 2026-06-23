@@ -87,10 +87,34 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editFields, setEditFields] = useState<any>({});
   const [isConfirmSaveOpen, setIsConfirmSaveOpen] = useState(false);
+  
+  // Edit Profile State
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [editProfileData, setEditProfileData] = useState({
+    name: '',
+    phone: '',
+    address: '',
+    pan: '',
+    remarks: '',
+    specialInstructions: ''
+  });
 
   useEffect(() => {
     if (db) getSettings(db).then(setSettings);
   }, [db]);
+
+  useEffect(() => {
+    if (customer) {
+      setEditProfileData({
+        name: customer.name,
+        phone: customer.phone,
+        address: customer.address,
+        pan: customer.pan || '',
+        remarks: customer.remarks || '',
+        specialInstructions: customer.specialInstructions || ''
+      });
+    }
+  }, [customer]);
 
   const transactionsWithBalance = useMemo(() => {
     const chronological = [...transactions].reverse();
@@ -101,7 +125,6 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
     }).reverse();
   }, [transactions]);
 
-  // Check for discrepancy between stored balance and calculated total
   const calculatedTotal = useMemo(() => {
     return transactions.reduce((acc, t) => acc + (t.quantity * getTransactionImpact(t.type)), 0);
   }, [transactions]);
@@ -134,6 +157,17 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
       toast({ variant: "destructive", title: t('error'), description: err.message });
     } finally {
       setIsGeneratingPDF(false);
+    }
+  };
+
+  const handleEditProfileSave = async () => {
+    if (!customer) return;
+    try {
+      await updateCustomer(customer.id, editProfileData);
+      setIsEditProfileOpen(false);
+      toast({ title: t('success') });
+    } catch (err) {
+      toast({ variant: "destructive", title: t('error') });
     }
   };
 
@@ -181,6 +215,9 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
               {t('fixBalance')}
             </Button>
           )}
+          <Button variant="outline" size="sm" onClick={() => setIsEditProfileOpen(true)}>
+            <Edit2 className="h-4 w-4 mr-1" /> Edit
+          </Button>
           <Button variant="outline" size="sm" className="font-bold" onClick={handleSharePDF} disabled={isGeneratingPDF}>{isGeneratingPDF ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4 mr-1" />}{t('shareStatement')}</Button>
           <Button size="sm" variant="outline" onClick={() => updateCustomerStatus(customer.id, isInactive ? 'active' : 'inactive')}>{isInactive ? <UserCheck className="h-4 w-4 mr-1" /> : <UserX className="h-4 w-4 mr-1" />}{isInactive ? t('activate') : t('deactivate')}</Button>
         </div>
@@ -242,6 +279,30 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
           <Card className="bg-muted/20 border-none shadow-xl"><CardHeader><CardTitle className="text-sm font-bold flex gap-2 items-center"><ClipboardList className="h-4 w-4" /> {t('documentation')}</CardTitle></CardHeader><CardContent className="space-y-4 text-xs"><div><p className="text-[10px] font-bold uppercase text-muted-foreground mb-1">{t('generalNotes')}</p><div className="bg-card p-2 rounded border">{customer.remarks || "N/A"}</div></div><div><p className="text-[10px] font-bold uppercase text-primary mb-1">{t('instructions')}</p><div className="bg-card p-2 rounded border">{customer.specialInstructions || "None"}</div></div></CardContent></Card>
         </div>
       </div>
+
+      <Dialog open={isEditProfileOpen} onOpenChange={setIsEditProfileOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Edit Profile</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+             <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2"><Label>Name</Label><Input value={editProfileData.name} onChange={e => setEditProfileData({...editProfileData, name: e.target.value})} /></div>
+                <div className="space-y-2"><Label>Phone</Label><Input value={editProfileData.phone} onChange={e => setEditProfileData({...editProfileData, phone: e.target.value})} /></div>
+             </div>
+             <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2"><Label>Address</Label><Input value={editProfileData.address} onChange={e => setEditProfileData({...editProfileData, address: e.target.value})} /></div>
+                <div className="space-y-2"><Label>PAN</Label><Input value={editProfileData.pan} onChange={e => setEditProfileData({...editProfileData, pan: e.target.value})} /></div>
+             </div>
+             <div className="space-y-2"><Label>General Notes</Label><Textarea value={editProfileData.remarks} onChange={e => setEditProfileData({...editProfileData, remarks: e.target.value})} /></div>
+             <div className="space-y-2"><Label>Special Instructions</Label><Textarea value={editProfileData.specialInstructions} onChange={e => setEditProfileData({...editProfileData, specialInstructions: e.target.value})} /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditProfileOpen(false)}>Cancel</Button>
+            <Button onClick={handleEditProfileSave}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={editingId !== null && isConfirmSaveOpen} onOpenChange={setIsConfirmSaveOpen}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Save Changes?</AlertDialogTitle><AlertDialogDescription>This will update the ledger entry and adjust denormalized balances.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel onClick={() => setEditingId(null)}>Cancel</AlertDialogCancel><AlertDialogAction onClick={saveInlineEdit} className="bg-emerald-600">Save</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
     </div>
