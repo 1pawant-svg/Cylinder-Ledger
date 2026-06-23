@@ -5,7 +5,7 @@ import { useState, useMemo, useCallback } from "react";
 import { useLedger } from "@/lib/ledger-context";
 import { useToast } from "@/hooks/use-toast";
 import { 
-  Plus, Search, MoreHorizontal, Eye, MapPin, Loader2
+  Plus, Search, MoreHorizontal, Eye, MapPin, Loader2, Calendar
 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
@@ -16,11 +16,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { getCurrentADDate, adToBs, bsToAd, toMillis } from "@/lib/date-utils";
+import { getCurrentADDate, adToBs, bsToAd, toMillis, BS_MONTHS, getBSYears } from "@/lib/date-utils";
 import { useI18n } from "@/lib/i18n-context";
 
 type StatusFilter = 'ALL' | 'ACTIVE' | 'INACTIVE' | 'TO_RECEIVE' | 'TO_GIVE' | 'SETTLED' | 'OVERDUE';
 type SortOption = 'NAME_ASC' | 'NAME_DESC' | 'BALANCE_HIGH_TO_LOW' | 'BALANCE_LOW_TO_HIGH' | 'LATEST_ACTIVITY';
+
+const safePad = (val: string | number): string => {
+  const s = String(val || "");
+  if (s.length >= 2) return s;
+  return ('0' + s).slice(-2);
+};
 
 export default function CustomersPage() {
   const { customers, addCustomer, addTransaction, getCustomerTransactions, loading } = useLedger();
@@ -35,8 +41,15 @@ export default function CustomersPage() {
   const getTodayBSParts = useCallback(() => {
     const todayAD = getCurrentADDate();
     const bsDateStr = adToBs(todayAD);
-    const parts = bsDateStr.split('-');
-    return parts.length === 3 ? { year: parts[0], month: parts[1], day: parts[2] } : { year: '2081', month: '01', day: '01' };
+    const parts = bsDateStr.split(/[-/]/);
+    if (parts.length === 3) {
+      return { 
+        year: parts[0], 
+        month: safePad(parts[1]), 
+        day: safePad(parts[2]) 
+      };
+    }
+    return { year: '2081', month: '01', day: '01' };
   }, []);
 
   const [newCust, setNewCust] = useState({ 
@@ -108,8 +121,8 @@ export default function CustomersPage() {
     const toReceive = parseInt(newCust.openingToReceive) || 0;
     const toGive = parseInt(newCust.openingToGive) || 0;
 
-    if (toReceive > 0) addTransaction({ customerId, date: openingAD, bsDate: openingBSStr, type: 'OUT_FULL', quantity: toReceive, remark: '' });
-    if (toGive > 0) addTransaction({ customerId, date: openingAD, bsDate: openingBSStr, type: 'IN_EMPTY', quantity: toGive, remark: '' });
+    if (toReceive > 0) addTransaction({ customerId, date: openingAD, bsDate: openingBSStr, type: 'OUT_FULL', quantity: toReceive, remark: 'Initial Balance' });
+    if (toGive > 0) addTransaction({ customerId, date: openingAD, bsDate: openingBSStr, type: 'IN_EMPTY', quantity: toGive, remark: 'Initial Balance' });
 
     setNewCust({ name: '', address: '', phone: '', pan: '', notes: '', openingToReceive: '', openingToGive: '' });
     setOpeningDateBS(getTodayBSParts());
@@ -118,6 +131,9 @@ export default function CustomersPage() {
   }, [newCust, openingDateBS, addCustomer, addTransaction, getTodayBSParts, toast, t]);
 
   if (loading) return <div className="flex h-full w-full items-center justify-center p-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+
+  const years = getBSYears();
+  const daysList = Array.from({ length: 32 }, (_, i) => safePad(i + 1));
 
   return (
     <div className="p-4 md:p-8 space-y-8 animate-in slide-in-from-bottom-4 duration-500 pb-24 w-full max-w-full overflow-x-hidden min-w-0">
@@ -145,6 +161,26 @@ export default function CustomersPage() {
                     <div className="space-y-2"><Label className="text-[9px] uppercase font-bold">{t('toReceiveSuffix')}</Label><Input type="number" value={newCust.openingToReceive} onChange={e => setNewCust({...newCust, openingToReceive: e.target.value})} /></div>
                     <div className="space-y-2"><Label className="text-[9px] uppercase font-bold">{t('toGiveSuffix')}</Label><Input type="number" value={newCust.openingToGive} onChange={e => setNewCust({...newCust, openingToGive: e.target.value})} /></div>
                  </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2 text-muted-foreground uppercase text-[10px] tracking-widest font-bold mb-1">
+                  <Calendar className="h-3 w-3" /> Opening Date (BS)
+                </Label>
+                <div className="grid grid-cols-3 gap-2">
+                  <Select value={openingDateBS.year} onValueChange={(v) => setOpeningDateBS(prev => ({...prev, year: v}))}>
+                    <SelectTrigger className="h-10 bg-background border-border text-xs px-2"><SelectValue /></SelectTrigger>
+                    <SelectContent className="max-h-[300px]">{years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
+                  </Select>
+                  <Select value={openingDateBS.month} onValueChange={(v) => setOpeningDateBS(prev => ({...prev, month: v}))}>
+                    <SelectTrigger className="h-10 bg-background border-border text-xs px-2"><SelectValue /></SelectTrigger>
+                    <SelectContent>{BS_MONTHS.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
+                  </Select>
+                  <Select value={openingDateBS.day} onValueChange={(v) => setOpeningDateBS(prev => ({...prev, day: v}))}>
+                    <SelectTrigger className="h-10 bg-background border-border text-xs px-2"><SelectValue /></SelectTrigger>
+                    <SelectContent className="max-h-[300px]">{daysList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
             <DialogFooter><Button onClick={handleAdd} className="w-full h-12 font-bold">{t('saveProfile')}</Button></DialogFooter>
