@@ -33,6 +33,7 @@ import {
   DialogFooter 
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { adToBs, bsToAd, BS_MONTHS, getBSYears, getCurrentADDate } from "@/lib/date-utils";
 import { useToast } from "@/hooks/use-toast";
 import { TransactionType } from "@/lib/types";
@@ -88,7 +89,7 @@ export default function TransactionsPage() {
 
   const [bsParts, setBsParts] = useState(getTodayBSParts);
   const [dueBsParts, setDueBsParts] = useState(() => getFutureBSParts(7));
-  const [useDueDate, setUseDueDate] = useState(true);
+  const [useDueDate, setUseDueDate] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(!!editTransactionId);
 
@@ -358,22 +359,35 @@ export default function TransactionsPage() {
                       <Label className="flex items-center gap-2 text-primary uppercase text-[10px] tracking-widest font-bold">
                         <BellRing className="h-3.5 w-3.5" /> Collection Reminder (Due Date)
                       </Label>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="use-due-date" 
+                          checked={useDueDate} 
+                          onCheckedChange={(checked) => setUseDueDate(!!checked)} 
+                        />
+                        <Label htmlFor="use-due-date" className="text-[10px] font-bold cursor-pointer">Set Reminder</Label>
+                      </div>
                     </div>
-                    <div className="grid grid-cols-3 gap-2">
-                      <Select value={dueBsParts.year} onValueChange={(v) => handleDueBSChange('year', v)}>
-                        <SelectTrigger className="h-12 bg-background border-border text-xs px-2"><SelectValue /></SelectTrigger>
-                        <SelectContent className="max-h-[300px]">{years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
-                      </Select>
-                      <Select value={dueBsParts.month} onValueChange={(v) => handleDueBSChange('month', v)}>
-                        <SelectTrigger className="h-12 bg-background border-border text-xs px-2"><SelectValue /></SelectTrigger>
-                        <SelectContent>{BS_MONTHS.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
-                      </Select>
-                      <Select value={dueBsParts.day} onValueChange={(v) => handleDueBSChange('day', v)}>
-                        <SelectTrigger className="h-12 bg-background border-border text-xs px-2"><SelectValue /></SelectTrigger>
-                        <SelectContent className="max-h-[300px]">{daysList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </div>
-                    <p className="text-[9px] text-muted-foreground italic">Sets when you expect to receive the return empty cylinders.</p>
+                    
+                    {useDueDate && (
+                      <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                        <div className="grid grid-cols-3 gap-2">
+                          <Select value={dueBsParts.year} onValueChange={(v) => handleDueBSChange('year', v)}>
+                            <SelectTrigger className="h-12 bg-background border-border text-xs px-2"><SelectValue /></SelectTrigger>
+                            <SelectContent className="max-h-[300px]">{years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
+                          </Select>
+                          <Select value={dueBsParts.month} onValueChange={(v) => handleDueBSChange('month', v)}>
+                            <SelectTrigger className="h-12 bg-background border-border text-xs px-2"><SelectValue /></SelectTrigger>
+                            <SelectContent>{BS_MONTHS.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
+                          </Select>
+                          <Select value={dueBsParts.day} onValueChange={(v) => handleDueBSChange('day', v)}>
+                            <SelectTrigger className="h-12 bg-background border-border text-xs px-2"><SelectValue /></SelectTrigger>
+                            <SelectContent className="max-h-[300px]">{daysList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+                          </Select>
+                        </div>
+                        <p className="text-[9px] text-muted-foreground italic">Sets when you expect to receive the return empty cylinders.</p>
+                      </div>
+                    )}
                   </div>
                 )}
 
