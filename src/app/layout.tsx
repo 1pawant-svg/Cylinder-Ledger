@@ -1,3 +1,4 @@
+
 import type {Metadata} from 'next';
 import './globals.css';
 import {AppSidebar} from '@/components/app-sidebar';
@@ -29,10 +30,10 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover" />
       </head>
       <body className="font-body antialiased pb-24 md:pb-0 min-h-screen bg-background">
-        <FirebaseClientProvider>
-          <FirebaseErrorListener />
-          <AuthGuard>
-            <I18nProvider>
+        <I18nProvider>
+          <FirebaseClientProvider>
+            <FirebaseErrorListener />
+            <AuthGuard>
               <LedgerProvider>
                 <SidebarProvider>
                   <div className="flex min-h-screen w-full">
@@ -47,9 +48,9 @@ export default function RootLayout({
                 <MobileNav />
                 <Toaster />
               </LedgerProvider>
-            </I18nProvider>
-          </AuthGuard>
-        </FirebaseClientProvider>
+            </AuthGuard>
+          </FirebaseClientProvider>
+        </I18nProvider>
       </body>
     </html>
   );
