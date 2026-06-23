@@ -81,6 +81,13 @@ export const translations = {
     instructions: "Instructions",
     confirmLog: "Confirm Log",
     movementLogged: "Movement Logged",
+    fromDate: "From Date",
+    toDate: "To Date",
+    filter: "Filter",
+    clear: "Clear",
+    openingBalance: "Opening Balance",
+    closingBalance: "Closing Balance",
+    filteredStatement: "Filtered Statement",
     
     // Transactions
     logMovements: "Log cylinder movements using accurate algorithmic Nepali calendar",
@@ -197,6 +204,13 @@ export const translations = {
     instructions: "विशेष निर्देशन",
     confirmLog: "कारोबार पुष्टि गर्नुहोस्",
     movementLogged: "कारोबार सफल भयो",
+    fromDate: "देखि",
+    toDate: "सम्म",
+    filter: "फिल्टर",
+    clear: "हटाउनुहोस्",
+    openingBalance: "पहिलेको बाँकी",
+    closingBalance: "हालको बाँकी",
+    filteredStatement: "फिल्टर गरिएको विवरण",
     
     // Transactions
     logMovements: "नेपाली पात्रो प्रयोग गरी सिलिन्डरको कारोबार रेकर्ड गर्नुहोस्",

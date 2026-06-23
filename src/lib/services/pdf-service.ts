@@ -20,6 +20,9 @@ export async function generateCustomerLedgerPDF(
     totalIn: number;
     totalOut: number;
     balance: number;
+    isFiltered?: boolean;
+    openingBalance?: number;
+    dateRange?: string;
   }
 ) {
   const doc = new jsPDF({
@@ -46,7 +49,7 @@ export async function generateCustomerLedgerPDF(
   // Customer Info Section
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  doc.text('CUSTOMER STATEMENT', 14, 38);
+  doc.text(summary.isFiltered ? 'FILTERED STATEMENT' : 'CUSTOMER STATEMENT', 14, 38);
 
   doc.setFontSize(10);
   doc.text(`Name: ${customer.name}`, 14, 46);
@@ -56,26 +59,40 @@ export async function generateCustomerLedgerPDF(
   if (customer.pan) doc.text(`PAN: ${customer.pan}`, 14, 61);
 
   // Report Info
-  doc.text(`Statement Date: ${adToBs(getCurrentADDate())} (${getCurrentADDate()})`, 140, 46);
+  doc.text(`Report Date: ${adToBs(getCurrentADDate())} (${getCurrentADDate()})`, 140, 46);
+  if (summary.dateRange) {
+    doc.setFontSize(8);
+    doc.text(`Period: ${summary.dateRange}`, 140, 51);
+  }
 
   // Summary Box
   doc.setFillColor(245, 245, 245);
-  doc.rect(14, 70, 182, 25, 'F');
+  doc.rect(14, 70, 182, 35, 'F');
   
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.text('ACCOUNT SUMMARY', 18, 77);
   
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
-  doc.text('Total Issued (Out):', 18, 83);
-  doc.text(`${summary.totalOut} PCS`, 55, 83);
   
-  doc.text('Total Returned (In):', 18, 88);
-  doc.text(`${summary.totalIn} PCS`, 55, 88);
+  let yOffset = 83;
+  if (summary.isFiltered) {
+    doc.text('Opening Balance:', 18, yOffset);
+    doc.text(`${summary.openingBalance || 0} PCS`, 55, yOffset);
+    yOffset += 5;
+  }
+
+  doc.text('Period Issues (Out):', 18, yOffset);
+  doc.text(`${summary.totalOut} PCS`, 55, yOffset);
+  yOffset += 5;
+  
+  doc.text('Period Returns (In):', 18, yOffset);
+  doc.text(`${summary.totalIn} PCS`, 55, yOffset);
 
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.text('Current Balance:', 110, 85);
+  doc.text('Net Balance:', 110, 88);
   const balText = summary.balance === 0 
     ? 'SETTLED' 
     : summary.balance > 0 
@@ -84,7 +101,7 @@ export async function generateCustomerLedgerPDF(
   
   doc.setTextColor(summary.balance > 0 ? 190 : (summary.balance < 0 ? 220 : 0), 0, 0);
   if (summary.balance === 0) doc.setTextColor(0, 150, 0);
-  doc.text(balText, 145, 85);
+  doc.text(balText, 145, 88);
   doc.setTextColor(0, 0, 0);
 
   // Transaction Table
@@ -104,7 +121,7 @@ export async function generateCustomerLedgerPDF(
   });
 
   autoTable(doc, {
-    startY: 105,
+    startY: 110,
     head: [['Date (BS)', 'Event Type', 'In Qty', 'Out Qty', 'Balance', 'Remarks']],
     body: tableRows,
     theme: 'grid',
@@ -154,7 +171,7 @@ export async function sharePDF(doc: jsPDF, filename: string, customerPhone?: str
   const file = new File([blob], filename, { type: 'application/pdf' });
 
   // Native share is primarily for mobile devices
-  if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+  if (typeof navigator !== 'undefined' && navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
     try {
       await navigator.share({
         files: [file],

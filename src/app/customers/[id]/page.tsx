@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -7,7 +6,7 @@ import { useLedger } from "@/lib/ledger-context";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { 
-  ArrowLeft, MapPin, Phone, Share2, Edit2, Trash2, MoreVertical, History, Info, MessageSquare, ArrowUpRight, ArrowDownLeft, StickyNote, ClipboardList, AlertTriangle, UserX, UserCheck, Save, X, Hash, Loader2, Plus, Calendar, FileText, RefreshCw
+  ArrowLeft, MapPin, Phone, Share2, Edit2, Trash2, MoreVertical, History, Info, MessageSquare, ArrowUpRight, ArrowDownLeft, StickyNote, ClipboardList, AlertTriangle, UserX, UserCheck, Save, X, Hash, Loader2, Plus, Calendar, FileText, RefreshCw, Filter, Eraser, Download
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -88,6 +87,13 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
   const [editFields, setEditFields] = useState<any>({});
   const [isConfirmSaveOpen, setIsConfirmSaveOpen] = useState(false);
   
+  // Date Filter State (BS)
+  const [filterDates, setFilterDates] = useState({
+    from: { year: '', month: '', day: '' },
+    to: { year: '', month: '', day: '' }
+  });
+  const [activeFilter, setActiveFilter] = useState<{ from: string, to: string } | null>(null);
+
   // Edit Profile State
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [editProfileData, setEditProfileData] = useState({
@@ -117,19 +123,65 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
   }, [customer]);
 
   const transactionsWithBalance = useMemo(() => {
-    const chronological = [...transactions].reverse();
-    let currentBalance = 0;
-    return chronological.map(txn => {
-      currentBalance += (txn.quantity * getTransactionImpact(txn.type));
-      return { ...txn, runningBalance: currentBalance };
-    }).reverse();
-  }, [transactions]);
+    // Chronological order (oldest first) to calculate running balance correctly
+    const chronological = [...transactions].sort((a, b) => toMillis(a.date) - toMillis(b.date));
+    let running = 0;
+    
+    const enriched = chronological.map(txn => {
+      running += (txn.quantity * getTransactionImpact(txn.type));
+      return { ...txn, runningBalance: running };
+    });
+
+    // Filtering logic
+    let result = enriched;
+    if (activeFilter) {
+      const fromAD = bsToAd(activeFilter.from.split('-')[0], activeFilter.from.split('-')[1], activeFilter.from.split('-')[2]);
+      const toAD = bsToAd(activeFilter.to.split('-')[0], activeFilter.to.split('-')[1], activeFilter.to.split('-')[2]);
+      result = enriched.filter(t => {
+        const adDate = typeof t.date === 'string' ? t.date : (t.date as any).toDate().toISOString().split('T')[0];
+        return adDate >= fromAD && adDate <= toAD;
+      });
+    }
+
+    return result.reverse(); // Display newest first in UI
+  }, [transactions, activeFilter]);
+
+  const openingBalance = useMemo(() => {
+    if (!activeFilter) return 0;
+    const fromAD = bsToAd(activeFilter.from.split('-')[0], activeFilter.from.split('-')[1], activeFilter.from.split('-')[2]);
+    return transactions
+      .filter(t => {
+        const adDate = typeof t.date === 'string' ? t.date : (t.date as any).toDate().toISOString().split('T')[0];
+        return adDate < fromAD;
+      })
+      .reduce((sum, t) => sum + (t.quantity * getTransactionImpact(t.type)), 0);
+  }, [transactions, activeFilter]);
 
   const calculatedTotal = useMemo(() => {
     return transactions.reduce((acc, t) => acc + (t.quantity * getTransactionImpact(t.type)), 0);
   }, [transactions]);
 
   const hasBalanceDiscrepancy = Math.abs(calculatedTotal - balance) > 0.001;
+
+  const handleApplyFilter = () => {
+    if (filterDates.from.year && filterDates.from.month && filterDates.from.day && 
+        filterDates.to.year && filterDates.to.month && filterDates.to.day) {
+      setActiveFilter({
+        from: `${filterDates.from.year}-${filterDates.from.month}-${filterDates.from.day}`,
+        to: `${filterDates.to.year}-${filterDates.to.month}-${filterDates.to.day}`
+      });
+    } else {
+      toast({ variant: "destructive", title: t('error'), description: t('incompleteForm') });
+    }
+  };
+
+  const handleClearFilter = () => {
+    setFilterDates({
+      from: { year: '', month: '', day: '' },
+      to: { year: '', month: '', day: '' }
+    });
+    setActiveFilter(null);
+  };
 
   const handleRecalculate = async () => {
     if (!customer) return;
@@ -148,9 +200,25 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
     if (!customer) return;
     setIsGeneratingPDF(true);
     try {
-      const totalOut = transactions.filter(t => getTransactionImpact(t.type) === 1).reduce((s, t) => s + t.quantity, 0);
-      const totalIn = transactions.filter(t => getTransactionImpact(t.type) === -1).reduce((s, t) => s + t.quantity, 0);
-      const doc = await generateCustomerLedgerPDF(customer, transactionsWithBalance, settings, { totalIn, totalOut, balance });
+      const displayTxns = transactionsWithBalance;
+      const totalOut = displayTxns.filter(t => getTransactionImpact(t.type) === 1).reduce((s, t) => s + t.quantity, 0);
+      const totalIn = displayTxns.filter(t => getTransactionImpact(t.type) === -1).reduce((s, t) => s + t.quantity, 0);
+      
+      const closingBalance = openingBalance + totalOut - totalIn;
+
+      const doc = await generateCustomerLedgerPDF(
+        customer, 
+        displayTxns, 
+        settings, 
+        { 
+          totalIn, 
+          totalOut, 
+          balance: closingBalance,
+          isFiltered: !!activeFilter,
+          openingBalance,
+          dateRange: activeFilter ? `${activeFilter.from} to ${activeFilter.to} (BS)` : undefined
+        }
+      );
       await sharePDF(doc, `${customer.name.replace(/\s+/g, '_')}_Ledger.pdf`, customer.phone, customer.name);
       toast({ title: t('success') });
     } catch (err: any) {
@@ -193,6 +261,9 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
 
   if (!customer) return <div className="p-20 text-center">Not found</div>;
 
+  const bsYears = getBSYears();
+  const daysList = Array.from({ length: 32 }, (_, i) => (i + 1).toString().padStart(2, '0'));
+
   return (
     <div className="p-4 md:p-8 space-y-6 animate-in fade-in duration-700 pb-24">
       <div className="flex flex-col md:flex-row md:items-center gap-4 border-b pb-6">
@@ -233,11 +304,63 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
         </div>
       )}
 
+      {/* Date Filter Bar */}
+      <Card className="border-none shadow-md bg-card/50">
+        <CardContent className="p-4 flex flex-col lg:flex-row items-end gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 w-full">
+            <div className="space-y-2">
+              <Label className="text-[10px] uppercase font-bold text-muted-foreground">{t('fromDate')} (BS)</Label>
+              <div className="grid grid-cols-3 gap-1">
+                <Select value={filterDates.from.year} onValueChange={(v) => setFilterDates(prev => ({...prev, from: {...prev.from, year: v}}))}>
+                  <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Year" /></SelectTrigger>
+                  <SelectContent className="max-h-[300px]">{bsYears.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
+                </Select>
+                <Select value={filterDates.from.month} onValueChange={(v) => setFilterDates(prev => ({...prev, from: {...prev.from, month: v}}))}>
+                  <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Month" /></SelectTrigger>
+                  <SelectContent>{BS_MONTHS.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
+                </Select>
+                <Select value={filterDates.from.day} onValueChange={(v) => setFilterDates(prev => ({...prev, from: {...prev.from, day: v}}))}>
+                  <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Day" /></SelectTrigger>
+                  <SelectContent className="max-h-[300px]">{daysList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[10px] uppercase font-bold text-muted-foreground">{t('toDate')} (BS)</Label>
+              <div className="grid grid-cols-3 gap-1">
+                <Select value={filterDates.to.year} onValueChange={(v) => setFilterDates(prev => ({...prev, to: {...prev.to, year: v}}))}>
+                  <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Year" /></SelectTrigger>
+                  <SelectContent className="max-h-[300px]">{bsYears.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
+                </Select>
+                <Select value={filterDates.to.month} onValueChange={(v) => setFilterDates(prev => ({...prev, to: {...prev.to, month: v}}))}>
+                  <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Month" /></SelectTrigger>
+                  <SelectContent>{BS_MONTHS.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
+                </Select>
+                <Select value={filterDates.to.day} onValueChange={(v) => setFilterDates(prev => ({...prev, to: {...prev.to, day: v}}))}>
+                  <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Day" /></SelectTrigger>
+                  <SelectContent className="max-h-[300px]">{daysList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-2 w-full lg:w-auto">
+            <Button variant="outline" size="sm" onClick={handleClearFilter} className="flex-1 lg:flex-none"><Eraser className="h-4 w-4 mr-2" /> {t('clear')}</Button>
+            <Button size="sm" onClick={handleApplyFilter} className="flex-1 lg:flex-none"><Filter className="h-4 w-4 mr-2" /> {t('filter')}</Button>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
           <Card className="border-none shadow-xl">
              <CardHeader className="flex flex-row items-center justify-between px-6">
-                <div><CardTitle className="text-xl font-bold">{t('ledger')}</CardTitle><CardDescription>{t('transactionTimeline')}</CardDescription></div>
+                <div className="min-w-0">
+                  <CardTitle className="text-xl font-bold flex items-center gap-2">
+                    {t('ledger')} 
+                    {activeFilter && <Badge variant="outline" className="text-[9px]">{activeFilter.from} - {activeFilter.to}</Badge>}
+                  </CardTitle>
+                  <CardDescription>{t('transactionTimeline')}</CardDescription>
+                </div>
                 <div className="text-right">
                   <p className="text-[10px] uppercase font-bold text-muted-foreground">{t('statedBalance')}</p>
                   <Badge className={cn(balance > 0 ? "bg-primary" : balance < 0 ? "bg-accent" : "bg-emerald-500")}>
@@ -246,6 +369,14 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
                 </div>
              </CardHeader>
              <CardContent className="p-0">
+                {activeFilter && (
+                  <div className="px-6 py-2 bg-muted/20 border-b flex justify-between items-center text-xs font-bold">
+                    <span className="text-muted-foreground uppercase">{t('openingBalance')}</span>
+                    <span className={cn(openingBalance >= 0 ? "text-primary" : "text-accent")}>
+                      {openingBalance} PCS
+                    </span>
+                  </div>
+                )}
                 <Table>
                   <TableHeader className="bg-muted/30">
                     <TableRow>
@@ -268,6 +399,11 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
                         <TableCell className="text-right pr-6"><DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onClick={() => startInlineEdit(txn)}><Edit2 className="h-3 w-3 mr-2" />Edit</DropdownMenuItem><DropdownMenuItem className="text-destructive" onClick={() => deleteTransaction(txn.id, "User requested delete")}><Trash2 className="h-3 w-3 mr-2" />Delete</DropdownMenuItem></DropdownMenuContent></DropdownMenu></TableCell>
                       </TableRow>
                     ))}
+                    {transactionsWithBalance.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={6} className="h-24 text-center text-muted-foreground italic">No transactions found for this selection.</TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
              </CardContent>
