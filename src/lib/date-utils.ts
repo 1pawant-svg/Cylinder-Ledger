@@ -1,23 +1,32 @@
-
 'use client';
 
 import { Timestamp } from 'firebase/firestore';
 import NepaliDate from 'nepali-date-converter';
 
 /**
+ * Safely pads a string to a target length.
+ * Prevents RangeError: Invalid count value in buggy environments.
+ */
+const safePad = (val: string | number, targetLen: number = 2): string => {
+  const s = String(val);
+  if (s.length >= targetLen) return s;
+  return s.padStart(targetLen, '0');
+};
+
+/**
  * Gets today's date in YYYY-MM-DD format strictly for Nepal timezone.
  */
 export const getCurrentADDate = () => {
   try {
-    const options: Intl.DateTimeFormatOptions = {
-      timeZone: 'Asia/Kathmandu',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    };
-    // Using en-CA locale as it gives YYYY-MM-DD format reliably
-    const adDate = new Intl.DateTimeFormat('en-CA', options).format(new Date());
-    return adDate;
+    const d = new Date();
+    // Offset for Nepal Time (UTC+5:45)
+    const nepalTime = new Date(d.getTime() + (d.getTimezoneOffset() * 60000) + (345 * 60000));
+    
+    const year = nepalTime.getFullYear();
+    const month = safePad(nepalTime.getMonth() + 1);
+    const day = safePad(nepalTime.getDate());
+    
+    return `${year}-${month}-${day}`;
   } catch (e) {
     return new Date().toISOString().split('T')[0];
   }
@@ -32,9 +41,14 @@ export const adToBs = (adDateStr: string): string => {
   if (!adDateStr) return "";
   try {
     const adDate = new Date(adDateStr);
+    if (isNaN(adDate.getTime())) return "";
+    
     const npDate = new NepaliDate(adDate);
-    // Returns YYYY-MM-DD format
-    return npDate.format('YYYY-MM-DD');
+    const y = npDate.getYear();
+    const m = safePad(npDate.getMonth() + 1);
+    const d = safePad(npDate.getDate());
+    
+    return `${y}-${m}-${d}`;
   } catch (e) {
     console.error("[DATE_UTILS] Error converting AD to BS:", e);
     return "";
@@ -60,7 +74,11 @@ export const bsToAd = (bsYear: string, bsMonth: string, bsDay: string): string =
     const npDate = new NepaliDate(y, m - 1, d);
     const adDate = npDate.toJsDate();
     
-    return adDate.toISOString().split('T')[0];
+    const year = adDate.getFullYear();
+    const month = safePad(adDate.getMonth() + 1);
+    const day = safePad(adDate.getDate());
+    
+    return `${year}-${month}-${day}`;
   } catch (e) {
     console.error("[DATE_UTILS] Error converting BS to AD:", e);
     return getCurrentADDate();
@@ -91,7 +109,7 @@ export const BS_MONTHS = [
 export const getBSYears = () => {
   const years = [];
   // Standard range supported by most libraries
-  for (let i = 2000; i <= 2100; i++) {
+  for (let i = 2075; i <= 2095; i++) {
     years.push(i.toString());
   }
   return years;

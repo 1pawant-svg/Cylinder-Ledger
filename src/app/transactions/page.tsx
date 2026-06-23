@@ -32,15 +32,18 @@ import {
   DialogFooter 
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import { adToBs, bsToAd, BS_MONTHS, getBSYears, getCurrentADDate } from "@/lib/date-utils";
-import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { TransactionType } from "@/lib/types";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useFirestore } from "@/firebase";
 import { doc, getDoc } from "firebase/firestore";
+
+const safePad = (val: string | number, len: number = 2): string => {
+  const s = String(val || "");
+  if (s.length >= len) return s;
+  return s.padStart(len, "0");
+};
 
 export default function TransactionsPage() {
   const router = useRouter();
@@ -59,8 +62,8 @@ export default function TransactionsPage() {
     if (parts.length === 3) {
       return { 
         year: parts[0], 
-        month: parts[1].padStart(2, '0'), 
-        day: parts[2].padStart(2, '0') 
+        month: safePad(parts[1]), 
+        day: safePad(parts[2]) 
       };
     }
     return { year: '2081', month: '01', day: '01' };
@@ -79,7 +82,6 @@ export default function TransactionsPage() {
     remark: '',
   });
 
-  // Fetch transaction data if editing (Duplicate & Replace workflow)
   useEffect(() => {
     async function fetchTxn() {
       if (!editTransactionId || !db) return;
@@ -95,12 +97,11 @@ export default function TransactionsPage() {
           if (parts.length === 3) {
             setBsParts({
               year: parts[0],
-              month: parts[1].padStart(2, '0'),
-              day: parts[2].padStart(2, '0')
+              month: safePad(parts[1]),
+              day: safePad(parts[2])
             });
           }
 
-          // Map legacy types
           let mappedType = data.type as TransactionType;
           if (mappedType === 'IN' as any) mappedType = 'IN_EMPTY';
           if (mappedType === 'OUT' as any) mappedType = 'OUT_FULL';
@@ -168,7 +169,6 @@ export default function TransactionsPage() {
     const bsDateStr = `${bsParts.year}-${bsParts.month}-${bsParts.day}`;
 
     try {
-      // If editing, delete the old one first (Duplicate & Replace workflow)
       if (editTransactionId) {
         await deleteTransaction(editTransactionId, "Replaced by updated entry");
       }
@@ -179,7 +179,7 @@ export default function TransactionsPage() {
         bsDate: bsDateStr,
         type: formData.type,
         quantity: formData.quantity,
-        remark: formData.remark || "" // Strictly only user typed text
+        remark: formData.remark || ""
       });
       
       const isPositiveImpact = formData.type === 'OUT_FULL' || formData.type === 'OUT';
@@ -190,7 +190,7 @@ export default function TransactionsPage() {
           bsDate: bsDateStr,
           type: 'IN_EMPTY',
           quantity: formData.returnQuantity,
-          remark: '', // Explicitly empty
+          remark: '',
         });
       }
 
@@ -204,7 +204,7 @@ export default function TransactionsPage() {
   };
 
   const years = getBSYears();
-  const daysList = Array.from({ length: 32 }, (_, i) => (i + 1).toString().padStart(2, '0'));
+  const daysList = Array.from({ length: 32 }, (_, i) => safePad(i + 1));
   const isPositiveImpact = formData.type === 'OUT_FULL' || formData.type === 'OUT';
 
   if (loading) {
