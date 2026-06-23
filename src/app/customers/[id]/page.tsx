@@ -92,14 +92,12 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
   const [editFields, setEditFields] = useState<any>({});
   const [isConfirmSaveOpen, setIsConfirmSaveOpen] = useState(false);
   
-  // Date Filter State (BS)
   const [filterDates, setFilterDates] = useState({
     from: { year: '', month: '', day: '' },
     to: { year: '', month: '', day: '' }
   });
   const [activeFilter, setActiveFilter] = useState<{ from: string, to: string } | null>(null);
 
-  // Edit Profile State
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [editProfileData, setEditProfileData] = useState({
     name: '',
@@ -127,12 +125,10 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
     }
   }, [customer]);
 
-  // Pre-populate date filters on mount
   useEffect(() => {
     const todayStr = getCurrentADDate();
     const todayBS = adToBs(todayStr).split('-');
     
-    // Calculate one month ago
     const d = new Date(todayStr);
     d.setMonth(d.getMonth() - 1);
     const agoStr = d.toISOString().split('T')[0];
@@ -287,19 +283,19 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
   const daysList = Array.from({ length: 32 }, (_, i) => safePad(i + 1));
 
   return (
-    <div className="p-4 md:p-8 space-y-6 animate-in fade-in duration-700 pb-32 w-full max-w-full">
-      <div className="flex flex-col gap-4 border-b pb-6">
+    <div className="p-4 md:p-8 space-y-6 animate-in fade-in duration-700 pb-32 w-full max-w-full overflow-x-hidden">
+      <div className="flex flex-col gap-4 border-b pb-6 min-w-0">
         <div className="flex items-center gap-2 min-w-0">
            <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full -ml-2 shrink-0"><ArrowLeft className="h-5 w-5" /></Button>
            <h1 className="font-headline text-lg md:text-3xl font-bold truncate flex-1 min-w-0">{customer.name}</h1>
            <Badge variant={isInactive ? "secondary" : "default"} className="shrink-0 text-[10px] uppercase">{(customer.status || 'active').toUpperCase()}</Badge>
         </div>
         
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 min-w-0">
           <div className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-xs min-w-0">
             <span className="flex items-center truncate max-w-[200px]"><MapPin className="h-3 w-3 mr-1 shrink-0" />{customer.address}</span>
-            <span className="flex items-center"><Phone className="h-3 w-3 mr-1 shrink-0" />{customer.phone}</span>
-            {customer.pan && <span className="flex items-center"><Hash className="h-3 w-3 mr-1 shrink-0" />PAN: {customer.pan}</span>}
+            <span className="flex items-center shrink-0"><Phone className="h-3 w-3 mr-1 shrink-0" />{customer.phone}</span>
+            {customer.pan && <span className="flex items-center shrink-0"><Hash className="h-3 w-3 mr-1 shrink-0" />PAN: {customer.pan}</span>}
           </div>
           
           <div className="flex flex-wrap gap-2 shrink-0">
@@ -326,48 +322,47 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
 
       {hasBalanceDiscrepancy && (
         <div className="bg-accent/10 border border-accent/20 p-3 rounded-lg flex items-center justify-between">
-          <div className="flex items-center gap-2 text-accent text-[10px] font-bold uppercase tracking-wider">
-            <AlertTriangle className="h-4 w-4" />
-            Sync Required
+          <div className="flex items-center gap-2 text-accent text-[10px] font-bold uppercase tracking-wider min-w-0">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            <span className="truncate">Sync Required</span>
           </div>
-          <Button variant="link" size="sm" onClick={handleRecalculate} className="text-accent h-auto p-0 font-bold text-[10px] underline">{t('fixBalance')}</Button>
+          <Button variant="link" size="sm" onClick={handleRecalculate} className="text-accent h-auto p-0 font-bold text-[10px] underline shrink-0">{t('fixBalance')}</Button>
         </div>
       )}
 
-      {/* Date Filter Bar */}
       <Card className="border-none shadow-md bg-card/50 w-full overflow-hidden">
         <CardContent className="p-3 md:p-4 flex flex-col gap-3">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 min-w-0">
               <Label className="text-[9px] uppercase font-bold text-muted-foreground">{t('fromDate')} (BS)</Label>
               <div className="grid grid-cols-3 gap-1">
                 <Select value={filterDates.from.year} onValueChange={(v) => setFilterDates(prev => ({...prev, from: {...prev.from, year: v}}))}>
-                  <SelectTrigger className="h-8 text-[10px]"><SelectValue placeholder="Y" /></SelectTrigger>
+                  <SelectTrigger className="h-8 text-[10px] px-1 overflow-hidden"><SelectValue placeholder="Y" /></SelectTrigger>
                   <SelectContent className="max-h-[300px]">{bsYears.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
                 </Select>
                 <Select value={filterDates.from.month} onValueChange={(v) => setFilterDates(prev => ({...prev, from: {...prev.from, month: v}}))}>
-                  <SelectTrigger className="h-8 text-[10px]"><SelectValue placeholder="M" /></SelectTrigger>
+                  <SelectTrigger className="h-8 text-[10px] px-1 overflow-hidden"><SelectValue placeholder="M" /></SelectTrigger>
                   <SelectContent>{BS_MONTHS.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
                 </Select>
                 <Select value={filterDates.from.day} onValueChange={(v) => setFilterDates(prev => ({...prev, from: {...prev.from, day: v}}))}>
-                  <SelectTrigger className="h-8 text-[10px]"><SelectValue placeholder="D" /></SelectTrigger>
+                  <SelectTrigger className="h-8 text-[10px] px-1 overflow-hidden"><SelectValue placeholder="D" /></SelectTrigger>
                   <SelectContent className="max-h-[300px]">{daysList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 min-w-0">
               <Label className="text-[9px] uppercase font-bold text-muted-foreground">{t('toDate')} (BS)</Label>
               <div className="grid grid-cols-3 gap-1">
                 <Select value={filterDates.to.year} onValueChange={(v) => setFilterDates(prev => ({...prev, to: {...prev.to, year: v}}))}>
-                  <SelectTrigger className="h-8 text-[10px]"><SelectValue placeholder="Y" /></SelectTrigger>
+                  <SelectTrigger className="h-8 text-[10px] px-1 overflow-hidden"><SelectValue placeholder="Y" /></SelectTrigger>
                   <SelectContent className="max-h-[300px]">{bsYears.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
                 </Select>
                 <Select value={filterDates.to.month} onValueChange={(v) => setFilterDates(prev => ({...prev, to: {...prev.to, month: v}}))}>
-                  <SelectTrigger className="h-8 text-[10px]"><SelectValue placeholder="M" /></SelectTrigger>
+                  <SelectTrigger className="h-8 text-[10px] px-1 overflow-hidden"><SelectValue placeholder="M" /></SelectTrigger>
                   <SelectContent>{BS_MONTHS.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
                 </Select>
                 <Select value={filterDates.to.day} onValueChange={(v) => setFilterDates(prev => ({...prev, to: {...prev.to, day: v}}))}>
-                  <SelectTrigger className="h-8 text-[10px]"><SelectValue placeholder="D" /></SelectTrigger>
+                  <SelectTrigger className="h-8 text-[10px] px-1 overflow-hidden"><SelectValue placeholder="D" /></SelectTrigger>
                   <SelectContent className="max-h-[300px]">{daysList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
@@ -380,7 +375,7 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-w-0">
         <div className="lg:col-span-2 min-w-0">
           <Card className="border-none shadow-xl overflow-hidden w-full">
              <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-4 md:px-6 pb-2 min-w-0">
@@ -391,18 +386,18 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
                   </CardTitle>
                   <CardDescription className="text-xs truncate">{t('transactionTimeline')}</CardDescription>
                 </div>
-                <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-2 border-t md:border-t-0 pt-3 md:pt-0 mt-2 md:mt-0 w-full md:w-auto shrink-0">
-                  <p className="text-[10px] uppercase font-bold text-muted-foreground">{t('statedBalance')}</p>
-                  <Badge className={cn("text-[10px] font-bold shrink-0", balance > 0 ? "bg-primary" : balance < 0 ? "bg-accent" : "bg-emerald-500")}>
+                <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-2 border-t md:border-t-0 pt-3 md:pt-0 mt-2 md:mt-0 w-full md:w-auto shrink-0 min-w-0">
+                  <p className="text-[10px] uppercase font-bold text-muted-foreground shrink-0">{t('statedBalance')}</p>
+                  <Badge className={cn("text-[10px] font-bold shrink-0 truncate", balance > 0 ? "bg-primary" : balance < 0 ? "bg-accent" : "bg-emerald-500")}>
                     {balance === 0 ? t('settled') : `${Math.abs(balance)} ${balance > 0 ? t('toReceiveSuffix') : t('toGiveSuffix')}`}
                   </Badge>
                 </div>
              </CardHeader>
              <CardContent className="p-0 overflow-hidden">
                 {activeFilter && (
-                  <div className="px-4 md:px-6 py-2 bg-muted/20 border-b flex justify-between items-center text-xs font-bold">
-                    <span className="text-muted-foreground uppercase text-[10px]">{t('openingBalance')}</span>
-                    <span className={cn(openingBalance >= 0 ? "text-primary" : "text-accent")}>
+                  <div className="px-4 md:px-6 py-2 bg-muted/20 border-b flex justify-between items-center text-xs font-bold min-w-0">
+                    <span className="text-muted-foreground uppercase text-[10px] shrink-0 mr-2">{t('openingBalance')}</span>
+                    <span className={cn("shrink-0", openingBalance >= 0 ? "text-primary" : "text-accent")}>
                       {openingBalance} PCS
                     </span>
                   </div>
@@ -445,7 +440,7 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
         <div className="space-y-6 min-w-0">
           {!isInactive && (
             <Card className="border-none shadow-xl w-full">
-              <CardHeader className="pb-2"><CardTitle className="text-sm font-bold uppercase tracking-widest text-muted-foreground">{t('newEntry')}</CardTitle></CardHeader>
+              <CardHeader className="pb-2"><CardTitle className="text-sm font-bold uppercase tracking-widest text-muted-foreground">NEW TRANSACTION</CardTitle></CardHeader>
               <CardContent className="space-y-4">
                 <Button className="w-full h-12 bg-primary text-primary-foreground font-bold shadow-lg shadow-primary/20" onClick={() => router.push(`/transactions?customerId=${id}`)}>
                   <Plus className="h-5 w-5 mr-2" /> {t('newTransaction')}
@@ -454,16 +449,16 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
               </CardContent>
             </Card>
           )}
-          <Card className="bg-muted/20 border-none shadow-xl w-full">
-            <CardHeader className="pb-2"><CardTitle className="text-[10px] font-bold uppercase tracking-widest flex gap-2 items-center text-muted-foreground"><ClipboardList className="h-4 w-4" /> {t('documentation')}</CardTitle></CardHeader>
-            <CardContent className="space-y-4 text-xs">
-              <div>
+          <Card className="bg-muted/20 border-none shadow-xl w-full overflow-hidden">
+            <CardHeader className="pb-2"><CardTitle className="text-[10px] font-bold uppercase tracking-widest flex gap-2 items-center text-muted-foreground shrink-0"><ClipboardList className="h-4 w-4 shrink-0" /> {t('documentation')}</CardTitle></CardHeader>
+            <CardContent className="space-y-4 text-xs min-w-0">
+              <div className="min-w-0">
                 <p className="text-[9px] font-bold uppercase text-muted-foreground mb-1">{t('generalNotes')}</p>
-                <div className="bg-card p-2 rounded border border-border/50 text-muted-foreground min-h-[40px] leading-relaxed break-words">{customer.remarks || "N/A"}</div>
+                <div className="bg-card p-2 rounded border border-border/50 text-muted-foreground min-h-[40px] leading-relaxed break-words overflow-hidden">{customer.remarks || "N/A"}</div>
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-[9px] font-bold uppercase text-primary mb-1">{t('instructions')}</p>
-                <div className="bg-card p-2 rounded border border-primary/20 text-muted-foreground min-h-[40px] leading-relaxed break-words">{customer.specialInstructions || "None"}</div>
+                <div className="bg-card p-2 rounded border border-primary/20 text-muted-foreground min-h-[40px] leading-relaxed break-words overflow-hidden">{customer.specialInstructions || "None"}</div>
               </div>
             </CardContent>
           </Card>
@@ -478,11 +473,11 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
           <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto px-1">
              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2"><Label>Name</Label><Input value={editProfileData.name} onChange={e => setEditProfileData({...editProfileData, name: e.target.value})} /></div>
-                <div className="space-y-2"><Label>Phone</Label><Input value={editProfileData.phone} onChange={e => setEditProfileData({...editProfileData, phone: e.target.value})} /></div>
+                <div className="space-y-2"><Label>Phone</Label><Input value={editProfileData.phone} onChange={e => setEditProfileData({...editProfileData, phone: e.target.value.replace(/\D/g, '')})} /></div>
              </div>
              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2"><Label>Address</Label><Input value={editProfileData.address} onChange={e => setEditProfileData({...editProfileData, address: e.target.value})} /></div>
-                <div className="space-y-2"><Label>PAN</Label><Input value={editProfileData.pan} onChange={e => setEditProfileData({...editProfileData, pan: e.target.value})} /></div>
+                <div className="space-y-2"><Label>PAN</Label><Input value={editProfileData.pan} onChange={e => setEditProfileData({...editProfileData, pan: e.target.value.replace(/\D/g, '')})} /></div>
              </div>
              <div className="space-y-2"><Label>General Notes</Label><Textarea value={editProfileData.remarks} onChange={e => setEditProfileData({...editProfileData, remarks: e.target.value})} /></div>
              <div className="space-y-2"><Label>Special Instructions</Label><Textarea value={editProfileData.specialInstructions} onChange={e => setEditProfileData({...editProfileData, specialInstructions: e.target.value})} /></div>

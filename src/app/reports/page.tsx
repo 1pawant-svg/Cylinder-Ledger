@@ -134,31 +134,31 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="p-4 md:p-8 space-y-6 md:space-y-8 animate-in slide-in-from-top-4 duration-500 print:p-0 print:space-y-4 pb-24 md:pb-8 w-full max-w-full">
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-border pb-6 print:hidden">
+    <div className="p-4 md:p-8 space-y-6 md:space-y-8 animate-in slide-in-from-top-4 duration-500 print:p-0 print:space-y-4 pb-24 md:pb-8 w-full max-w-full overflow-x-hidden">
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-border pb-6 print:hidden min-w-0">
         <div className="min-w-0 flex-1">
           <h1 className="font-headline text-2xl md:text-4xl font-bold text-primary truncate">Advanced Analytics</h1>
           <p className="text-muted-foreground mt-1 font-medium text-[10px] md:text-sm truncate">Production and operational performance module</p>
         </div>
-        <div className="flex flex-row sm:flex-row gap-2 sm:gap-3 w-full md:w-auto shrink-0">
-          <Button variant="outline" className="gap-2 font-bold h-10 md:h-12 flex-1 sm:flex-none text-[10px] md:text-sm" onClick={handlePrint}>
-            <Printer className="h-4 w-4" /> Print PDF
+        <div className="flex flex-row sm:flex-row gap-2 sm:gap-3 w-full md:w-auto shrink-0 min-w-0">
+          <Button variant="outline" className="gap-2 font-bold h-10 md:h-12 flex-1 sm:flex-none text-[10px] md:text-sm shrink-0" onClick={handlePrint}>
+            <Printer className="h-4 w-4 shrink-0" /> <span className="truncate">Print PDF</span>
           </Button>
-          <Button variant="outline" className="gap-2 font-bold h-10 md:h-12 flex-1 sm:flex-none text-[10px] md:text-sm" onClick={exportCSV}>
-            <Download className="h-4 w-4" /> Export CSV
+          <Button variant="outline" className="gap-2 font-bold h-10 md:h-12 flex-1 sm:flex-none text-[10px] md:text-sm shrink-0" onClick={exportCSV}>
+            <Download className="h-4 w-4 shrink-0" /> <span className="truncate">Export CSV</span>
           </Button>
         </div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8 print:grid-cols-3 print:gap-4">
-        <Card className="border-none shadow-xl bg-card border-t-4 border-t-primary min-w-0">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8 print:grid-cols-3 print:gap-4 min-w-0">
+        <Card className="border-none shadow-xl bg-card border-t-4 border-t-primary min-w-0 overflow-hidden">
           <CardHeader className="p-4 md:p-6 min-w-0">
             <CardTitle className="font-headline text-lg md:text-xl font-bold flex items-center gap-2 truncate">
-              <TrendingUp className="h-5 w-5 text-primary shrink-0" /> Top Debtors
+              <TrendingUp className="h-5 w-5 text-primary shrink-0" /> <span className="truncate">Top Debtors</span>
             </CardTitle>
             <CardDescription className="print:hidden text-[10px] md:text-xs truncate">Highest outstanding To Receive counts</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3 p-4 md:p-6 pt-0">
+          <CardContent className="space-y-3 p-4 md:p-6 pt-0 min-w-0">
             {rankings.filter(r => r.balance > 0).slice(0, 5).map((r, i) => (
               <Link key={r.id} href={`/customers/${r.id}`}>
                 <div className="flex items-center justify-between p-2 rounded-lg bg-muted/20 hover:bg-muted/40 transition-all cursor-pointer group gap-2 min-w-0">
@@ -173,14 +173,14 @@ export default function ReportsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-xl bg-card border-t-4 border-t-emerald-500 min-w-0">
+        <Card className="border-none shadow-xl bg-card border-t-4 border-t-emerald-500 min-w-0 overflow-hidden">
           <CardHeader className="p-4 md:p-6 min-w-0">
             <CardTitle className="font-headline text-lg md:text-xl font-bold flex items-center gap-2 truncate">
-              <Activity className="h-5 w-5 text-emerald-500 shrink-0" /> Staff Performance
+              <Activity className="h-5 w-5 text-emerald-500 shrink-0" /> <span className="truncate">Staff Performance</span>
             </CardTitle>
             <CardDescription className="print:hidden text-[10px] md:text-xs truncate">Contribution logs by personnel</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4 p-4 md:p-6 pt-0">
+          <CardContent className="space-y-4 p-4 md:p-6 pt-0 min-w-0">
             {staffActivity.slice(0, 3).map((staff, i) => (
               <div key={i} className="space-y-1 p-3 rounded-lg bg-emerald-500/5 min-w-0">
                 <div className="flex justify-between items-center mb-1 gap-2 min-w-0">
@@ -190,8 +190,8 @@ export default function ReportsPage() {
                   </span>
                   <Badge variant="outline" className="text-[8px] font-bold shrink-0">{staff.count} TXNS</Badge>
                 </div>
-                <div className="flex justify-between text-[9px] text-muted-foreground uppercase tracking-widest font-bold gap-2">
-                  <span className="shrink-0">Volume</span>
+                <div className="flex justify-between text-[9px] text-muted-foreground uppercase tracking-widest font-bold gap-2 min-w-0">
+                  <span className="shrink-0 mr-2">Volume</span>
                   <span className="text-emerald-500 truncate">{staff.volume} PCS</span>
                 </div>
               </div>
@@ -199,26 +199,26 @@ export default function ReportsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-xl bg-card border-t-4 border-t-accent min-w-0">
+        <Card className="border-none shadow-xl bg-card border-t-4 border-t-accent min-w-0 overflow-hidden">
           <CardHeader className="p-4 md:p-6 min-w-0">
             <CardTitle className="font-headline text-lg md:text-xl font-bold flex items-center gap-2 truncate">
-              <Package className="h-5 w-5 text-accent shrink-0" /> Operation Volume
+              <Package className="h-5 w-5 text-accent shrink-0" /> <span className="truncate">Operation Volume</span>
             </CardTitle>
             <CardDescription className="print:hidden text-[10px] md:text-xs truncate">Net business movement</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6 p-4 md:p-6 pt-0">
-            <div className="space-y-2">
-              <div className="flex justify-between text-[9px] font-bold text-muted-foreground uppercase tracking-widest gap-2">
-                <span className="shrink-0">Total Issues (+)</span>
+          <CardContent className="space-y-6 p-4 md:p-6 pt-0 min-w-0">
+            <div className="space-y-2 min-w-0">
+              <div className="flex justify-between text-[9px] font-bold text-muted-foreground uppercase tracking-widest gap-2 min-w-0">
+                <span className="shrink-0 mr-2">Total Issues (+)</span>
                 <span className="text-primary truncate">{totalOut} PCS</span>
               </div>
               <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
                 <div className="h-full bg-primary transition-all duration-1000" style={{ width: `${outPercentage}%` }} />
               </div>
             </div>
-            <div className="space-y-2">
-              <div className="flex justify-between text-[9px] font-bold text-muted-foreground uppercase tracking-widest gap-2">
-                <span className="shrink-0">Total Cleared (-)</span>
+            <div className="space-y-2 min-w-0">
+              <div className="flex justify-between text-[9px] font-bold text-muted-foreground uppercase tracking-widest gap-2 min-w-0">
+                <span className="shrink-0 mr-2">Total Cleared (-)</span>
                 <span className="text-emerald-500 truncate">{totalIn} PCS</span>
               </div>
               <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
@@ -236,7 +236,7 @@ export default function ReportsPage() {
               <CardTitle className="font-headline text-xl md:text-2xl font-bold truncate">Business Ledger</CardTitle>
               <CardDescription className="text-xs md:text-sm truncate">Comprehensive transaction history</CardDescription>
             </div>
-            <div className="flex flex-col sm:flex-row items-center gap-3 print:hidden w-full lg:w-auto shrink-0">
+            <div className="flex flex-col sm:flex-row items-center gap-3 print:hidden w-full lg:w-auto shrink-0 min-w-0">
               <div className="relative w-full sm:flex-1 lg:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input 
@@ -247,7 +247,7 @@ export default function ReportsPage() {
                 />
               </div>
               <Select value={filterType} onValueChange={setFilterType}>
-                <SelectTrigger className="w-full sm:w-[150px] h-10 text-xs">
+                <SelectTrigger className="w-full sm:w-[150px] h-10 text-xs shrink-0">
                   <SelectValue placeholder="All Events" />
                 </SelectTrigger>
                 <SelectContent>
@@ -272,7 +272,7 @@ export default function ReportsPage() {
                   <TableHead className="py-4 font-bold text-[9px] uppercase tracking-widest px-2 md:px-4">Customer</TableHead>
                   <TableHead className="py-4 font-bold text-[9px] uppercase tracking-widest px-2 md:px-4">Type</TableHead>
                   <TableHead className="py-4 font-bold text-[9px] uppercase tracking-widest px-2 md:px-4">Qty</TableHead>
-                  <TableHead className="py-4 font-bold text-[9px] uppercase tracking-widest text-right pr-4 md:pr-6 print:hidden">View</TableHead>
+                  <TableHead className="text-right pr-4 md:pr-6 text-[9px] uppercase tracking-widest print:hidden">View</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -287,7 +287,7 @@ export default function ReportsPage() {
                       <TableCell className="px-2 md:px-4 font-medium text-[10px] min-w-[100px] max-w-[150px]">
                         <div className="truncate flex items-center gap-1 min-w-0">
                           <span className="truncate">{customer?.name || 'Deleted'}</span>
-                          {isInactive && <Badge variant="outline" className="text-[6px] px-1 h-3">OFF</Badge>}
+                          {isInactive && <Badge variant="outline" className="text-[6px] px-1 h-3 shrink-0">OFF</Badge>}
                         </div>
                       </TableCell>
                       <TableCell className="px-2 md:px-4">
