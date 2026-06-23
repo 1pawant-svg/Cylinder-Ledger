@@ -1,38 +1,35 @@
 "use client";
 
 import * as React from "react";
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useLedger } from "@/lib/ledger-context";
 import { useToast } from "@/hooks/use-toast";
 import { 
-  Plus, Search, MoreHorizontal, Eye, Phone, MapPin, History, Filter, ArrowUpDown, Loader2, UserPlus, Calendar, Hash, MessageSquare
+  Plus, Search, MoreHorizontal, Eye, MapPin, Loader2
 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { getCurrentADDate, adToBs, bsToAd, BS_MONTHS, getBSYears, toMillis } from "@/lib/date-utils";
+import { getCurrentADDate, adToBs, bsToAd, toMillis } from "@/lib/date-utils";
 import { useI18n } from "@/lib/i18n-context";
-import { ReminderDialog } from "@/components/reminder-dialog";
-import { useFirestore } from "@/firebase";
-import { getSettings } from "@/lib/services/settings-service";
-import { Customer, Setting } from "@/lib/types";
 
 type StatusFilter = 'ALL' | 'ACTIVE' | 'INACTIVE' | 'TO_RECEIVE' | 'TO_GIVE' | 'SETTLED' | 'OVERDUE';
 type SortOption = 'NAME_ASC' | 'NAME_DESC' | 'BALANCE_HIGH_TO_LOW' | 'BALANCE_LOW_TO_HIGH' | 'LATEST_ACTIVITY';
 
+const safePad = (val: string | number): string => {
+  const s = String(val || "");
+  if (s.length >= 2) return s;
+  return ('0' + s).slice(-2);
+};
+
 export default function CustomersPage() {
-  const searchParams = useSearchParams();
-  const db = useFirestore();
-  const { customers, transactions, addCustomer, addTransaction, getCustomerTransactions, loading } = useLedger();
+  const { customers, addCustomer, addTransaction, getCustomerTransactions, loading } = useLedger();
   const { toast } = useToast();
   const { t } = useI18n();
   
@@ -40,12 +37,6 @@ export default function CustomersPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ACTIVE');
   const [sortBy, setSortBy] = useState<SortOption>('NAME_ASC');
   const [isAddOpen, setIsAddOpen] = useState(false);
-  const [settings, setSettings] = useState<Setting | null>(null);
-  const [reminderCustomer, setReminderCustomer] = useState<Customer | null>(null);
-
-  useEffect(() => {
-    if (db) getSettings(db).then(setSettings);
-  }, [db]);
 
   const getTodayBSParts = useCallback(() => {
     const todayAD = getCurrentADDate();
@@ -187,20 +178,13 @@ export default function CustomersPage() {
                     <div className="flex items-center gap-2 text-[10px] text-muted-foreground"><MapPin className="h-3 w-3" /> {customer.address} • {customer.phone}</div>
                   </TableCell>
                   <TableCell><span className={cn("font-headline font-bold text-sm", bal > 0 ? "text-primary" : bal < 0 ? "text-accent" : "text-emerald-500")}>{bal === 0 ? t('settled') : bal > 0 ? `${bal} ${t('toReceiveSuffix')}` : `${Math.abs(bal)} ${t('toGiveSuffix')}`}</span></TableCell>
-                  <TableCell className="text-right pr-6"><DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem asChild><Link href={`/customers/${customer.id}`} className="cursor-pointer gap-2"><Eye className="h-4 w-4" /> {t('viewProfile')}</Link></DropdownMenuItem><DropdownMenuItem asChild><Link href={`/transactions?customerId=${customer.id}`} className="cursor-pointer gap-2 text-primary"><Plus className="h-4 w-4" /> {t('newEntry')}</Link></DropdownMenuItem><DropdownMenuItem className="cursor-pointer gap-2 text-emerald-600" onClick={() => setReminderCustomer(customer)}><MessageSquare className="h-4 w-4" /> {t('remind')}</DropdownMenuItem></DropdownMenuContent></DropdownMenu></TableCell>
+                  <TableCell className="text-right pr-6"><DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem asChild><Link href={`/customers/${customer.id}`} className="cursor-pointer gap-2"><Eye className="h-4 w-4" /> {t('viewProfile')}</Link></DropdownMenuItem><DropdownMenuItem asChild><Link href={`/transactions?customerId=${customer.id}`} className="cursor-pointer gap-2 text-primary"><Plus className="h-4 w-4" /> {t('newEntry')}</Link></DropdownMenuItem></DropdownMenuContent></DropdownMenu></TableCell>
                 </TableRow>
               );
             })}
           </TableBody>
         </Table>
       </div>
-
-      <ReminderDialog 
-        customer={reminderCustomer} 
-        settings={settings} 
-        open={!!reminderCustomer} 
-        onOpenChange={(open) => !open && setReminderCustomer(null)} 
-      />
     </div>
   );
 }

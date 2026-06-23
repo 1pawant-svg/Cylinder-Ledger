@@ -4,15 +4,13 @@ import * as React from "react";
 import { useState, useEffect, useMemo } from "react";
 import { useLedger } from "@/lib/ledger-context";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { 
-  ArrowLeft, MapPin, Phone, Share2, Edit2, Trash2, MoreVertical, History, Info, MessageSquare, ArrowUpRight, ArrowDownLeft, StickyNote, ClipboardList, AlertTriangle, UserX, UserCheck, Save, X, Hash, Loader2, Plus, Calendar, FileText, RefreshCw, Filter, Eraser, Download, MessageCircle
+  ArrowLeft, MapPin, Phone, Share2, Edit2, MoreVertical, AlertTriangle, UserX, UserCheck, Loader2, Plus, Filter, Eraser, Hash
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -23,12 +21,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils";
 import { getCurrentADDate, adToBs, bsToAd, toMillis, BS_MONTHS, getBSYears } from "@/lib/date-utils";
 import { useToast } from "@/hooks/use-toast";
-import { useUser, useFirestore } from "@/firebase";
+import { useFirestore } from "@/firebase";
 import { getSettings } from "@/lib/services/settings-service";
 import { generateCustomerLedgerPDF, sharePDF } from "@/lib/services/pdf-service";
 import { TransactionType, Transaction, Setting } from "@/lib/types";
 import { useI18n } from "@/lib/i18n-context";
-import { ReminderDialog } from "@/components/reminder-dialog";
 
 const getTransactionLabel = (type: TransactionType) => {
   const t = type.toUpperCase();
@@ -73,11 +70,9 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
   const { toast } = useToast();
   const { t } = useI18n();
   const db = useFirestore();
-  const { user } = useUser();
   const { 
     customers, 
     getCustomerTransactions, 
-    addTransaction, 
     deleteTransaction, 
     updateCustomer, 
     updateCustomerStatus, 
@@ -96,7 +91,6 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editFields, setEditFields] = useState<any>({});
   const [isConfirmSaveOpen, setIsConfirmSaveOpen] = useState(false);
-  const [isReminderOpen, setIsReminderOpen] = useState(false);
   
   // Date Filter State (BS)
   const [filterDates, setFilterDates] = useState({
@@ -153,7 +147,6 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
   }, []);
 
   const transactionsWithBalance = useMemo(() => {
-    // Chronological order (oldest first) to calculate running balance correctly
     const chronological = [...transactions].sort((a, b) => toMillis(a.date) - toMillis(b.date));
     let running = 0;
     
@@ -162,7 +155,6 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
       return { ...txn, runningBalance: running };
     });
 
-    // Filtering logic
     let result = enriched;
     if (activeFilter) {
       const fromAD = bsToAd(activeFilter.from.split('-')[0], activeFilter.from.split('-')[1], activeFilter.from.split('-')[2]);
@@ -173,7 +165,7 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
       });
     }
 
-    return result.reverse(); // Display newest first in UI
+    return result.reverse(); 
   }, [transactions, activeFilter]);
 
   const openingBalance = useMemo(() => {
@@ -318,9 +310,6 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
           )}
           <Button variant="outline" size="sm" onClick={() => setIsEditProfileOpen(true)}>
             <Edit2 className="h-4 w-4 mr-1" /> Edit
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setIsReminderOpen(true)}>
-            <MessageSquare className="h-4 w-4 mr-1" /> {t('remind')}
           </Button>
           <Button variant="outline" size="sm" className="font-bold" onClick={handleSharePDF} disabled={isGeneratingPDF}>{isGeneratingPDF ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4 mr-1" />}{t('shareStatement')}</Button>
           <Button size="sm" variant="outline" onClick={() => updateCustomerStatus(customer.id, isInactive ? 'active' : 'inactive')}>{isInactive ? <UserCheck className="h-4 w-4 mr-1" /> : <UserX className="h-4 w-4 mr-1" />}{isInactive ? t('activate') : t('deactivate')}</Button>
@@ -482,13 +471,6 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <ReminderDialog 
-        customer={customer} 
-        settings={settings} 
-        open={isReminderOpen} 
-        onOpenChange={setIsReminderOpen} 
-      />
 
       <AlertDialog open={editingId !== null && isConfirmSaveOpen} onOpenChange={setIsConfirmSaveOpen}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Save Changes?</AlertDialogTitle><AlertDialogDescription>This will update the ledger entry and adjust denormalized balances.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel onClick={() => setEditingId(null)}>Cancel</AlertDialogCancel><AlertDialogAction onClick={saveInlineEdit} className="bg-emerald-600">Save</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
     </div>

@@ -60,11 +60,6 @@ export const translations = {
     profileAdded: "Profile Added",
     toReceiveSuffix: "To Receive",
     toGiveSuffix: "To Give",
-    remind: "Remind",
-    sendReminder: "Send Reminder",
-    whatsappReminder: "WhatsApp Reminder",
-    smsReminder: "SMS Reminder",
-    reminderPreview: "Reminder Preview",
     
     // Customer Profile
     ledger: "Ledger",
@@ -188,11 +183,6 @@ export const translations = {
     profileAdded: "प्रोफाइल थपियो",
     toReceiveSuffix: "पाउनु पर्ने",
     toGiveSuffix: "दिनु पर्ने",
-    remind: "सम्झाउनुहोस्",
-    sendReminder: "रिमाइन्डर पठाउनुहोस्",
-    whatsappReminder: "ह्वाट्सएप रिमाइन्डर",
-    smsReminder: "एसएमएस रिमाइन्डर",
-    reminderPreview: "सन्देश पूर्वावलोकन",
     
     // Customer Profile
     ledger: "खाता (लेजर)",
