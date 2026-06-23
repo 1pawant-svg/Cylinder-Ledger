@@ -127,27 +127,27 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-500 pb-24 md:pb-8">
+    <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-500 pb-24 md:pb-8 w-full max-w-full overflow-x-hidden">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-border pb-6">
-        <div className="flex items-center gap-3">
-          <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center md:hidden">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center md:hidden shrink-0">
             <LayoutDashboard className="h-6 w-6 text-primary" />
           </div>
-          <div>
-            <h1 className="font-headline text-2xl md:text-4xl font-bold text-primary">{t('overview')}</h1>
-            <p className="text-muted-foreground text-xs md:text-sm font-medium">{todayLabel || "Loading date..."}</p>
+          <div className="min-w-0">
+            <h1 className="font-headline text-2xl md:text-4xl font-bold text-primary truncate">{t('overview')}</h1>
+            <p className="text-muted-foreground text-xs md:text-sm font-medium truncate">{todayLabel || "Loading date..."}</p>
           </div>
         </div>
         <div className="flex gap-3">
-          <Link href="/transactions">
-            <Button className="bg-primary text-primary-foreground font-bold px-6 py-2.5 rounded-lg shadow-lg shadow-primary/20 hover:scale-105 transition-transform">
+          <Link href="/transactions" className="w-full md:w-auto">
+            <Button className="w-full md:w-auto bg-primary text-primary-foreground font-bold px-6 py-2.5 rounded-lg shadow-lg shadow-primary/20 hover:scale-105 transition-transform">
               {t('newTransaction')}
             </Button>
           </Link>
         </div>
       </header>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
         <StatCard 
           title={t('toReceive')} 
           value={`${coreStats.toReceiveTotal} ${t('pcs')}`} 
@@ -167,24 +167,24 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="border-none shadow-xl bg-card">
+        <Card className="border-none shadow-xl bg-card min-w-0">
           <CardHeader className="pb-3 px-4 md:px-6">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
                 <CardTitle className="font-headline text-lg font-bold flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-primary" /> {t('topToReceive')}
+                  <TrendingUp className="h-5 w-5 text-primary shrink-0" /> <span className="truncate">{t('topToReceive')}</span>
                 </CardTitle>
-                <CardDescription className="text-xs">{t('highestOutstanding')}</CardDescription>
+                <CardDescription className="text-xs truncate">{t('highestOutstanding')}</CardDescription>
               </div>
-              <Button variant="ghost" size="sm" className="text-[10px] uppercase font-bold tracking-widest" asChild>
+              <Button variant="ghost" size="sm" className="text-[10px] uppercase font-bold tracking-widest shrink-0" asChild>
                 <Link href="/customers?filter=TO_RECEIVE">{t('fullList')}</Link>
               </Button>
             </div>
           </CardHeader>
           <CardContent className="px-4 md:px-6 space-y-2">
             {coreStats.topToReceive.map((c) => (
-              <Link key={c.id} href={`/customers/${c.id}`} className="flex items-center justify-between p-3 rounded-xl bg-muted/20 hover:bg-muted/40 transition-colors group">
-                <span className="font-bold text-xs truncate group-hover:text-primary pr-2">{c.name}</span>
+              <Link key={c.id} href={`/customers/${c.id}`} className="flex items-center justify-between p-3 rounded-xl bg-muted/20 hover:bg-muted/40 transition-colors group gap-2">
+                <span className="font-bold text-xs truncate group-hover:text-primary min-w-0">{c.name}</span>
                 <Badge className="bg-primary/10 text-primary border-none font-bold shrink-0">{c.balance} {t('pcs')}</Badge>
               </Link>
             ))}
@@ -194,24 +194,24 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-xl bg-card">
+        <Card className="border-none shadow-xl bg-card min-w-0">
           <CardHeader className="pb-3 px-4 md:px-6">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
                 <CardTitle className="font-headline text-lg font-bold flex items-center gap-2">
-                  <TrendingDown className="h-5 w-5 text-accent" /> {t('topToGive')}
+                  <TrendingDown className="h-5 w-5 text-accent shrink-0" /> <span className="truncate">{t('topToGive')}</span>
                 </CardTitle>
-                <CardDescription className="text-xs">{t('owedToCustomers')}</CardDescription>
+                <CardDescription className="text-xs truncate">{t('owedToCustomers')}</CardDescription>
               </div>
-              <Button variant="ghost" size="sm" className="text-[10px] uppercase font-bold tracking-widest" asChild>
+              <Button variant="ghost" size="sm" className="text-[10px] uppercase font-bold tracking-widest shrink-0" asChild>
                 <Link href="/customers?filter=TO_GIVE">{t('fullList')}</Link>
               </Button>
             </div>
           </CardHeader>
           <CardContent className="px-4 md:px-6 space-y-2">
             {coreStats.topToGive.map((c) => (
-              <Link key={c.id} href={`/customers/${c.id}`} className="flex items-center justify-between p-3 rounded-xl bg-muted/20 hover:bg-muted/40 transition-colors group">
-                <span className="font-bold text-xs truncate group-hover:text-primary pr-2">{c.name}</span>
+              <Link key={c.id} href={`/customers/${c.id}`} className="flex items-center justify-between p-3 rounded-xl bg-muted/20 hover:bg-muted/40 transition-colors group gap-2">
+                <span className="font-bold text-xs truncate group-hover:text-primary min-w-0">{c.name}</span>
                 <Badge className="bg-accent/10 text-accent border-none font-bold shrink-0">{Math.abs(c.balance)} {t('pcs')}</Badge>
               </Link>
             ))}
@@ -233,31 +233,31 @@ export default function Dashboard() {
             <CardHeader className="pb-2">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <TabsList className="grid grid-cols-3 w-full md:w-[450px] h-11 bg-muted/50 p-1">
-                  <TabsTrigger value="overdue" className="data-[state=active]:bg-background data-[state=active]:text-destructive font-bold text-xs gap-2">
+                  <TabsTrigger value="overdue" className="data-[state=active]:bg-background data-[state=active]:text-destructive font-bold text-xs gap-1 md:gap-2">
                     {t('overdue')} <Badge variant="destructive" className="h-5 px-1.5 min-w-5 flex items-center justify-center">{collectionData.overdue.length}</Badge>
                   </TabsTrigger>
-                  <TabsTrigger value="today" className="data-[state=active]:bg-background data-[state=active]:text-orange-500 font-bold text-xs gap-2">
+                  <TabsTrigger value="today" className="data-[state=active]:bg-background data-[state=active]:text-orange-500 font-bold text-xs gap-1 md:gap-2">
                     {t('today')} <Badge className="h-5 px-1.5 min-w-5 flex items-center justify-center bg-orange-500">{collectionData.dueToday.length}</Badge>
                   </TabsTrigger>
-                  <TabsTrigger value="weekly" className="data-[state=active]:bg-background data-[state=active]:text-yellow-500 font-bold text-xs gap-2">
+                  <TabsTrigger value="weekly" className="data-[state=active]:bg-background data-[state=active]:text-yellow-500 font-bold text-xs gap-1 md:gap-2">
                     {t('weekly')} <Badge className="h-5 px-1.5 min-w-5 flex items-center justify-center bg-yellow-500">{collectionData.dueThisWeek.length}</Badge>
                   </TabsTrigger>
                 </TabsList>
               </div>
             </CardHeader>
 
-            <div className="px-6 pb-6">
+            <div className="px-2 md:px-6 pb-6">
               <TabsContent value="overdue" className="mt-4 space-y-4 animate-in fade-in slide-in-from-left-2 duration-300">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {collectionData.overdue.slice(0, 9).map((item) => {
                     const customer = customers.find(c => c.id === item.customerId);
                     return (
-                      <div key={item.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/20 border border-border/50 group hover:bg-muted/40 transition-colors">
+                      <div key={item.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/20 border border-border/50 group hover:bg-muted/40 transition-colors gap-2">
                         <div className="min-w-0 flex-1">
                           <Link href={`/customers/${customer?.id}`} className="font-bold text-xs truncate block group-hover:text-primary transition-colors">{customer?.name}</Link>
                           <p className="text-[10px] text-destructive font-bold uppercase">{Math.abs(item.daysDiff)}d {t('overdue')}</p>
                         </div>
-                        <div className="text-right ml-3">
+                        <div className="text-right shrink-0">
                           <p className="text-xs font-bold text-destructive">{item.balance} {t('pcs')}</p>
                           <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => window.open(`tel:${customer?.phone}`)}><Phone className="h-3 w-3" /></Button>
                         </div>
@@ -273,12 +273,12 @@ export default function Dashboard() {
                   {collectionData.dueToday.slice(0, 9).map((item) => {
                     const customer = customers.find(c => c.id === item.customerId);
                     return (
-                      <div key={item.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/20 border border-border/50 group hover:bg-muted/40 transition-colors">
+                      <div key={item.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/20 border border-border/50 group hover:bg-muted/40 transition-colors gap-2">
                         <div className="min-w-0 flex-1">
                           <Link href={`/customers/${customer?.id}`} className="font-bold text-xs truncate block group-hover:text-primary transition-colors">{customer?.name}</Link>
-                          <p className="text-[10px] text-muted-foreground">{customer?.phone}</p>
+                          <p className="text-[10px] text-muted-foreground truncate">{customer?.phone}</p>
                         </div>
-                        <div className="text-right ml-3">
+                        <div className="text-right shrink-0">
                           <p className="text-xs font-bold text-orange-500">{item.balance} {t('pcs')}</p>
                         </div>
                       </div>
@@ -293,12 +293,12 @@ export default function Dashboard() {
                   {collectionData.dueThisWeek.slice(0, 9).map((item) => {
                     const customer = customers.find(c => c.id === item.customerId);
                     return (
-                      <div key={item.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/20 border border-border/50 group hover:bg-muted/40 transition-colors">
+                      <div key={item.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/20 border border-border/50 group hover:bg-muted/40 transition-colors gap-2">
                         <div className="min-w-0 flex-1">
                           <Link href={`/customers/${customer?.id}`} className="font-bold text-xs truncate block group-hover:text-primary transition-colors">{customer?.name}</Link>
                           <p className="text-[10px] text-muted-foreground">Due in {item.daysDiff} days</p>
                         </div>
-                        <span className="text-xs font-bold text-yellow-500 shrink-0 ml-3">{item.balance} {t('pcs')}</span>
+                        <span className="text-xs font-bold text-yellow-500 shrink-0">{item.balance} {t('pcs')}</span>
                       </div>
                     );
                   })}
@@ -311,12 +311,12 @@ export default function Dashboard() {
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
-        <Card className="lg:col-span-2 border-none shadow-xl bg-card/50 backdrop-blur-sm">
+        <Card className="lg:col-span-2 border-none shadow-xl bg-card/50 backdrop-blur-sm min-w-0">
           <CardHeader className="flex flex-row items-center justify-between border-b border-border/50 pb-6 px-4 md:px-6">
-            <div>
-              <CardTitle className="font-headline text-lg md:text-xl font-bold flex items-center gap-2"><History className="h-5 w-5" /> {t('recentLogs')}</CardTitle>
+            <div className="min-w-0">
+              <CardTitle className="font-headline text-lg md:text-xl font-bold flex items-center gap-2"><History className="h-5 w-5 shrink-0" /> <span className="truncate">{t('recentLogs')}</span></CardTitle>
             </div>
-            <Link href="/reports"><Button variant="ghost" size="sm" className="text-xs">{t('viewAll')}</Button></Link>
+            <Link href="/reports" className="shrink-0"><Button variant="ghost" size="sm" className="text-xs">{t('viewAll')}</Button></Link>
           </CardHeader>
           <CardContent className="pt-6 p-0">
             <ScrollArea className="h-[400px]">
@@ -325,14 +325,14 @@ export default function Dashboard() {
                   const customer = customers.find(c => c.id === txn.customerId);
                   const bal = customer?.balance || 0;
                   return (
-                    <div key={txn.id} className="flex items-center justify-between py-3 border-b border-border/50 last:border-0 group">
+                    <div key={txn.id} className="flex items-center justify-between py-3 border-b border-border/50 last:border-0 group gap-4">
                       <div className="flex items-center gap-4 min-w-0 flex-1">
                         <div className={cn("h-10 w-10 rounded-full flex items-center justify-center shrink-0", getTransactionColor(txn.type))}>
                           {getTransactionIcon(txn.type)}
                         </div>
                         <div className="min-w-0">
                           <p className="font-bold text-sm truncate">{customer?.name || "System"}</p>
-                          <p className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold">{txn.type.replace('_', ' ')} • {txn.bsDate}</p>
+                          <p className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold truncate">{txn.type.replace('_', ' ')} • {txn.bsDate}</p>
                         </div>
                       </div>
                       <div className="text-right shrink-0">
@@ -346,8 +346,8 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-xl bg-card border-t-4 border-accent overflow-hidden">
-          <CardHeader className="px-4 md:px-6"><CardTitle className="font-headline text-lg font-bold flex items-center gap-2"><PhoneCall className="h-5 w-5 text-accent" /> {t('contactCenter')}</CardTitle></CardHeader>
+        <Card className="border-none shadow-xl bg-card border-t-4 border-accent overflow-hidden min-w-0">
+          <CardHeader className="px-4 md:px-6"><CardTitle className="font-headline text-lg font-bold flex items-center gap-2"><PhoneCall className="h-5 w-5 text-accent shrink-0" /> <span className="truncate">{t('contactCenter')}</span></CardTitle></CardHeader>
           <CardContent className="p-0">
             <ScrollArea className="h-[400px]">
               <div className="space-y-4 px-4 md:px-6 pb-6 pt-2">
@@ -356,11 +356,11 @@ export default function Dashboard() {
                   if (!customer) return null;
                   return (
                     <div key={txn.id} className="p-4 rounded-xl bg-muted/30 border border-border/50 space-y-4 hover:bg-muted/50 transition-colors">
-                      <div className="flex justify-between items-start">
+                      <div className="flex justify-between items-start gap-2">
                         <div className="min-w-0 flex-1"><Link href={`/customers/${customer.id}`} className="font-bold text-sm truncate block">{customer.name}</Link>
-                          <p className="text-[10px] text-muted-foreground">{t('owed')}: <span className="font-bold text-primary">{customer.balance} {t('pcs')}</span></p>
+                          <p className="text-[10px] text-muted-foreground truncate">{t('owed')}: <span className="font-bold text-primary">{customer.balance} {t('pcs')}</span></p>
                         </div>
-                        {getOverdueBadge(txn.daysDiff, t)}
+                        <div className="shrink-0">{getOverdueBadge(txn.daysDiff, t)}</div>
                       </div>
                       <Button size="sm" variant="outline" className="w-full h-9 text-[10px] gap-2" onClick={() => window.open(`tel:${customer.phone}`)}><PhoneCall className="h-3 w-3" /> {t('call')} {customer.phone}</Button>
                     </div>

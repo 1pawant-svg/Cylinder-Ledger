@@ -212,35 +212,35 @@ export default function TransactionsPage() {
   }
 
   return (
-    <div className="p-4 md:p-8 space-y-6 md:space-y-8 animate-in slide-in-from-right-4 duration-500 pb-24">
+    <div className="p-4 md:p-8 space-y-6 md:space-y-8 animate-in slide-in-from-right-4 duration-500 pb-24 w-full max-w-full overflow-x-hidden">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full">
+        <div className="flex items-center gap-4 min-w-0">
+          <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full shrink-0">
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div>
-            <h1 className="font-headline text-2xl md:text-4xl font-bold text-foreground">
+          <div className="min-w-0">
+            <h1 className="font-headline text-2xl md:text-4xl font-bold text-foreground truncate">
               {editTransactionId ? "Edit Transaction" : "New Transaction"}
             </h1>
-            <p className="text-muted-foreground mt-1 text-xs md:text-sm font-medium">Log cylinder movements using accurate algorithmic Nepali calendar</p>
+            <p className="text-muted-foreground mt-1 text-xs md:text-sm font-medium truncate">Record cylinder movements accurately</p>
           </div>
         </div>
       </header>
 
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-3xl mx-auto w-full">
         <form onSubmit={handleSubmit}>
-          <Card className="border-none shadow-2xl bg-card overflow-hidden">
-            <CardHeader className="p-6 pb-2 border-b border-border/50 bg-muted/30">
+          <Card className="border-none shadow-2xl bg-card overflow-hidden w-full">
+            <CardHeader className="p-4 md:p-6 border-b border-border/50 bg-muted/30">
               <div className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-muted text-muted-foreground">
+                <div className="p-2 rounded-lg bg-muted text-muted-foreground shrink-0">
                   <Plus className="h-5 w-5" />
                 </div>
-                <h3 className="font-bold uppercase tracking-widest text-xs">
+                <h3 className="font-bold uppercase tracking-widest text-[10px] md:text-xs">
                   {editTransactionId ? "Direct Edit Mode" : "Direct Entry Mode"}
                 </h3>
               </div>
             </CardHeader>
-            <CardContent className="p-6 md:p-8 space-y-8">
+            <CardContent className="p-4 md:p-8 space-y-6 md:space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2 text-muted-foreground uppercase text-[10px] tracking-widest font-bold mb-1">
@@ -250,7 +250,7 @@ export default function TransactionsPage() {
                     value={formData.customerId} 
                     onValueChange={(v) => v === "ADD_NEW" ? setIsAddCustomerOpen(true) : setFormData({...formData, customerId: v})}
                   >
-                    <SelectTrigger className="h-12 bg-background border-border">
+                    <SelectTrigger className="h-12 bg-background border-border w-full">
                       <SelectValue placeholder="Select customer..." />
                     </SelectTrigger>
                     <SelectContent className="bg-card border-border max-h-[300px]">
@@ -275,16 +275,16 @@ export default function TransactionsPage() {
                   </Label>
                   <div className="grid grid-cols-3 gap-2">
                     <Select value={bsParts.year} onValueChange={(v) => handleBSChange('year', v)}>
-                      <SelectTrigger className="h-12 bg-background border-border text-xs"><SelectValue /></SelectTrigger>
-                      <SelectContent className="max-h-[400px]">{years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
+                      <SelectTrigger className="h-12 bg-background border-border text-xs px-2"><SelectValue /></SelectTrigger>
+                      <SelectContent className="max-h-[300px]">{years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
                     </Select>
                     <Select value={bsParts.month} onValueChange={(v) => handleBSChange('month', v)}>
-                      <SelectTrigger className="h-12 bg-background border-border text-xs"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="h-12 bg-background border-border text-xs px-2"><SelectValue /></SelectTrigger>
                       <SelectContent>{BS_MONTHS.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
                     </Select>
                     <Select value={bsParts.day} onValueChange={(v) => handleBSChange('day', v)}>
-                      <SelectTrigger className="h-12 bg-background border-border text-xs"><SelectValue /></SelectTrigger>
-                      <SelectContent className="max-h-[400px]">{daysList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+                      <SelectTrigger className="h-12 bg-background border-border text-xs px-2"><SelectValue /></SelectTrigger>
+                      <SelectContent className="max-h-[300px]">{daysList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                 </div>
@@ -292,7 +292,7 @@ export default function TransactionsPage() {
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2 text-muted-foreground uppercase text-[10px] tracking-widest font-bold mb-1">Event Type</Label>
                   <Select value={formData.type} onValueChange={(v: TransactionType) => setFormData({...formData, type: v})}>
-                    <SelectTrigger className="h-12 bg-background border-border font-bold text-sm"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-12 bg-background border-border font-bold text-sm w-full"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="OUT_FULL">To Receive (Full Issue)</SelectItem>
                       <SelectItem value="IN_EMPTY">To Give (Empty Return)</SelectItem>
@@ -317,23 +317,23 @@ export default function TransactionsPage() {
 
                 <div className="space-y-2 md:col-span-2">
                   <Label className="text-muted-foreground uppercase text-[10px] tracking-widest font-bold">Remarks</Label>
-                  <Textarea className="bg-background resize-none min-h-[100px]" value={formData.remark} onChange={e => setFormData({...formData, remark: e.target.value})} placeholder="Internal notes about this movement..." />
+                  <Textarea className="bg-background resize-none min-h-[80px]" value={formData.remark} onChange={e => setFormData({...formData, remark: e.target.value})} placeholder="Internal notes about this movement..." />
                 </div>
               </div>
 
-              <div className="pt-4 flex flex-col sm:flex-row gap-4">
+              <div className="pt-4 flex flex-col sm:flex-row gap-3">
                 <Button 
                   variant="ghost" 
                   type="button" 
                   onClick={() => router.back()} 
-                  className="flex-1 h-16 font-bold uppercase tracking-widest border border-border"
+                  className="flex-1 h-14 md:h-16 font-bold uppercase tracking-widest border border-border"
                 >
                   <X className="h-4 w-4 mr-2" /> Cancel
                 </Button>
                 <Button 
                   type="submit" 
                   disabled={submitting}
-                  className="flex-[2] h-16 bg-primary text-primary-foreground font-headline text-xl font-bold shadow-lg shadow-primary/20"
+                  className="flex-[2] h-14 md:h-16 bg-primary text-primary-foreground font-headline text-lg md:text-xl font-bold shadow-lg shadow-primary/20"
                 >
                   {submitting ? (
                     <Loader2 className="h-6 w-6 animate-spin" />
@@ -351,7 +351,7 @@ export default function TransactionsPage() {
       </div>
 
       <Dialog open={isAddCustomerOpen} onOpenChange={setIsAddCustomerOpen}>
-        <DialogContent className="sm:max-w-[400px]">
+        <DialogContent className="sm:max-w-[400px] w-[95vw] rounded-xl">
           <DialogHeader>
             <DialogTitle className="font-headline font-bold text-xl">Quick Customer Add</DialogTitle>
           </DialogHeader>
