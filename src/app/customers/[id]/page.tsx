@@ -13,7 +13,6 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -76,7 +75,6 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
     deleteTransaction, 
     updateCustomer, 
     updateCustomerStatus, 
-    updateTransaction,
     recalculateBalance 
   } = useLedger();
   
@@ -88,9 +86,6 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
   const [settings, setSettings] = useState<Setting | null>(null);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isRecalculating, setIsRecalculating] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editFields, setEditFields] = useState<any>({});
-  const [isConfirmSaveOpen, setIsConfirmSaveOpen] = useState(false);
   
   const [filterDates, setFilterDates] = useState({
     from: { year: '', month: '', day: '' },
@@ -257,26 +252,6 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
     }
   };
 
-  const startInlineEdit = (txn: Transaction) => {
-    setEditingId(txn.id);
-    setEditFields({ bsDate: txn.bsDate, type: txn.type, quantity: txn.quantity, remark: txn.remark || '', customerId: txn.customerId });
-  };
-
-  const saveInlineEdit = async () => {
-    if (!editingId) return;
-    try {
-      const parts = editFields.bsDate.split('-');
-      const adDate = bsToAd(parts[0], parts[1], parts[2]);
-      await updateTransaction(editingId, { ...editFields, date: adDate });
-      setEditingId(null);
-      toast({ title: t('success') });
-    } catch (err: any) {
-      toast({ variant: "destructive", title: t('error') });
-    } finally {
-      setIsConfirmSaveOpen(false);
-    }
-  };
-
   if (!customer) return <div className="p-20 text-center">Not found</div>;
 
   const bsYears = getBSYears();
@@ -416,13 +391,27 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
                     </TableHeader>
                     <TableBody>
                       {transactionsWithBalance.map((txn) => (
-                        <TableRow key={txn.id} className={cn(editingId === txn.id && "bg-primary/5")}>
+                        <TableRow key={txn.id}>
                           <TableCell className="pl-4 md:pl-6 font-medium text-xs">{txn.bsDate}</TableCell>
                           <TableCell><Badge variant="outline" className={cn("text-[9px] font-bold", getTransactionColor(txn.type))}>{getTransactionLabel(txn.type)}</Badge></TableCell>
                           <TableCell className={cn("font-bold text-xs", getTransactionImpact(txn.type) > 0 ? "text-primary" : "text-emerald-500")}>{getTransactionImpact(txn.type) > 0 ? '+' : '-'}{txn.quantity}</TableCell>
                           <TableCell className="font-bold text-xs">{txn.runningBalance === 0 ? t('settled') : `${Math.abs(txn.runningBalance)} ${txn.runningBalance > 0 ? 'R' : 'G'}`}</TableCell>
                           <TableCell className="text-[10px] text-muted-foreground italic truncate max-w-[120px]">{txn.remark || "-"}</TableCell>
-                          <TableCell className="text-right pr-4 md:pr-6"><DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onClick={() => startInlineEdit(txn)}><Edit2 className="h-3 w-3 mr-2" />Edit</DropdownMenuItem><DropdownMenuItem className="text-destructive" onClick={() => deleteTransaction(txn.id, "User requested delete")}><Trash2 className="h-3 w-3 mr-2" />Delete</DropdownMenuItem></DropdownMenuContent></DropdownMenu></TableCell>
+                          <TableCell className="text-right pr-4 md:pr-6">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => router.push(`/transactions?editId=${txn.id}&customerId=${id}`)}>
+                                  <Edit2 className="h-3 w-3 mr-2" />Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="text-destructive" onClick={() => deleteTransaction(txn.id, "User requested delete")}>
+                                  <Trash2 className="h-3 w-3 mr-2" />Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
                         </TableRow>
                       ))}
                       {transactionsWithBalance.length === 0 && (
@@ -488,8 +477,6 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <AlertDialog open={editingId !== null && isConfirmSaveOpen} onOpenChange={setIsConfirmSaveOpen}><AlertDialogContent className="w-[90vw] rounded-lg"><AlertDialogHeader><AlertDialogTitle>Save Changes?</AlertDialogTitle><AlertDialogDescription>This will update the ledger entry and adjust denormalized balances.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel onClick={() => setEditingId(null)}>Cancel</AlertDialogCancel><AlertDialogAction onClick={saveInlineEdit} className="bg-emerald-600 text-white">Save</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
     </div>
   );
 }
