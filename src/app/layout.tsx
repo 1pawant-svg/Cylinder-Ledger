@@ -1,4 +1,3 @@
-
 import type {Metadata} from 'next';
 import './globals.css';
 import {AppSidebar} from '@/components/app-sidebar';
@@ -29,17 +28,17 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover" />
       </head>
-      <body className="font-body antialiased pb-24 md:pb-0 min-h-screen bg-background">
+      <body className="font-body antialiased pb-24 md:pb-0 min-h-screen bg-background overflow-x-hidden">
         <I18nProvider>
           <FirebaseClientProvider>
             <FirebaseErrorListener />
             <AuthGuard>
               <LedgerProvider>
                 <SidebarProvider>
-                  <div className="flex min-h-screen w-full">
+                  <div className="flex min-h-screen w-full max-w-full overflow-x-hidden">
                     <AppSidebar />
-                    <SidebarInset className="flex-1 bg-background relative">
-                      <main className="flex-1 w-full">
+                    <SidebarInset className="flex-1 bg-background relative min-w-0 overflow-x-hidden">
+                      <main className="flex-1 w-full min-w-0">
                         {children}
                       </main>
                     </SidebarInset>

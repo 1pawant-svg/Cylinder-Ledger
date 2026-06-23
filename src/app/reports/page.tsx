@@ -134,17 +134,17 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="p-4 md:p-8 space-y-6 md:space-y-8 animate-in slide-in-from-top-4 duration-500 print:p-0 print:space-y-4 pb-24 md:pb-8 w-full max-w-full overflow-x-hidden">
+    <div className="p-4 md:p-8 space-y-6 md:space-y-8 animate-in slide-in-from-top-4 duration-500 print:p-0 print:space-y-4 pb-24 md:pb-8 w-full max-w-full overflow-x-hidden min-w-0">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-border pb-6 print:hidden min-w-0">
         <div className="min-w-0 flex-1">
           <h1 className="font-headline text-2xl md:text-4xl font-bold text-primary truncate">Advanced Analytics</h1>
           <p className="text-muted-foreground mt-1 font-medium text-[10px] md:text-sm truncate">Production and operational performance module</p>
         </div>
-        <div className="flex flex-row sm:flex-row gap-2 sm:gap-3 w-full md:w-auto shrink-0 min-w-0">
-          <Button variant="outline" className="gap-2 font-bold h-10 md:h-12 flex-1 sm:flex-none text-[10px] md:text-sm shrink-0" onClick={handlePrint}>
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full md:w-auto shrink min-w-0">
+          <Button variant="outline" className="gap-2 font-bold h-10 md:h-12 flex-1 sm:flex-none text-[10px] md:text-sm shrink" onClick={handlePrint}>
             <Printer className="h-4 w-4 shrink-0" /> <span className="truncate">Print PDF</span>
           </Button>
-          <Button variant="outline" className="gap-2 font-bold h-10 md:h-12 flex-1 sm:flex-none text-[10px] md:text-sm shrink-0" onClick={exportCSV}>
+          <Button variant="outline" className="gap-2 font-bold h-10 md:h-12 flex-1 sm:flex-none text-[10px] md:text-sm shrink" onClick={exportCSV}>
             <Download className="h-4 w-4 shrink-0" /> <span className="truncate">Export CSV</span>
           </Button>
         </div>
@@ -229,7 +229,7 @@ export default function ReportsPage() {
         </Card>
       </div>
 
-      <Card className="border-none shadow-xl bg-card print:shadow-none overflow-hidden w-full">
+      <Card className="border-none shadow-xl bg-card print:shadow-none overflow-hidden w-full max-w-full">
         <CardHeader className="border-b border-border/50 p-4 md:p-6 print:pb-2 min-w-0">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 min-w-0">
             <div className="min-w-0 flex-1">
@@ -283,7 +283,7 @@ export default function ReportsPage() {
                   return (
                     <TableRow key={txn.id} className={cn("border-border/50", isInactive && "opacity-80")}>
                       <TableCell className="pl-4 md:pl-6 font-mono text-[9px] text-muted-foreground hidden sm:table-cell">#{txn.id.slice(-4)}</TableCell>
-                      <TableCell className="px-2 md:px-4 font-bold text-[10px]">{txn.bsDate}</TableCell>
+                      <TableCell className="px-2 md:px-4 font-bold text-[10px] whitespace-nowrap">{txn.bsDate}</TableCell>
                       <TableCell className="px-2 md:px-4 font-medium text-[10px] min-w-[100px] max-w-[150px]">
                         <div className="truncate flex items-center gap-1 min-w-0">
                           <span className="truncate">{customer?.name || 'Deleted'}</span>
