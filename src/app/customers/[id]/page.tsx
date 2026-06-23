@@ -269,7 +269,10 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 min-w-0">
           <div className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-xs min-w-0">
             <span className="flex items-center truncate max-w-[200px]"><MapPin className="h-3 w-3 mr-1 shrink-0" />{customer.address}</span>
-            <span className="flex items-center shrink-0"><Phone className="h-3 w-3 mr-1 shrink-0" />{customer.phone}</span>
+            <a href={`tel:${customer.phone}`} className="flex items-center shrink-0 hover:text-primary transition-colors hover:underline">
+              <Phone className="h-3 w-3 mr-1 shrink-0" />
+              {customer.phone}
+            </a>
             {customer.pan && <span className="flex items-center shrink-0"><Hash className="h-3 w-3 mr-1 shrink-0" />PAN: {customer.pan}</span>}
           </div>
           
