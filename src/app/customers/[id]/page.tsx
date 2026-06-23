@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useLedger } from "@/lib/ledger-context";
 import { useRouter } from "next/navigation";
 import { 
-  ArrowLeft, MapPin, Phone, Share2, Edit2, MoreVertical, AlertTriangle, UserX, UserCheck, Loader2, Plus, Filter, Eraser, Hash
+  ArrowLeft, MapPin, Phone, Share2, Edit2, MoreVertical, AlertTriangle, UserX, UserCheck, Loader2, Plus, Filter, Eraser, Hash, Trash2, RefreshCw, ClipboardList
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
