@@ -28,6 +28,7 @@ import { useUser, useFirestore } from "@/firebase";
 import { getSettings } from "@/lib/services/settings-service";
 import { generateCustomerLedgerPDF, sharePDF } from "@/lib/services/pdf-service";
 import { TransactionType, Transaction, Setting } from "@/lib/types";
+import { useI18n } from "@/lib/i18n-context";
 
 const getTransactionLabel = (type: TransactionType) => {
   const t = type.toUpperCase();
@@ -61,6 +62,7 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
   const { id } = React.use(props.params);
   const router = useRouter();
   const { toast } = useToast();
+  const { t } = useI18n();
   const db = useFirestore();
   const { user } = useUser();
   const { 
@@ -111,9 +113,9 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
     setIsRecalculating(true);
     try {
       await recalculateBalance(customer.id);
-      toast({ title: "Balance Fixed", description: `Synced to ${calculatedTotal} PCS` });
+      toast({ title: t('success'), description: `Synced to ${calculatedTotal} PCS` });
     } catch (err) {
-      toast({ variant: "destructive", title: "Fix Failed" });
+      toast({ variant: "destructive", title: t('error') });
     } finally {
       setIsRecalculating(false);
     }
@@ -127,9 +129,9 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
       const totalIn = transactions.filter(t => getTransactionImpact(t.type) === -1).reduce((s, t) => s + t.quantity, 0);
       const doc = await generateCustomerLedgerPDF(customer, transactionsWithBalance, settings, { totalIn, totalOut, balance });
       await sharePDF(doc, `${customer.name.replace(/\s+/g, '_')}_Ledger.pdf`, customer.phone, customer.name);
-      toast({ title: "Statement Prepared" });
+      toast({ title: t('success') });
     } catch (err: any) {
-      toast({ variant: "destructive", title: "PDF Failed", description: err.message });
+      toast({ variant: "destructive", title: t('error'), description: err.message });
     } finally {
       setIsGeneratingPDF(false);
     }
@@ -147,9 +149,9 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
       const adDate = bsToAd(parts[0], parts[1], parts[2]);
       await updateTransaction(editingId, { ...editFields, date: adDate });
       setEditingId(null);
-      toast({ title: "Entry Updated" });
+      toast({ title: t('success') });
     } catch (err: any) {
-      toast({ variant: "destructive", title: "Update Failed" });
+      toast({ variant: "destructive", title: t('error') });
     } finally {
       setIsConfirmSaveOpen(false);
     }
@@ -176,12 +178,11 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
           {hasBalanceDiscrepancy && (
             <Button size="sm" variant="destructive" onClick={handleRecalculate} disabled={isRecalculating} className="animate-pulse">
               {isRecalculating ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <RefreshCw className="h-4 w-4 mr-1" />}
-              Fix Balance
+              {t('fixBalance')}
             </Button>
           )}
-          <Button size="sm" className="bg-emerald-600 font-bold" onClick={() => router.push(`/transactions?customerId=${id}`)}><Plus className="h-4 w-4 mr-1" /> New Entry</Button>
-          <Button variant="outline" size="sm" className="font-bold" onClick={handleSharePDF} disabled={isGeneratingPDF}>{isGeneratingPDF ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4 mr-1" />}Share PDF</Button>
-          <Button size="sm" variant="outline" onClick={() => updateCustomerStatus(customer.id, isInactive ? 'active' : 'inactive')}>{isInactive ? <UserCheck className="h-4 w-4 mr-1" /> : <UserX className="h-4 w-4 mr-1" />}{isInactive ? "Activate" : "Deactivate"}</Button>
+          <Button variant="outline" size="sm" className="font-bold" onClick={handleSharePDF} disabled={isGeneratingPDF}>{isGeneratingPDF ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4 mr-1" />}{t('shareStatement')}</Button>
+          <Button size="sm" variant="outline" onClick={() => updateCustomerStatus(customer.id, isInactive ? 'active' : 'inactive')}>{isInactive ? <UserCheck className="h-4 w-4 mr-1" /> : <UserX className="h-4 w-4 mr-1" />}{isInactive ? t('activate') : t('deactivate')}</Button>
         </div>
       </div>
 
@@ -191,7 +192,7 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
             <AlertTriangle className="h-4 w-4" />
             Account balance is out of sync with transactions.
           </div>
-          <Button variant="link" size="sm" onClick={handleRecalculate} className="text-accent h-auto p-0 font-bold text-xs underline">Recalculate Now</Button>
+          <Button variant="link" size="sm" onClick={handleRecalculate} className="text-accent h-auto p-0 font-bold text-xs underline">{t('fixBalance')}</Button>
         </div>
       )}
 
@@ -199,24 +200,24 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
         <div className="lg:col-span-2">
           <Card className="border-none shadow-xl">
              <CardHeader className="flex flex-row items-center justify-between px-6">
-                <div><CardTitle className="text-xl font-bold">Ledger</CardTitle><CardDescription>Transaction timeline</CardDescription></div>
+                <div><CardTitle className="text-xl font-bold">{t('ledger')}</CardTitle><CardDescription>{t('transactionTimeline')}</CardDescription></div>
                 <div className="text-right">
-                  <p className="text-[10px] uppercase font-bold text-muted-foreground">Stated Balance</p>
+                  <p className="text-[10px] uppercase font-bold text-muted-foreground">{t('statedBalance')}</p>
                   <Badge className={cn(balance > 0 ? "bg-primary" : balance < 0 ? "bg-accent" : "bg-emerald-500")}>
-                    {balance === 0 ? "SETTLED" : `${Math.abs(balance)} ${balance > 0 ? 'To Receive' : 'To Give'}`}
+                    {balance === 0 ? t('settled') : `${Math.abs(balance)} ${balance > 0 ? t('toReceiveSuffix') : t('toGiveSuffix')}`}
                   </Badge>
                 </div>
              </CardHeader>
              <CardContent className="p-0">
                 <Table>
-                  <TableHeader className="bg-muted/30"><TableRow><TableHead className="pl-6 text-[10px] font-bold">DATE (BS)</TableHead><TableHead className="text-[10px] font-bold">TYPE</TableHead><TableHead className="text-[10px] font-bold">QTY</TableHead><TableHead className="text-[10px] font-bold">RUNNING</TableHead><TableHead className="text-right pr-6 text-[10px] font-bold">ACTIONS</TableHead></TableRow></TableHeader>
+                  <TableHeader className="bg-muted/30"><TableRow><TableHead className="pl-6 text-[10px] font-bold">{t('dateBs')}</TableHead><TableHead className="text-[10px] font-bold">{t('type')}</TableHead><TableHead className="text-[10px] font-bold">{t('qty')}</TableHead><TableHead className="text-[10px] font-bold">{t('running')}</TableHead><TableHead className="text-right pr-6 text-[10px] font-bold">{t('actions')}</TableHead></TableRow></TableHeader>
                   <TableBody>
                     {transactionsWithBalance.map((txn) => (
                       <TableRow key={txn.id} className={cn(editingId === txn.id && "bg-primary/5")}>
                         <TableCell className="pl-6 font-medium text-xs">{txn.bsDate}</TableCell>
                         <TableCell><Badge variant="outline" className={cn("text-[9px] font-bold", getTransactionColor(txn.type))}>{getTransactionLabel(txn.type)}</Badge></TableCell>
                         <TableCell className={cn("font-bold text-xs", getTransactionImpact(txn.type) > 0 ? "text-primary" : "text-emerald-500")}>{getTransactionImpact(txn.type) > 0 ? '+' : '-'}{txn.quantity}</TableCell>
-                        <TableCell className="font-bold text-xs">{txn.runningBalance === 0 ? "Settled" : `${Math.abs(txn.runningBalance)} ${txn.runningBalance > 0 ? 'R' : 'G'}`}</TableCell>
+                        <TableCell className="font-bold text-xs">{txn.runningBalance === 0 ? t('settled') : `${Math.abs(txn.runningBalance)} ${txn.runningBalance > 0 ? 'R' : 'G'}`}</TableCell>
                         <TableCell className="text-right pr-6"><DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onClick={() => startInlineEdit(txn)}><Edit2 className="h-3 w-3 mr-2" />Edit</DropdownMenuItem><DropdownMenuItem className="text-destructive" onClick={() => deleteTransaction(txn.id, "User requested delete")}><Trash2 className="h-3 w-3 mr-2" />Delete</DropdownMenuItem></DropdownMenuContent></DropdownMenu></TableCell>
                       </TableRow>
                     ))}
@@ -231,14 +232,14 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
             <Card className="border-none shadow-xl">
               <CardHeader><CardTitle className="text-lg font-bold">Quick Entry</CardTitle></CardHeader>
               <CardContent className="space-y-4">
-                <Button className="w-full h-12 bg-primary font-bold text-lg" onClick={() => router.push(`/transactions?customerId=${id}`)}>
-                  <Plus className="h-5 w-5 mr-2" /> New Transaction
+                <Button className="w-full h-12 bg-primary text-primary-foreground font-bold text-lg" onClick={() => router.push(`/transactions?customerId=${id}`)}>
+                  <Plus className="h-5 w-5 mr-2" /> {t('newTransaction')}
                 </Button>
                 <p className="text-[10px] text-muted-foreground text-center">Log new cylinder movements for this customer</p>
               </CardContent>
             </Card>
           )}
-          <Card className="bg-muted/20 border-none shadow-xl"><CardHeader><CardTitle className="text-sm font-bold flex gap-2 items-center"><ClipboardList className="h-4 w-4" /> Documentation</CardTitle></CardHeader><CardContent className="space-y-4 text-xs"><div><p className="text-[10px] font-bold uppercase text-muted-foreground mb-1">General Notes</p><div className="bg-card p-2 rounded border">{customer.remarks || "N/A"}</div></div><div><p className="text-[10px] font-bold uppercase text-primary mb-1">Instructions</p><div className="bg-card p-2 rounded border">{customer.specialInstructions || "None"}</div></div></CardContent></Card>
+          <Card className="bg-muted/20 border-none shadow-xl"><CardHeader><CardTitle className="text-sm font-bold flex gap-2 items-center"><ClipboardList className="h-4 w-4" /> {t('documentation')}</CardTitle></CardHeader><CardContent className="space-y-4 text-xs"><div><p className="text-[10px] font-bold uppercase text-muted-foreground mb-1">{t('generalNotes')}</p><div className="bg-card p-2 rounded border">{customer.remarks || "N/A"}</div></div><div><p className="text-[10px] font-bold uppercase text-primary mb-1">{t('instructions')}</p><div className="bg-card p-2 rounded border">{customer.specialInstructions || "None"}</div></div></CardContent></Card>
         </div>
       </div>
 
