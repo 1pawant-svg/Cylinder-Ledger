@@ -1,4 +1,3 @@
-
 import { 
   Firestore, 
   collection, 
@@ -15,9 +14,6 @@ import { logAction } from './audit-service';
 import { getInventoryRef, getInventoryImpact } from './inventory-service';
 import { cleanFirestoreData } from '@/lib/utils';
 
-/**
- * Calculates the balance impact of a transaction type on the customer.
- */
 function getCustomerBalanceImpact(type: TransactionType, quantity: number): number {
   const t = type.toUpperCase();
   if (t === 'OUT' || t === 'OUT_FULL') return quantity;
@@ -54,19 +50,16 @@ export async function addTransaction(db: Firestore, data: Omit<Transaction, 'id'
 
       if (!custSnap.exists()) throw new Error("Customer not found");
 
-      // 1. Update Inventory
       let currentInv: Inventory = invSnap.exists() 
         ? invSnap.data() as Inventory 
         : { filledStock: 0, emptyStock: 0, updatedAt: new Date().toISOString() };
 
       const { filledDelta, emptyDelta } = getInventoryImpact(data.type, data.quantity);
       
-      // 2. Update Customer Balance
       const currentCust = custSnap.data() as Customer;
       const balanceDelta = getCustomerBalanceImpact(data.type, data.quantity);
       const newBalance = (currentCust.balance || 0) + balanceDelta;
 
-      // Commit Operations
       transaction.set(txnDocRef, payload);
       transaction.update(customerRef, { balance: newBalance });
 
@@ -133,7 +126,6 @@ export async function updateTransaction(db: Firestore, id: string, data: Partial
 
       if (!custSnap.exists()) throw new Error("Customer not found");
 
-      // Calculate Deltas
       const oldInvImpact = getInventoryImpact(oldTxn.type, oldTxn.quantity);
       const newType = data.type || oldTxn.type;
       const newQty = data.quantity !== undefined ? data.quantity : oldTxn.quantity;
@@ -151,7 +143,6 @@ export async function updateTransaction(db: Firestore, id: string, data: Partial
         ? invSnap.data() as Inventory 
         : { filledStock: 0, emptyStock: 0, updatedAt: new Date().toISOString() };
 
-      // Commit
       transaction.update(docRef, updateData);
       transaction.update(customerRef, { balance: (currentCust.balance || 0) + balanceDelta });
 

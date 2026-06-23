@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo, useCallback } from 'react';
@@ -14,12 +13,14 @@ const I18nContext = createContext<I18nContextType | undefined>(undefined);
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Language>('en');
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     const savedLang = localStorage.getItem('cylindera_lang') as Language;
     if (savedLang && (savedLang === 'en' || savedLang === 'ne')) {
       setLanguageState(savedLang);
     }
+    setMounted(true);
   }, []);
 
   const setLanguage = (lang: Language) => {
@@ -28,7 +29,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   };
 
   const t = useCallback((key: keyof typeof translations['en']): string => {
-    return translations[language][key] || translations['en'][key] || key;
+    const dict = translations[language] || translations['en'];
+    return dict[key] || translations['en'][key] || key;
   }, [language]);
 
   const value = useMemo(() => ({
@@ -36,6 +38,11 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     setLanguage,
     t
   }), [language, t]);
+
+  // Prevent hydration mismatches by not rendering children until mounted on client
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <I18nContext.Provider value={value}>

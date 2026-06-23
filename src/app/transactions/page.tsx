@@ -39,10 +39,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useFirestore } from "@/firebase";
 import { doc, getDoc } from "firebase/firestore";
 
-const safePad = (val: string | number, len: number = 2): string => {
+const safePad = (val: string | number): string => {
   const s = String(val || "");
-  if (s.length >= len) return s;
-  return s.padStart(len, "0");
+  return s.length >= 2 ? s : ('0' + s).slice(-2);
 };
 
 export default function TransactionsPage() {
