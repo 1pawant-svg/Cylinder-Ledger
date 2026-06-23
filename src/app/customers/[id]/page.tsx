@@ -247,7 +247,16 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
              </CardHeader>
              <CardContent className="p-0">
                 <Table>
-                  <TableHeader className="bg-muted/30"><TableRow><TableHead className="pl-6 text-[10px] font-bold">{t('dateBs')}</TableHead><TableHead className="text-[10px] font-bold">{t('type')}</TableHead><TableHead className="text-[10px] font-bold">{t('qty')}</TableHead><TableHead className="text-[10px] font-bold">{t('running')}</TableHead><TableHead className="text-right pr-6 text-[10px] font-bold">{t('actions')}</TableHead></TableRow></TableHeader>
+                  <TableHeader className="bg-muted/30">
+                    <TableRow>
+                      <TableHead className="pl-6 text-[10px] font-bold">{t('dateBs')}</TableHead>
+                      <TableHead className="text-[10px] font-bold">{t('type')}</TableHead>
+                      <TableHead className="text-[10px] font-bold">{t('qty')}</TableHead>
+                      <TableHead className="text-[10px] font-bold">{t('running')}</TableHead>
+                      <TableHead className="text-[10px] font-bold">{t('remarks')}</TableHead>
+                      <TableHead className="text-right pr-6 text-[10px] font-bold">{t('actions')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
                   <TableBody>
                     {transactionsWithBalance.map((txn) => (
                       <TableRow key={txn.id} className={cn(editingId === txn.id && "bg-primary/5")}>
@@ -255,6 +264,7 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
                         <TableCell><Badge variant="outline" className={cn("text-[9px] font-bold", getTransactionColor(txn.type))}>{getTransactionLabel(txn.type)}</Badge></TableCell>
                         <TableCell className={cn("font-bold text-xs", getTransactionImpact(txn.type) > 0 ? "text-primary" : "text-emerald-500")}>{getTransactionImpact(txn.type) > 0 ? '+' : '-'}{txn.quantity}</TableCell>
                         <TableCell className="font-bold text-xs">{txn.runningBalance === 0 ? t('settled') : `${Math.abs(txn.runningBalance)} ${txn.runningBalance > 0 ? 'R' : 'G'}`}</TableCell>
+                        <TableCell className="text-[10px] text-muted-foreground italic truncate max-w-[150px]">{txn.remark || "-"}</TableCell>
                         <TableCell className="text-right pr-6"><DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onClick={() => startInlineEdit(txn)}><Edit2 className="h-3 w-3 mr-2" />Edit</DropdownMenuItem><DropdownMenuItem className="text-destructive" onClick={() => deleteTransaction(txn.id, "User requested delete")}><Trash2 className="h-3 w-3 mr-2" />Delete</DropdownMenuItem></DropdownMenuContent></DropdownMenu></TableCell>
                       </TableRow>
                     ))}
