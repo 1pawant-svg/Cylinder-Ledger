@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 import { getCurrentADDate, adToBs, bsToAd, toMillis, BS_MONTHS, getBSYears } from "@/lib/date-utils";
 import { useI18n } from "@/lib/i18n-context";
 
-type StatusFilter = 'ALL' | 'ACTIVE' | 'INACTIVE' | 'TO_RECEIVE' | 'TO_GIVE' | 'SETTLED' | 'OVERDUE';
+type StatusFilter = 'ALL' | 'ACTIVE' | 'INACTIVE' | 'TO_RECEIVE' | 'TO_GIVE' | 'SETTLED' | 'OVERDUE' | 'RETAILERS' | 'NON_RETAILERS';
 type SortOption = 'NAME_ASC' | 'NAME_DESC' | 'BALANCE_HIGH_TO_LOW' | 'BALANCE_LOW_TO_HIGH' | 'LATEST_ACTIVITY';
 
 const safePad = (val: string | number): string => {
@@ -76,6 +76,8 @@ export default function CustomersPage() {
       if (statusFilter === 'TO_RECEIVE') return balance > 0;
       if (statusFilter === 'TO_GIVE') return balance < 0;
       if (statusFilter === 'SETTLED') return balance === 0;
+      if (statusFilter === 'RETAILERS') return !!c.pan && c.pan.trim().length > 0;
+      if (statusFilter === 'NON_RETAILERS') return !c.pan || c.pan.trim().length === 0;
       if (statusFilter === 'OVERDUE') {
         const txns = getCustomerTransactions(c.id);
         return balance > 0 && txns.some(t => t.dueDate && t.dueDate < today);
@@ -190,7 +192,32 @@ export default function CustomersPage() {
 
       <div className="flex flex-col md:flex-row gap-3 min-w-0">
         <div className="relative flex-1 min-w-0"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" /><Input placeholder={t('search')} className="pl-10 h-12 w-full" value={search} onChange={e => setSearch(e.target.value)} /></div>
-        <div className="grid grid-cols-2 gap-2 shrink-0"><Select value={statusFilter} onValueChange={(v: any) => setStatusFilter(v)}><SelectTrigger className="h-12 w-full md:w-[150px]"><SelectValue placeholder={t('activeOnly')} /></SelectTrigger><SelectContent><SelectItem value="ACTIVE">{t('activeOnly')}</SelectItem><SelectItem value="INACTIVE">{t('inactiveOnly')}</SelectItem><SelectItem value="ALL">{t('allCustomers')}</SelectItem><SelectItem value="TO_RECEIVE">{t('toReceive')}</SelectItem><SelectItem value="TO_GIVE">{t('toGive')}</SelectItem><SelectItem value="SETTLED">{t('settled')}</SelectItem><SelectItem value="OVERDUE">{t('overdue')}</SelectItem></SelectContent></Select><Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}><SelectTrigger className="h-12 w-full md:w-[160px]"><SelectValue placeholder="Sort" /></SelectTrigger><SelectContent><SelectItem value="NAME_ASC">Name (A-Z)</SelectItem><SelectItem value="NAME_DESC">Name (Z-A)</SelectItem><SelectItem value="BALANCE_HIGH_TO_LOW">High Balance</SelectItem><SelectItem value="BALANCE_LOW_TO_HIGH">Low Balance</SelectItem><SelectItem value="LATEST_ACTIVITY">Latest Activity</SelectItem></SelectContent></Select></div>
+        <div className="grid grid-cols-2 gap-2 shrink-0">
+          <Select value={statusFilter} onValueChange={(v: any) => setStatusFilter(v)}>
+            <SelectTrigger className="h-12 w-full md:w-[150px]"><SelectValue placeholder={t('activeOnly')} /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ACTIVE">{t('activeOnly')}</SelectItem>
+              <SelectItem value="INACTIVE">{t('inactiveOnly')}</SelectItem>
+              <SelectItem value="ALL">{t('allCustomers')}</SelectItem>
+              <SelectItem value="TO_RECEIVE">{t('toReceive')}</SelectItem>
+              <SelectItem value="TO_GIVE">{t('toGive')}</SelectItem>
+              <SelectItem value="SETTLED">{t('settled')}</SelectItem>
+              <SelectItem value="OVERDUE">{t('overdue')}</SelectItem>
+              <SelectItem value="RETAILERS">{t('retailers')}</SelectItem>
+              <SelectItem value="NON_RETAILERS">{t('nonRetailers')}</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
+            <SelectTrigger className="h-12 w-full md:w-[160px]"><SelectValue placeholder="Sort" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="NAME_ASC">Name (A-Z)</SelectItem>
+              <SelectItem value="NAME_DESC">Name (Z-A)</SelectItem>
+              <SelectItem value="BALANCE_HIGH_TO_LOW">High Balance</SelectItem>
+              <SelectItem value="BALANCE_LOW_TO_HIGH">Low Balance</SelectItem>
+              <SelectItem value="LATEST_ACTIVITY">Latest Activity</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="bg-card border rounded-xl overflow-hidden shadow-xl w-full max-w-full">
