@@ -1,3 +1,4 @@
+
 'use client';
 
 import jsPDF from 'jspdf';
@@ -14,8 +15,8 @@ const getTransactionImpact = (type: TransactionType): number => {
 
 /**
  * Generates a professional Customer Ledger PDF.
- * Note: Uses English labels for the report structure to ensure compatibility 
- * with standard PDF fonts and prevent character garbling.
+ * Note: Uses Romanized Nepali (Nepali words in English script) for structural labels
+ * to ensure 100% compatibility across all PDF viewers without font corruption.
  */
 export async function generateCustomerLedgerPDF(
   customer: Customer,
@@ -28,19 +29,6 @@ export async function generateCustomerLedgerPDF(
     isFiltered?: boolean;
     openingBalance?: number;
     dateRange?: string;
-  },
-  labels?: {
-    toReceive: string;
-    toGive: string;
-    in: string;
-    out: string;
-    settled: string;
-    dateBs: string;
-    eventType: string;
-    qtyIn: string;
-    qtyOut: string;
-    balance: string;
-    remarks: string;
   }
 ) {
   const doc = new jsPDF({
@@ -53,25 +41,25 @@ export async function generateCustomerLedgerPDF(
   const businessAddress = settings?.address || '';
   const businessPhone = settings?.phone || '';
 
-  // Fallback to standard English labels for the PDF to prevent garbled text
+  // Use Romanized Nepali labels to prevent "gibberish" while respecting the user's terms
   const l = {
-    toReceive: 'To Receive',
-    toGive: 'To Give',
-    in: 'IN (आयो)',
-    out: 'OUT (गयो)',
-    settled: 'SETTLED',
-    dateBs: 'Date (BS)',
-    eventType: 'Event Type',
-    qtyIn: 'IN',
-    qtyOut: 'OUT',
-    balance: 'Balance',
-    remarks: 'Remarks'
+    toReceive: 'LIN (To Receive)',
+    toGive: 'DIN (To Give)',
+    in: 'AAYO (IN)',
+    out: 'GAYO (OUT)',
+    settled: 'CHUKTA (Settled)',
+    dateBs: 'Miti (Date BS)',
+    eventType: 'Bibaran (Type)',
+    qtyIn: 'AAYO',
+    qtyOut: 'GAYO',
+    balance: 'Baaki (Balance)',
+    remarks: 'Kaifiyat (Remarks)'
   };
 
   // Header
   doc.setFontSize(22);
   doc.setFont('helvetica', 'bold');
-  doc.text(businessName, 14, 22);
+  doc.text(businessName.toUpperCase(), 14, 22);
 
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
@@ -85,10 +73,11 @@ export async function generateCustomerLedgerPDF(
   doc.setTextColor(0);
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.text(summary.isFiltered ? 'FILTERED ACCOUNT STATEMENT' : 'CUSTOMER LEDGER STATEMENT', 14, 42);
+  const title = summary.isFiltered ? 'FILTERED ACCOUNT STATEMENT' : 'CUSTOMER LEDGER STATEMENT';
+  doc.text(title, 14, 42);
 
   doc.setFontSize(10);
-  doc.text(`Customer: ${customer.name}`, 14, 50);
+  doc.text(`Customer Name: ${customer.name}`, 14, 50);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(80);
   doc.text(`Address: ${customer.address}`, 14, 55);
@@ -97,7 +86,7 @@ export async function generateCustomerLedgerPDF(
 
   // Report Info
   doc.setTextColor(100);
-  doc.text(`Report Date: ${adToBs(getCurrentADDate())} (${getCurrentADDate()})`, 140, 50);
+  doc.text(`Report Date: ${adToBs(getCurrentADDate())} BS`, 140, 50);
   if (summary.dateRange) {
     doc.setFontSize(9);
     doc.text(`Period: ${summary.dateRange}`, 140, 56);
@@ -106,7 +95,7 @@ export async function generateCustomerLedgerPDF(
   // Summary Box
   doc.setFillColor(248, 249, 250);
   doc.rect(14, 75, 182, 35, 'F');
-  doc.setDrawColor(230);
+  doc.setDrawColor(220);
   doc.rect(14, 75, 182, 35, 'S');
   
   doc.setFontSize(10);
@@ -120,37 +109,38 @@ export async function generateCustomerLedgerPDF(
   
   let yOffset = 90;
   if (summary.isFiltered) {
-    doc.text('Opening Balance:', 20, yOffset);
+    doc.text('Opening Baaki:', 20, yOffset);
     doc.text(`${summary.openingBalance || 0} PCS`, 60, yOffset);
     yOffset += 5;
   }
 
-  doc.text(`Total Issues (${l.qtyOut}):`, 20, yOffset);
+  doc.text(`Total Gayo (${l.qtyOut}):`, 20, yOffset);
   doc.text(`${summary.totalOut} PCS`, 60, yOffset);
   yOffset += 5;
   
-  doc.text(`Total Returns (${l.qtyIn}):`, 20, yOffset);
+  doc.text(`Total Aayo (${l.qtyIn}):`, 20, yOffset);
   doc.text(`${summary.totalIn} PCS`, 60, yOffset);
 
   // Net Balance Highlight
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0);
-  doc.text('Current Net Balance:', 110, 93);
+  doc.text('Net Baaki (Current Balance):', 110, 93);
   
+  const balValue = Math.abs(summary.balance);
   const balLabel = summary.balance === 0 
     ? l.settled 
     : summary.balance > 0 
-      ? `${summary.balance} ${l.toReceive}` 
-      : `${Math.abs(summary.balance)} ${l.toGive}`;
+      ? `${balValue} LIN` 
+      : `${balValue} DIN`;
   
-  // Color coding for balance
-  if (summary.balance > 0) doc.setTextColor(218, 165, 32); // Gold/Yellow
+  // Color coding for balance (Golden for Lin, Emerald for Din)
+  if (summary.balance > 0) doc.setTextColor(184, 134, 11); // Dark Golden Rod
   else if (summary.balance < 0) doc.setTextColor(16, 185, 129); // Emerald
   else doc.setTextColor(16, 185, 129);
   
   doc.text(balLabel, 110, 100);
-  doc.setTextColor(0, 0, 0);
+  doc.setTextColor(0);
 
   // Transaction Table
   const tableRows = transactions.map((t) => {
@@ -160,14 +150,14 @@ export async function generateCustomerLedgerPDF(
     
     let displayType = t.type.replace('_', ' ');
     const upper = t.type.toUpperCase();
-    if (upper === 'OUT' || upper === 'OUT_FULL') displayType = 'OUT';
-    else if (upper === 'IN' || upper === 'IN_EMPTY') displayType = 'IN';
+    if (upper === 'OUT' || upper === 'OUT_FULL') displayType = 'GAYO';
+    else if (upper === 'IN' || upper === 'IN_EMPTY') displayType = 'AAYO';
 
     const balanceLabel = t.runningBalance === 0 
       ? '0' 
       : (t.runningBalance > 0 
-          ? `${t.runningBalance} To Receive` 
-          : `${Math.abs(t.runningBalance)} To Give`
+          ? `${t.runningBalance} LIN` 
+          : `${Math.abs(t.runningBalance)} DIN`
         );
 
     return [
@@ -186,7 +176,7 @@ export async function generateCustomerLedgerPDF(
     body: tableRows,
     theme: 'grid',
     headStyles: {
-      fillColor: [33, 37, 41],
+      fillColor: [45, 45, 45],
       textColor: [255, 255, 255],
       fontSize: 9,
       fontStyle: 'bold',
@@ -195,12 +185,12 @@ export async function generateCustomerLedgerPDF(
     },
     bodyStyles: {
       fontSize: 8,
-      textColor: [33, 37, 41],
+      textColor: [45, 45, 45],
       valign: 'middle'
     },
     columnStyles: {
-      0: { cellWidth: 28 },
-      1: { cellWidth: 25, halign: 'center' },
+      0: { cellWidth: 32 }, // Increased width for date
+      1: { cellWidth: 22, halign: 'center' },
       2: { cellWidth: 15, halign: 'center' },
       3: { cellWidth: 15, halign: 'center' },
       4: { cellWidth: 35, halign: 'center' },
@@ -219,7 +209,7 @@ export async function generateCustomerLedgerPDF(
         { align: 'center' }
       );
       doc.text(
-        'Computer generated statement. Powered by Cylindera LPG Pro.',
+        'Computer generated ledger. Powered by Cylindera LPG Pro.',
         14,
         doc.internal.pageSize.getHeight() - 10
       );

@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -374,7 +375,7 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
                   <Table className="min-w-[700px] w-full border-collapse">
                     <TableHeader className="bg-muted/40">
                       <TableRow className="border-b border-border/50">
-                        <TableHead className="pl-4 md:pl-6 text-[10px] font-bold uppercase tracking-widest w-[140px] text-muted-foreground">{t('dateBs')}</TableHead>
+                        <TableHead className="pl-4 md:pl-6 text-[10px] font-bold uppercase tracking-widest w-[180px] text-muted-foreground">{t('dateBs')}</TableHead>
                         <TableHead className="text-[10px] font-bold uppercase tracking-widest w-[100px] text-muted-foreground">{t('type')}</TableHead>
                         <TableHead className="text-[10px] font-bold uppercase tracking-widest w-[80px] text-muted-foreground">{t('qty')}</TableHead>
                         <TableHead className="text-[10px] font-bold uppercase tracking-widest w-[130px] text-muted-foreground">{t('running')}</TableHead>
