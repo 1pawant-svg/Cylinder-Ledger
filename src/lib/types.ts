@@ -1,4 +1,3 @@
-
 import { Timestamp } from 'firebase/firestore';
 
 export type TransactionType = 'IN' | 'OUT' | 'OUT_FULL' | 'IN_EMPTY' | 'LEAKAGE' | 'LOST' | 'ADJUSTMENT';
@@ -60,6 +59,7 @@ export interface Setting {
   phone: string;
   panNumber?: string;
   vatPercentage?: number;
+  lastBackupAt?: Timestamp | string | Date;
 }
 
 export interface AuditLog {

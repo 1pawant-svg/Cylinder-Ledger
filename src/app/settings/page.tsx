@@ -1,12 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { useState, useEffect, useRef } from "react";
-import { useFirestore, useUser } from "@/firebase";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { useFirestore, useUser, useCollection } from "@/firebase";
 import { saveSettings, getSettings } from "@/lib/services/settings-service";
-import { logAction } from "@/lib/services/audit-service";
+import { logAction, getRecentLogsQuery } from "@/lib/services/audit-service";
 import { exportBackup, restoreBackup, clearDatabase, BackupData } from "@/lib/services/backup-service";
-import { Setting, UserProfile } from "@/lib/types";
+import { Setting, UserProfile, AuditLog } from "@/lib/types";
 import { getUserProfile } from "@/lib/services/user-service";
 import { useI18n } from "@/lib/i18n-context";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   Building2, 
   MapPin, 
@@ -29,7 +30,9 @@ import {
   AlertTriangle,
   History,
   Languages,
-  Trash2
+  Trash2,
+  CalendarCheck,
+  CheckCircle2
 } from "lucide-react";
 import {
   AlertDialog,
@@ -49,6 +52,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
+import { adToBs, getCurrentADDate, getDifferenceInDays, toMillis } from "@/lib/date-utils";
 
 export default function SettingsPage() {
   const db = useFirestore();
@@ -71,6 +75,18 @@ export default function SettingsPage() {
     vatPercentage: 13,
   });
 
+  // Query audit logs for backup history
+  const logsQuery = useMemo(() => db ? getRecentLogsQuery(db, 100) : null, [db]);
+  const { data: auditLogs } = useCollection<AuditLog>(logsQuery);
+
+  const backupHistory = useMemo(() => {
+    if (!auditLogs) return [];
+    return auditLogs
+      .filter(log => log.action === 'EXPORT_BACKUP')
+      .sort((a, b) => toMillis(b.timestamp) - toMillis(a.timestamp))
+      .slice(0, 10);
+  }, [auditLogs]);
+
   useEffect(() => {
     async function loadData() {
       if (!db || !user) return;
@@ -87,12 +103,33 @@ export default function SettingsPage() {
     loadData();
   }, [db, user]);
 
+  const daysSinceBackup = useMemo(() => {
+    if (!settings.lastBackupAt) return 99;
+    const today = getCurrentADDate();
+    const lastDate = settings.lastBackupAt instanceof Date 
+      ? settings.lastBackupAt.toISOString().split('T')[0] 
+      : (settings.lastBackupAt as any).toDate().toISOString().split('T')[0];
+    return getDifferenceInDays(lastDate, today);
+  }, [settings.lastBackupAt]);
+
+  const nextReminderDate = useMemo(() => {
+    if (!settings.lastBackupAt) return 'Immediate';
+    const lastDateObj = settings.lastBackupAt instanceof Date 
+      ? settings.lastBackupAt 
+      : (settings.lastBackupAt as any).toDate();
+    
+    const nextDate = new Date(lastDateObj);
+    nextDate.setDate(lastDateObj.getDate() + 15);
+    const adStr = nextDate.toISOString().split('T')[0];
+    return `${adToBs(adStr)} (${adStr})`;
+  }, [settings.lastBackupAt]);
+
   const handleSave = async () => {
     if (!db || !user || !profile) return;
     setSaving(true);
     
     try {
-      saveSettings(db, settings);
+      await saveSettings(db, settings);
       
       logAction(db, {
         userId: user.uid,
@@ -134,7 +171,12 @@ export default function SettingsPage() {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        toast({ title: t('success'), description: "JSON backup file has been downloaded." });
+        
+        // Refresh settings to update last backup date
+        const updatedSettings = await getSettings(db);
+        if (updatedSettings) setSettings(updatedSettings);
+
+        toast({ title: t('success'), description: t('backupSuccess') });
       }
     } catch (error: any) {
       if (error.code !== 'permission-denied') {
@@ -209,6 +251,72 @@ export default function SettingsPage() {
         <h1 className="font-headline text-3xl md:text-4xl font-bold text-foreground">{t('settings')} & {t('restore')}</h1>
         <p className="text-muted-foreground mt-1 font-medium">Configure business identity and manage system data</p>
       </header>
+
+      {/* Backup Status Card */}
+      <Card className={cn(
+        "border-none shadow-2xl bg-card border-l-4",
+        daysSinceBackup >= 15 ? "border-l-accent" : "border-l-emerald-500"
+      )}>
+        <CardHeader>
+          <CardTitle className="font-headline text-2xl font-bold flex items-center gap-2">
+            <CalendarCheck className={cn("h-6 w-6", daysSinceBackup >= 15 ? "text-accent" : "text-emerald-500")} />
+            {t('backupReminder')}
+          </CardTitle>
+          <CardDescription>System monitoring for data protection and scheduled reminders.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-4">
+              <div className="p-4 rounded-xl bg-muted/20 border border-border/50 space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{t('lastBackupDate')}</span>
+                  <span className="font-bold text-sm">
+                    {settings.lastBackupAt ? adToBs(settings.lastBackupAt instanceof Date ? settings.lastBackupAt.toISOString().split('T')[0] : (settings.lastBackupAt as any).toDate().toISOString().split('T')[0]) : 'Never'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{t('daysSinceLastBackup')}</span>
+                  <Badge variant={daysSinceBackup >= 15 ? "destructive" : "secondary"}>
+                    {daysSinceBackup} {t('pcs').toLowerCase()}
+                  </Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{t('nextBackupReminder')}</span>
+                  <span className="font-bold text-sm text-primary">{nextReminderDate}</span>
+                </div>
+              </div>
+              <Button 
+                onClick={handleExport} 
+                disabled={backingUp}
+                className="w-full h-12 bg-primary font-bold shadow-lg shadow-primary/20"
+              >
+                {backingUp ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Download className="h-4 w-4 mr-2" />}
+                {t('backupNow')}
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+               <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-[0.2em]">{t('backupHistory')}</h3>
+               <ScrollArea className="h-[140px] pr-4">
+                  <div className="space-y-2">
+                    {backupHistory.length > 0 ? backupHistory.map((log) => (
+                      <div key={log.id} className="flex items-center gap-3 p-2 rounded-lg bg-muted/10 border border-border/30">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[10px] font-bold truncate">{log.userName}</p>
+                          <p className="text-[9px] text-muted-foreground">{adToBs(toMillis(log.timestamp) ? new Date(toMillis(log.timestamp)).toISOString().split('T')[0] : '')}</p>
+                        </div>
+                        <Badge variant="outline" className="text-[8px] px-1 h-4">SUCCESS</Badge>
+                      </div>
+                    )) : (
+                      <p className="text-xs text-muted-foreground italic text-center py-8">{t('noBackupsYet')}</p>
+                    )}
+                  </div>
+               </ScrollArea>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card className="border-none shadow-2xl bg-card border-l-4 border-l-primary">
         <CardHeader>

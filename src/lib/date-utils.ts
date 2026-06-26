@@ -125,3 +125,17 @@ export const getDifferenceInDays = (adDate1: any, adDate2: any): number => {
   const diffTime = d2.getTime() - d1.getTime();
   return Math.round(diffTime / (1000 * 60 * 60 * 24));
 };
+
+/**
+ * Checks if today is the last day of the current BS month.
+ */
+export const isBSMonthEnd = () => {
+  try {
+    const npDate = new NepaliDate();
+    const currentDay = npDate.getDate();
+    const totalDays = npDate.getMonthDays();
+    return currentDay === totalDays;
+  } catch (e) {
+    return false;
+  }
+};

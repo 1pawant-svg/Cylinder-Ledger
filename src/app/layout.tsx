@@ -9,6 +9,7 @@ import {FirebaseErrorListener} from '@/components/FirebaseErrorListener';
 import {AuthGuard} from '@/components/auth-guard';
 import {MobileNav} from '@/components/mobile-nav';
 import {I18nProvider} from '@/lib/i18n-context';
+import {BackupReminderBanner} from '@/components/backup-reminder-banner';
 
 export const metadata: Metadata = {
   title: 'Cylindera - LPG Cylinder Ledger',
@@ -34,6 +35,7 @@ export default function RootLayout({
             <FirebaseErrorListener />
             <AuthGuard>
               <LedgerProvider>
+                <BackupReminderBanner />
                 <SidebarProvider>
                   <div className="flex min-h-screen w-full max-w-full overflow-x-hidden">
                     <AppSidebar />

@@ -126,6 +126,18 @@ export const translations = {
     confirmWipe: "Yes, Wipe Everything",
     dataWiped: "System Reset Successful",
     
+    // Backup Reminders
+    backupReminder: "Backup Reminder",
+    backupDue15Days: "It has been 15 days since your last backup. Please create a backup to protect your data.",
+    backupDueMonthEnd: "Month-end backup is due. Please create a backup before starting a new month.",
+    backupNow: "Backup Now",
+    lastBackupDate: "Last Backup Date",
+    nextBackupReminder: "Next Scheduled Reminder",
+    daysSinceLastBackup: "Days since last backup",
+    backupHistory: "Backup History",
+    noBackupsYet: "No backups recorded yet.",
+    backupSuccess: "Backup created successfully.",
+
     // Notifications & Validation
     success: "Success",
     error: "Error",
@@ -257,6 +269,18 @@ export const translations = {
     wipeDescription: "यसले सबै ग्राहक र कारोबारहरू स्थायी रूपमा मेटाउनेछ। यो कार्य फिर्ता गर्न सकिँदैन।",
     confirmWipe: "हो, सबै मेटाउनुहोस्",
     dataWiped: "प्रणाली रिसेट सफल भयो",
+
+    // Backup Reminders
+    backupReminder: "ब्याकअप रिमाइन्डर",
+    backupDue15Days: "तपाईंले ब्याकअप गरेको १५ दिन भइसक्यो। कृपया आफ्नो डाटा सुरक्षित गर्न ब्याकअप गर्नुहोस्।",
+    backupDueMonthEnd: "महिनाको अन्तिम ब्याकअप गर्ने समय भयो। नयाँ महिना सुरु हुनु अघि कृपया ब्याकअप गर्नुहोस्।",
+    backupNow: "अहिले ब्याकअप गर्नुहोस्",
+    lastBackupDate: "अन्तिम ब्याकअप मिति",
+    nextBackupReminder: "अर्को ब्याकअप रिमाइन्डर",
+    daysSinceLastBackup: "अन्तिम ब्याकअप पछिको दिन",
+    backupHistory: "ब्याकअप इतिहास",
+    noBackupsYet: "हालसम्म कुनै ब्याकअप गरिएको छैन।",
+    backupSuccess: "ब्याकअप सफल भयो।",
     
     // Notifications & Validation
     success: "सफल",

@@ -4,7 +4,9 @@ import {
   getDocs, 
   writeBatch, 
   doc,
-  getDoc
+  getDoc,
+  updateDoc,
+  serverTimestamp
 } from 'firebase/firestore';
 import { logAction } from './audit-service';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -33,6 +35,12 @@ export async function exportBackup(db: Firestore, userId: string, userName: stri
       exportedAt: new Date().toISOString(),
       version: "1.0",
     };
+
+    // Record the backup date in settings for reminders
+    const settingsRef = doc(db, 'settings', 'config');
+    await updateDoc(settingsRef, {
+      lastBackupAt: serverTimestamp(),
+    });
 
     logAction(db, {
       userId,
