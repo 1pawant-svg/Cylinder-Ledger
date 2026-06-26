@@ -72,7 +72,7 @@ export const translations = {
     dateBs: "DATE (BS)",
     type: "TYPE",
     qty: "QTY",
-    running: "RUNNING",
+    running: "Balance",
     fixBalance: "Fix Balance",
     shareStatement: "Share Statement",
     activate: "Activate",
