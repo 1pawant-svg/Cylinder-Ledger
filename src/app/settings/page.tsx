@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -6,7 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { useFirestore, useUser } from "@/firebase";
 import { saveSettings, getSettings } from "@/lib/services/settings-service";
 import { logAction } from "@/lib/services/audit-service";
-import { exportBackup, restoreBackup, BackupData } from "@/lib/services/backup-service";
+import { exportBackup, restoreBackup, clearDatabase, BackupData } from "@/lib/services/backup-service";
 import { Setting, UserProfile } from "@/lib/types";
 import { getUserProfile } from "@/lib/services/user-service";
 import { useI18n } from "@/lib/i18n-context";
@@ -29,7 +28,8 @@ import {
   Database,
   AlertTriangle,
   History,
-  Languages
+  Languages,
+  Trash2
 } from "lucide-react";
 import {
   AlertDialog,
@@ -61,6 +61,7 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [backingUp, setBackingUp] = useState(false);
   const [restoring, setRestoring] = useState(false);
+  const [wiping, setWiping] = useState(false);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [settings, setSettings] = useState<Setting>({
     businessName: "",
@@ -107,7 +108,6 @@ export default function SettingsPage() {
         description: "Business configuration has been updated successfully.",
       });
     } catch (error: any) {
-      // Permission errors are handled by the global listener
       if (error.code !== 'permission-denied') {
         toast({
           variant: "destructive",
@@ -179,6 +179,22 @@ export default function SettingsPage() {
     reader.readAsText(file);
   };
 
+  const handleWipeData = async () => {
+    if (!db || !user || !profile) return;
+    setWiping(true);
+    try {
+      await clearDatabase(db, user.uid, profile.fullName || 'User');
+      toast({ title: t('dataWiped'), description: "All business records have been removed." });
+      setTimeout(() => window.location.reload(), 1000);
+    } catch (error: any) {
+      if (error.code !== 'permission-denied') {
+        toast({ variant: "destructive", title: t('error'), description: error.message });
+      }
+    } finally {
+      setWiping(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex h-full w-full items-center justify-center p-20">
@@ -188,9 +204,9 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="p-8 space-y-8 animate-in fade-in duration-500 max-w-4xl mx-auto pb-24 md:pb-8">
+    <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-500 max-w-4xl mx-auto pb-24 md:pb-8">
       <header className="border-b border-border pb-6">
-        <h1 className="font-headline text-4xl font-bold text-foreground">{t('settings')} & {t('restore')}</h1>
+        <h1 className="font-headline text-3xl md:text-4xl font-bold text-foreground">{t('settings')} & {t('restore')}</h1>
         <p className="text-muted-foreground mt-1 font-medium">Configure business identity and manage system data</p>
       </header>
 
@@ -223,7 +239,7 @@ export default function SettingsPage() {
             <Building2 className="h-6 w-6" /> {t('businessIdentity')}
           </CardTitle>
           <CardDescription>
-            This information appears on WhatsApp statements, generated PDF reports, and determines your shop's identity in the system.
+            This information appears on WhatsApp statements and PDF reports.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-6">
@@ -290,10 +306,7 @@ export default function SettingsPage() {
             </div>
           </div>
         </CardContent>
-        <CardFooter className="bg-muted/10 border-t border-border p-6 flex justify-between items-center">
-          <p className="text-xs text-muted-foreground italic max-w-[60%]">
-            Last updated config affects all new WhatsApp statements and PDF reports.
-          </p>
+        <CardFooter className="bg-muted/10 border-t border-border p-6 flex justify-end">
           <Button 
             onClick={handleSave} 
             disabled={saving}
@@ -305,9 +318,9 @@ export default function SettingsPage() {
         </CardFooter>
       </Card>
 
-      <Card className="border-none shadow-2xl bg-card border-l-4 border-l-accent">
+      <Card className="border-none shadow-2xl bg-card">
         <CardHeader>
-          <CardTitle className="font-headline text-2xl font-bold flex items-center gap-2 text-accent">
+          <CardTitle className="font-headline text-2xl font-bold flex items-center gap-2 text-primary">
             <Database className="h-6 w-6" /> {t('systemMaintenance')}
           </CardTitle>
           <CardDescription>Export backups or restore data from a local JSON file.</CardDescription>
@@ -321,7 +334,7 @@ export default function SettingsPage() {
               <h3 className="font-bold">{t('backup')}</h3>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Downloads a complete snapshot of your customers, transactions, and settings. Recommended weekly for safety.
+              Downloads a complete snapshot of your customers, transactions, and settings.
             </p>
             <Button 
               variant="outline" 
@@ -334,15 +347,15 @@ export default function SettingsPage() {
             </Button>
           </div>
 
-          <div className="space-y-4 p-4 rounded-xl bg-accent/5 border border-accent/20">
+          <div className="space-y-4 p-4 rounded-xl bg-muted/10 border border-border/50">
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 rounded-lg bg-accent/10 text-accent">
+              <div className="p-2 rounded-lg bg-primary/10 text-primary">
                 <Upload className="h-5 w-5" />
               </div>
               <h3 className="font-bold">{t('restore')}</h3>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Upload a previous backup file to restore your system. <span className="text-accent font-bold">Warning:</span> This will overwrite existing data matches.
+              Upload a previous backup file to restore your system.
             </p>
             <input type="file" ref={fileInputRef} className="hidden" accept=".json" onChange={handleFileChange} />
             
@@ -350,7 +363,7 @@ export default function SettingsPage() {
               <AlertDialogTrigger asChild>
                 <Button 
                   variant="outline" 
-                  className="w-full h-12 border-accent/20 text-accent hover:bg-accent hover:text-white font-bold"
+                  className="w-full h-12 border-primary/20 text-primary hover:bg-primary/5 font-bold"
                   disabled={restoring}
                 >
                   {restoring ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
@@ -360,31 +373,66 @@ export default function SettingsPage() {
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle className="flex items-center gap-2">
-                    <AlertTriangle className="h-5 w-5 text-accent" /> Confirm Restore?
+                    <AlertTriangle className="h-5 w-5 text-amber-500" /> Confirm Restore?
                   </AlertDialogTitle>
                   <AlertDialogDescription>
-                    Restoring data will merge backup records with your current database. This action is irreversible and should only be done if you are certain about the backup file's content.
+                    Restoring data will merge backup records with your current database. Proceed with caution.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleRestoreClick} className="bg-accent text-white hover:bg-accent/90">
-                    I Understand, Proceed
+                  <AlertDialogAction onClick={handleRestoreClick} className="bg-primary text-primary-foreground hover:bg-primary/90">
+                    Proceed
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
           </div>
         </CardContent>
-        <CardFooter className="bg-muted/5 p-6 border-t border-border flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <History className="h-3 w-3" />
-            Last Maintenance: <span className="font-bold">{new Date().toLocaleDateString()}</span>
+      </Card>
+
+      <Card className="border-none shadow-2xl bg-card border-l-4 border-l-destructive">
+        <CardHeader>
+          <CardTitle className="font-headline text-2xl font-bold flex items-center gap-2 text-destructive">
+            <Trash2 className="h-6 w-6" /> {t('dangerZone')}
+          </CardTitle>
+          <CardDescription>Permanently remove all business data to start fresh.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="p-4 rounded-xl bg-destructive/5 border border-destructive/20 space-y-4">
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              {t('wipeDescription')}
+            </p>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button 
+                  variant="destructive" 
+                  className="w-full h-12 font-bold shadow-lg shadow-destructive/20"
+                  disabled={wiping}
+                >
+                  {wiping ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
+                  {t('wipeData')}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5 text-destructive" /> Final Warning
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This is a factory reset. You will lose all your customers and transaction logs. Are you absolutely sure?
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter className="flex-col gap-2 sm:flex-row">
+                  <AlertDialogCancel className="w-full sm:w-auto">Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleWipeData} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 w-full sm:w-auto">
+                    {t('confirmWipe')}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
-          <Badge variant="outline" className="text-[10px] opacity-70">
-            SECURE BS SYNC • ATOMIC WRITES
-          </Badge>
-        </CardFooter>
+        </CardContent>
       </Card>
     </div>
   );

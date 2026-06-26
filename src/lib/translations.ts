@@ -120,6 +120,11 @@ export const translations = {
     nepali: "Nepali (नेपाली)",
     saveConfiguration: "Save Configuration",
     settingsSaved: "Settings Saved",
+    dangerZone: "Danger Zone",
+    wipeData: "Wipe All Data",
+    wipeDescription: "This will permanently delete all customers and transactions. This action cannot be undone.",
+    confirmWipe: "Yes, Wipe Everything",
+    dataWiped: "System Reset Successful",
     
     // Notifications & Validation
     success: "Success",
@@ -247,6 +252,11 @@ export const translations = {
     nepali: "नेपाली",
     saveConfiguration: "विवरण सुरक्षित गर्नुहोस्",
     settingsSaved: "विवरण सुरक्षित भयो",
+    dangerZone: "खतरा क्षेत्र",
+    wipeData: "सबै डाटा मेटाउनुहोस्",
+    wipeDescription: "यसले सबै ग्राहक र कारोबारहरू स्थायी रूपमा मेटाउनेछ। यो कार्य फिर्ता गर्न सकिँदैन।",
+    confirmWipe: "हो, सबै मेटाउनुहोस्",
+    dataWiped: "प्रणाली रिसेट सफल भयो",
     
     // Notifications & Validation
     success: "सफल",

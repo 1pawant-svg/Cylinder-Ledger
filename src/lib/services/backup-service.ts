@@ -1,4 +1,3 @@
-
 import { 
   Firestore, 
   collection, 
@@ -96,6 +95,38 @@ export async function restoreBackup(db: Firestore, backup: BackupData, userId: s
         path: 'collections/restore',
         operation: 'write',
         requestResourceData: backup,
+      }));
+    }
+    throw error;
+  }
+}
+
+export async function clearDatabase(db: Firestore, userId: string, userName: string) {
+  try {
+    const [customersSnap, transactionsSnap] = await Promise.all([
+      getDocs(collection(db, 'customers')),
+      getDocs(collection(db, 'transactions'))
+    ]);
+
+    const batch = writeBatch(db);
+    customersSnap.docs.forEach(doc => batch.delete(doc.ref));
+    transactionsSnap.docs.forEach(doc => batch.delete(doc.ref));
+
+    await batch.commit();
+
+    logAction(db, {
+      userId,
+      userName,
+      action: 'WIPE_DATABASE',
+      entityType: 'SYSTEM',
+      entityId: 'wipe',
+      details: `System reset performed. Deleted ${customersSnap.size} customers and ${transactionsSnap.size} transactions.`,
+    });
+  } catch (error: any) {
+    if (error.code === 'permission-denied') {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: 'system/wipe',
+        operation: 'delete',
       }));
     }
     throw error;
