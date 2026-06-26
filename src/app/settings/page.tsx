@@ -53,11 +53,13 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { adToBs, getCurrentADDate, getDifferenceInDays, toMillis } from "@/lib/date-utils";
+import { cn } from "@/lib/utils";
 
 export default function SettingsPage() {
   const db = useFirestore();
   const { user } = useUser();
-  const { toast } = useToast();
+  const toastResult = useToast();
+  const toast = toastResult.toast;
   const { t, language, setLanguage } = useI18n();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
