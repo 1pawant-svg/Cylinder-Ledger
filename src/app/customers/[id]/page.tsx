@@ -398,7 +398,18 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
                           <TableCell className="pl-4 md:pl-6 font-medium text-xs">{txn.bsDate}</TableCell>
                           <TableCell><Badge variant="outline" className={cn("text-[9px] font-bold", getTransactionColor(txn.type))}>{getTransactionLabel(txn.type)}</Badge></TableCell>
                           <TableCell className={cn("font-bold text-xs", getTransactionImpact(txn.type) > 0 ? "text-primary" : "text-emerald-500")}>{getTransactionImpact(txn.type) > 0 ? '+' : '-'}{txn.quantity}</TableCell>
-                          <TableCell className="font-bold text-xs">{txn.runningBalance === 0 ? t('settled') : `${Math.abs(txn.runningBalance)} ${txn.runningBalance > 0 ? 'R' : 'G'}`}</TableCell>
+                          <TableCell className="font-bold text-xs">
+                            {txn.runningBalance === 0 ? (
+                              t('settled')
+                            ) : (
+                              <div className="flex flex-col">
+                                <span>{Math.abs(txn.runningBalance)}</span>
+                                <span className="text-[9px] font-normal text-muted-foreground leading-tight uppercase tracking-tighter">
+                                  {txn.runningBalance > 0 ? t('toReceiveSuffix') : t('toGiveSuffix')}
+                                </span>
+                              </div>
+                            )}
+                          </TableCell>
                           <TableCell className="text-[10px] text-muted-foreground italic truncate max-w-[120px]">{txn.remark || "-"}</TableCell>
                           <TableCell className="text-right pr-4 md:pr-6">
                             <DropdownMenu>

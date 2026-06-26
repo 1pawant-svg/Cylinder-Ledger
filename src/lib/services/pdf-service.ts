@@ -110,12 +110,20 @@ export async function generateCustomerLedgerPDF(
     const inQty = impact < 0 ? t.quantity : '-';
     const outQty = impact > 0 ? t.quantity : '-';
     
+    // Updated shorthand R/G to full To Receive/To Give with newline for PDF
+    const balanceLabel = t.runningBalance === 0 
+      ? '0' 
+      : (t.runningBalance > 0 
+          ? `${t.runningBalance}\nTo Receive` 
+          : `${Math.abs(t.runningBalance)}\nTo Give`
+        );
+
     return [
       t.bsDate,
       t.type.replace('_', ' '),
       inQty,
       outQty,
-      t.runningBalance === 0 ? '0' : (t.runningBalance > 0 ? `${t.runningBalance} (R)` : `${Math.abs(t.runningBalance)} (G)`),
+      balanceLabel,
       t.remark || ''
     ];
   });

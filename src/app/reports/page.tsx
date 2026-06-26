@@ -42,6 +42,7 @@ import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { TransactionType } from "@/lib/types";
 import { adToBs, getCurrentADDate } from "@/lib/date-utils";
+import { useI18n } from "@/lib/i18n-context";
 
 const getTransactionImpact = (type: TransactionType): number => {
   const t = type.toUpperCase();
@@ -64,6 +65,7 @@ const getTransactionLabel = (type: TransactionType) => {
 
 export default function ReportsPage() {
   const { customers, activeCustomers, transactions, getCustomerBalance, getStaffActivity } = useLedger();
+  const { t } = useI18n();
   const [filterType, setFilterType] = useState<string>('ALL');
   const [search, setSearch] = useState("");
 
@@ -166,7 +168,10 @@ export default function ReportsPage() {
                     <span className="text-[10px] font-bold text-primary w-4 shrink-0">#{i+1}</span>
                     <span className="font-bold text-xs truncate group-hover:text-primary">{r.name}</span>
                   </div>
-                  <span className="font-headline font-bold text-[10px] text-primary shrink-0 whitespace-nowrap">{r.balance} R</span>
+                  <div className="flex flex-col items-end shrink-0 whitespace-nowrap">
+                    <span className="font-headline font-bold text-[10px] text-primary">{r.balance}</span>
+                    <span className="text-[8px] uppercase tracking-tighter text-muted-foreground">{t('toReceiveSuffix')}</span>
+                  </div>
                 </div>
               </Link>
             ))}
