@@ -366,7 +366,7 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
                 </div>
                 <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-2 border-t md:border-t-0 pt-3 md:pt-0 mt-2 md:mt-0 w-full md:w-auto shrink-0 min-w-0">
                   <p className="text-[10px] uppercase font-bold text-muted-foreground shrink-0">{t('statedBalance')}</p>
-                  <Badge className={cn("text-[10px] font-bold shrink-0 truncate", balance > 0 ? "bg-primary" : balance < 0 ? "bg-accent" : "bg-emerald-500")}>
+                  <Badge className={cn("text-[10px] font-bold shrink-0 truncate", balance > 0 ? "bg-primary" : balance < 0 ? "bg-emerald-500" : "bg-emerald-500")}>
                     {balance === 0 ? t('settled') : `${Math.abs(balance)} ${balance > 0 ? t('toReceiveSuffix') : t('toGiveSuffix')}`}
                   </Badge>
                 </div>
@@ -375,7 +375,7 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
                 {activeFilter && (
                   <div className="px-4 md:px-6 py-2 bg-muted/20 border-b flex justify-between items-center text-xs font-bold min-w-0">
                     <span className="text-muted-foreground uppercase text-[10px] shrink-0 mr-2">{t('openingBalance')}</span>
-                    <span className={cn("shrink-0", openingBalance >= 0 ? "text-primary" : "text-accent")}>
+                    <span className={cn("shrink-0", openingBalance >= 0 ? "text-primary" : "text-emerald-500")}>
                       {openingBalance} PCS
                     </span>
                   </div>
@@ -403,8 +403,13 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
                               t('settled')
                             ) : (
                               <div className="flex flex-col">
-                                <span>{Math.abs(txn.runningBalance)}</span>
-                                <span className="text-[9px] font-normal text-muted-foreground leading-tight uppercase tracking-tighter">
+                                <span className={cn(txn.runningBalance > 0 ? "text-primary" : "text-emerald-500")}>
+                                  {Math.abs(txn.runningBalance)}
+                                </span>
+                                <span className={cn(
+                                  "text-[9px] font-normal leading-tight uppercase tracking-tighter",
+                                  txn.runningBalance > 0 ? "text-primary" : "text-emerald-500"
+                                )}>
                                   {txn.runningBalance > 0 ? t('toReceiveSuffix') : t('toGiveSuffix')}
                                 </span>
                               </div>

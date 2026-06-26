@@ -166,7 +166,7 @@ export default function Dashboard() {
           value={`${coreStats.toGiveTotal} ${t('pcs')}`} 
           icon={ArrowDownLeft} 
           description={t('owedToCustomers')}
-          variant="warning"
+          variant="secondary"
           href="/customers?filter=TO_GIVE"
         />
       </div>
@@ -231,7 +231,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0">
                 <CardTitle className="font-headline text-lg font-bold flex items-center gap-2">
-                  <TrendingDown className="h-5 w-5 text-accent shrink-0" /> <span className="truncate">{t('topToGive')}</span>
+                  <TrendingDown className="h-5 w-5 text-emerald-500 shrink-0" /> <span className="truncate">{t('topToGive')}</span>
                 </CardTitle>
                 <CardDescription className="text-xs truncate">{t('owedToCustomers')}</CardDescription>
               </div>
@@ -244,7 +244,7 @@ export default function Dashboard() {
             {coreStats.topToGive.map((c) => (
               <Link key={c.id} href={`/customers/${c.id}`} className="flex items-center justify-between p-3 rounded-xl bg-muted/20 hover:bg-muted/40 transition-colors group gap-2">
                 <span className="font-bold text-xs truncate group-hover:text-primary min-w-0">{c.name}</span>
-                <Badge className="bg-accent/10 text-accent border-none font-bold shrink-0">{Math.abs(c.balance)} {t('pcs')}</Badge>
+                <Badge className="bg-emerald-500/10 text-emerald-500 border-none font-bold shrink-0">{Math.abs(c.balance)} {t('pcs')}</Badge>
               </Link>
             ))}
             {coreStats.topToGive.length === 0 && (
