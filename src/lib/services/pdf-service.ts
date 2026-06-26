@@ -2,7 +2,7 @@
 
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { Customer, Transaction, Setting, TransactionType } from '@/lib/types';
+import { Customer, TransactionType, Setting } from '@/lib/types';
 import { adToBs, getCurrentADDate } from '@/lib/date-utils';
 
 const getTransactionImpact = (type: TransactionType): number => {
@@ -12,6 +12,11 @@ const getTransactionImpact = (type: TransactionType): number => {
   return 0;
 };
 
+/**
+ * Generates a professional Customer Ledger PDF.
+ * Note: Uses English labels for the report structure to ensure compatibility 
+ * with standard PDF fonts and prevent character garbling.
+ */
 export async function generateCustomerLedgerPDF(
   customer: Customer,
   transactions: any[],
@@ -48,87 +53,103 @@ export async function generateCustomerLedgerPDF(
   const businessAddress = settings?.address || '';
   const businessPhone = settings?.phone || '';
 
-  const l = labels || {
+  // Fallback to standard English labels for the PDF to prevent garbled text
+  const l = {
     toReceive: 'To Receive',
     toGive: 'To Give',
-    in: 'IN',
-    out: 'OUT',
+    in: 'IN (आयो)',
+    out: 'OUT (गयो)',
     settled: 'SETTLED',
     dateBs: 'Date (BS)',
     eventType: 'Event Type',
-    qtyIn: 'In Qty',
-    qtyOut: 'Out Qty',
+    qtyIn: 'IN',
+    qtyOut: 'OUT',
     balance: 'Balance',
     remarks: 'Remarks'
   };
 
   // Header
-  doc.setFontSize(18);
+  doc.setFontSize(22);
   doc.setFont('helvetica', 'bold');
-  doc.text(businessName, 14, 20);
-
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'normal');
-  doc.text(`${businessAddress}${businessPhone ? ` | Tel: ${businessPhone}` : ''}`, 14, 25);
-  
-  doc.line(14, 28, 196, 28); // Divider
-
-  // Customer Info Section
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.text(summary.isFiltered ? 'FILTERED STATEMENT' : 'CUSTOMER STATEMENT', 14, 38);
+  doc.text(businessName, 14, 22);
 
   doc.setFontSize(10);
-  doc.text(`Name: ${customer.name}`, 14, 46);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Address: ${customer.address}`, 14, 51);
-  doc.text(`Phone: ${customer.phone}`, 14, 56);
-  if (customer.pan) doc.text(`PAN: ${customer.pan}`, 14, 61);
+  doc.setTextColor(100);
+  doc.text(`${businessAddress}${businessPhone ? ` | Tel: ${businessPhone}` : ''}`, 14, 28);
+  
+  doc.setDrawColor(200);
+  doc.line(14, 32, 196, 32);
+
+  // Customer Info Section
+  doc.setTextColor(0);
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text(summary.isFiltered ? 'FILTERED ACCOUNT STATEMENT' : 'CUSTOMER LEDGER STATEMENT', 14, 42);
+
+  doc.setFontSize(10);
+  doc.text(`Customer: ${customer.name}`, 14, 50);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(80);
+  doc.text(`Address: ${customer.address}`, 14, 55);
+  doc.text(`Phone: ${customer.phone}`, 14, 60);
+  if (customer.pan) doc.text(`PAN: ${customer.pan}`, 14, 65);
 
   // Report Info
-  doc.text(`Report Date: ${adToBs(getCurrentADDate())} (${getCurrentADDate()})`, 140, 46);
+  doc.setTextColor(100);
+  doc.text(`Report Date: ${adToBs(getCurrentADDate())} (${getCurrentADDate()})`, 140, 50);
   if (summary.dateRange) {
-    doc.setFontSize(8);
-    doc.text(`Period: ${summary.dateRange}`, 140, 51);
+    doc.setFontSize(9);
+    doc.text(`Period: ${summary.dateRange}`, 140, 56);
   }
 
   // Summary Box
-  doc.setFillColor(245, 245, 245);
-  doc.rect(14, 70, 182, 35, 'F');
+  doc.setFillColor(248, 249, 250);
+  doc.rect(14, 75, 182, 35, 'F');
+  doc.setDrawColor(230);
+  doc.rect(14, 75, 182, 35, 'S');
   
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
-  doc.text('ACCOUNT SUMMARY', 18, 77);
+  doc.setTextColor(0);
+  doc.text('ACCOUNT SUMMARY', 20, 83);
   
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
+  doc.setTextColor(80);
   
-  let yOffset = 83;
+  let yOffset = 90;
   if (summary.isFiltered) {
-    doc.text('Opening Balance:', 18, yOffset);
-    doc.text(`${summary.openingBalance || 0} PCS`, 55, yOffset);
+    doc.text('Opening Balance:', 20, yOffset);
+    doc.text(`${summary.openingBalance || 0} PCS`, 60, yOffset);
     yOffset += 5;
   }
 
-  doc.text(`${l.qtyOut}:`, 18, yOffset);
-  doc.text(`${summary.totalOut} PCS`, 55, yOffset);
+  doc.text(`Total Issues (${l.qtyOut}):`, 20, yOffset);
+  doc.text(`${summary.totalOut} PCS`, 60, yOffset);
   yOffset += 5;
   
-  doc.text(`${l.qtyIn}:`, 18, yOffset);
-  doc.text(`${summary.totalIn} PCS`, 55, yOffset);
+  doc.text(`Total Returns (${l.qtyIn}):`, 20, yOffset);
+  doc.text(`${summary.totalIn} PCS`, 60, yOffset);
 
-  doc.setFontSize(11);
+  // Net Balance Highlight
+  doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  doc.text('Net Balance:', 110, 88);
+  doc.setTextColor(0);
+  doc.text('Current Net Balance:', 110, 93);
+  
   const balLabel = summary.balance === 0 
     ? l.settled 
     : summary.balance > 0 
       ? `${summary.balance} ${l.toReceive}` 
       : `${Math.abs(summary.balance)} ${l.toGive}`;
   
-  doc.setTextColor(summary.balance > 0 ? 190 : (summary.balance < 0 ? 0 : 0), 0, summary.balance < 0 ? 150 : 0);
-  if (summary.balance === 0) doc.setTextColor(0, 150, 0);
-  doc.text(balLabel, 145, 88);
+  // Color coding for balance
+  if (summary.balance > 0) doc.setTextColor(218, 165, 32); // Gold/Yellow
+  else if (summary.balance < 0) doc.setTextColor(16, 185, 129); // Emerald
+  else doc.setTextColor(16, 185, 129);
+  
+  doc.text(balLabel, 110, 100);
   doc.setTextColor(0, 0, 0);
 
   // Transaction Table
@@ -139,14 +160,14 @@ export async function generateCustomerLedgerPDF(
     
     let displayType = t.type.replace('_', ' ');
     const upper = t.type.toUpperCase();
-    if (upper === 'OUT' || upper === 'OUT_FULL') displayType = l.out;
-    else if (upper === 'IN' || upper === 'IN_EMPTY') displayType = l.in;
+    if (upper === 'OUT' || upper === 'OUT_FULL') displayType = 'OUT';
+    else if (upper === 'IN' || upper === 'IN_EMPTY') displayType = 'IN';
 
     const balanceLabel = t.runningBalance === 0 
       ? '0' 
       : (t.runningBalance > 0 
-          ? `${t.runningBalance}\n${l.toReceive}` 
-          : `${Math.abs(t.runningBalance)}\n${l.toGive}`
+          ? `${t.runningBalance} To Receive` 
+          : `${Math.abs(t.runningBalance)} To Give`
         );
 
     return [
@@ -160,27 +181,29 @@ export async function generateCustomerLedgerPDF(
   });
 
   autoTable(doc, {
-    startY: 110,
+    startY: 118,
     head: [[l.dateBs, l.eventType, l.qtyIn, l.qtyOut, l.balance, l.remarks]],
     body: tableRows,
     theme: 'grid',
     headStyles: {
-      fillColor: [45, 45, 45],
+      fillColor: [33, 37, 41],
       textColor: [255, 255, 255],
       fontSize: 9,
       fontStyle: 'bold',
-      halign: 'center'
+      halign: 'center',
+      valign: 'middle'
     },
     bodyStyles: {
       fontSize: 8,
-      textColor: [50, 50, 50]
+      textColor: [33, 37, 41],
+      valign: 'middle'
     },
     columnStyles: {
-      0: { cellWidth: 25 },
-      1: { cellWidth: 30 },
+      0: { cellWidth: 28 },
+      1: { cellWidth: 25, halign: 'center' },
       2: { cellWidth: 15, halign: 'center' },
       3: { cellWidth: 15, halign: 'center' },
-      4: { cellWidth: 30, halign: 'center' },
+      4: { cellWidth: 35, halign: 'center' },
       5: { cellWidth: 'auto' }
     },
     margin: { top: 20 },
@@ -188,6 +211,7 @@ export async function generateCustomerLedgerPDF(
       // Footer
       doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
+      doc.setTextColor(150);
       doc.text(
         `Page ${data.pageNumber}`,
         doc.internal.pageSize.getWidth() / 2,
@@ -195,7 +219,7 @@ export async function generateCustomerLedgerPDF(
         { align: 'center' }
       );
       doc.text(
-        'This is a computer generated statement. - Powered by Cylindera LPG Pro',
+        'Computer generated statement. Powered by Cylindera LPG Pro.',
         14,
         doc.internal.pageSize.getHeight() - 10
       );
@@ -209,37 +233,26 @@ export async function sharePDF(doc: jsPDF, filename: string, customerPhone?: str
   const blob = doc.output('blob');
   const file = new File([blob], filename, { type: 'application/pdf' });
 
-  // Native share is primarily for mobile devices
   if (typeof navigator !== 'undefined' && navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
     try {
       await navigator.share({
         files: [file],
-        title: `Ledger Statement: ${customerName || 'Customer'}`,
-        text: `Please find the attached cylinder movement statement for your records.`,
+        title: `Ledger: ${customerName || 'Customer'}`,
+        text: `Cylinder ledger statement for ${customerName}.`,
       });
       return true;
     } catch (err) {
-      if ((err as any).name === 'AbortError') {
-        return false;
-      }
-      console.error('Share failed, falling back to download', err);
+      if ((err as any).name === 'AbortError') return false;
       doc.save(filename);
     }
   } else {
-    // Fallback for desktop: Download file + Open WhatsApp Web with a message
     doc.save(filename);
-    
     if (customerPhone) {
       const cleanPhone = customerPhone.replace(/\D/g, '');
-      // Assuming Nepal (977) if number is 10 digits
       const phoneWithCountry = cleanPhone.length === 10 ? `977${cleanPhone}` : cleanPhone;
-      const message = encodeURIComponent(`Namaste, I have just downloaded your latest cylinder ledger statement PDF. I am sending it to you now. Please check the attached file.`);
+      const message = encodeURIComponent(`Namaste, I am sending your latest cylinder ledger statement as a PDF. Please check the attachment.`);
       const waUrl = `https://wa.me/${phoneWithCountry}?text=${message}`;
-      
-      // Short delay to ensure download starts before opening new tab
-      setTimeout(() => {
-        window.open(waUrl, '_blank');
-      }, 500);
+      setTimeout(() => window.open(waUrl, '_blank'), 500);
     }
   }
   return false;

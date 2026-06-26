@@ -55,7 +55,7 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
   const { id } = React.use(props.params);
   const router = useRouter();
   const { toast } = useToast();
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const db = useFirestore();
   const { 
     customers, 
@@ -219,20 +219,6 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
       
       const closingBalance = openingBalance + totalOut - totalIn;
 
-      const pdfLabels = {
-        toReceive: t('toReceiveSuffix'),
-        toGive: t('toGiveSuffix'),
-        in: t('labelIn'),
-        out: t('labelOut'),
-        settled: t('settled'),
-        dateBs: t('dateBs'),
-        eventType: t('eventType'),
-        qtyIn: t('labelIn'),
-        qtyOut: t('labelOut'),
-        balance: t('running'),
-        remarks: t('remarks')
-      };
-
       const doc = await generateCustomerLedgerPDF(
         customer, 
         displayTxns, 
@@ -244,8 +230,7 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
           isFiltered: !!activeFilter,
           openingBalance,
           dateRange: activeFilter ? `${activeFilter.from} to ${activeFilter.to} (BS)` : undefined
-        },
-        pdfLabels
+        }
       );
       await sharePDF(doc, `${customer.name.replace(/\s+/g, '_')}_Ledger.pdf`, customer.phone, customer.name);
       toast({ title: t('success') });
@@ -313,63 +298,53 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
         </div>
       </div>
 
-      {hasBalanceDiscrepancy && (
-        <div className="bg-accent/10 border border-accent/20 p-3 rounded-lg flex items-center justify-between">
-          <div className="flex items-center gap-2 text-accent text-[10px] font-bold uppercase tracking-wider min-w-0">
-            <AlertTriangle className="h-4 w-4 shrink-0" />
-            <span className="truncate">Sync Required</span>
-          </div>
-          <Button variant="link" size="sm" onClick={handleRecalculate} className="text-accent h-auto p-0 font-bold text-[10px] underline shrink-0">{t('fixBalance')}</Button>
-        </div>
-      )}
-
-      <Card className="border-none shadow-md bg-card/50 w-full overflow-hidden">
-        <CardContent className="p-3 md:p-4 flex flex-col gap-3">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div className="space-y-1.5 min-w-0">
-              <Label className="text-[9px] uppercase font-bold text-muted-foreground">{t('fromDate')} (BS)</Label>
-              <div className="grid grid-cols-3 gap-1">
-                <Select value={filterDates.from.year} onValueChange={(v) => setFilterDates(prev => ({...prev, from: {...prev.from, year: v}}))}>
-                  <SelectTrigger className="h-8 text-[10px] px-1 overflow-hidden"><SelectValue placeholder="Y" /></SelectTrigger>
-                  <SelectContent className="max-h-[300px]">{bsYears.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
-                </Select>
-                <Select value={filterDates.from.month} onValueChange={(v) => setFilterDates(prev => ({...prev, from: {...prev.from, month: v}}))}>
-                  <SelectTrigger className="h-8 text-[10px] px-1 overflow-hidden"><SelectValue placeholder="M" /></SelectTrigger>
-                  <SelectContent>{BS_MONTHS.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
-                </Select>
-                <Select value={filterDates.from.day} onValueChange={(v) => setFilterDates(prev => ({...prev, from: {...prev.from, day: v}}))}>
-                  <SelectTrigger className="h-8 text-[10px] px-1 overflow-hidden"><SelectValue placeholder="D" /></SelectTrigger>
-                  <SelectContent className="max-h-[300px]">{daysList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-1.5 min-w-0">
-              <Label className="text-[9px] uppercase font-bold text-muted-foreground">{t('toDate')} (BS)</Label>
-              <div className="grid grid-cols-3 gap-1">
-                <Select value={filterDates.to.year} onValueChange={(v) => setFilterDates(prev => ({...prev, to: {...prev.to, year: v}}))}>
-                  <SelectTrigger className="h-8 text-[10px] px-1 overflow-hidden"><SelectValue placeholder="Y" /></SelectTrigger>
-                  <SelectContent className="max-h-[300px]">{bsYears.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
-                </Select>
-                <Select value={filterDates.to.month} onValueChange={(v) => setFilterDates(prev => ({...prev, to: {...prev.to, month: v}}))}>
-                  <SelectTrigger className="h-8 text-[10px] px-1 overflow-hidden"><SelectValue placeholder="M" /></SelectTrigger>
-                  <SelectContent>{BS_MONTHS.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
-                </Select>
-                <Select value={filterDates.to.day} onValueChange={(v) => setFilterDates(prev => ({...prev, to: {...prev.to, day: v}}))}>
-                  <SelectTrigger className="h-8 text-[10px] px-1 overflow-hidden"><SelectValue placeholder="D" /></SelectTrigger>
-                  <SelectContent className="max-h-[300px]">{daysList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleClearFilter} className="flex-1 h-9 text-[10px] font-bold uppercase"><Eraser className="h-3.5 w-3.5 mr-1" /> {t('clear')}</Button>
-            <Button size="sm" onClick={handleApplyFilter} className="flex-1 h-9 text-[10px] font-bold uppercase"><Filter className="h-3.5 w-3.5 mr-1" /> {t('filter')}</Button>
-          </div>
-        </CardContent>
-      </Card>
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-w-0">
-        <div className="lg:col-span-2 min-w-0">
+        <div className="lg:col-span-2 min-w-0 space-y-4">
+          <Card className="border-none shadow-md bg-card/50 w-full overflow-hidden">
+            <CardContent className="p-3 md:p-4 flex flex-col gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-1.5 min-w-0">
+                  <Label className="text-[9px] uppercase font-bold text-muted-foreground">{t('fromDate')} (BS)</Label>
+                  <div className="grid grid-cols-3 gap-1">
+                    <Select value={filterDates.from.year} onValueChange={(v) => setFilterDates(prev => ({...prev, from: {...prev.from, year: v}}))}>
+                      <SelectTrigger className="h-8 text-[10px] px-1 overflow-hidden"><SelectValue placeholder="Y" /></SelectTrigger>
+                      <SelectContent className="max-h-[300px]">{bsYears.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <Select value={filterDates.from.month} onValueChange={(v) => setFilterDates(prev => ({...prev, from: {...prev.from, month: v}}))}>
+                      <SelectTrigger className="h-8 text-[10px] px-1 overflow-hidden"><SelectValue placeholder="M" /></SelectTrigger>
+                      <SelectContent>{BS_MONTHS.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <Select value={filterDates.from.day} onValueChange={(v) => setFilterDates(prev => ({...prev, from: {...prev.from, day: v}}))}>
+                      <SelectTrigger className="h-8 text-[10px] px-1 overflow-hidden"><SelectValue placeholder="D" /></SelectTrigger>
+                      <SelectContent className="max-h-[300px]">{daysList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-1.5 min-w-0">
+                  <Label className="text-[9px] uppercase font-bold text-muted-foreground">{t('toDate')} (BS)</Label>
+                  <div className="grid grid-cols-3 gap-1">
+                    <Select value={filterDates.to.year} onValueChange={(v) => setFilterDates(prev => ({...prev, to: {...prev.to, year: v}}))}>
+                      <SelectTrigger className="h-8 text-[10px] px-1 overflow-hidden"><SelectValue placeholder="Y" /></SelectTrigger>
+                      <SelectContent className="max-h-[300px]">{bsYears.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <Select value={filterDates.to.month} onValueChange={(v) => setFilterDates(prev => ({...prev, to: {...prev.to, month: v}}))}>
+                      <SelectTrigger className="h-8 text-[10px] px-1 overflow-hidden"><SelectValue placeholder="M" /></SelectTrigger>
+                      <SelectContent>{BS_MONTHS.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <Select value={filterDates.to.day} onValueChange={(v) => setFilterDates(prev => ({...prev, to: {...prev.to, day: v}}))}>
+                      <SelectTrigger className="h-8 text-[10px] px-1 overflow-hidden"><SelectValue placeholder="D" /></SelectTrigger>
+                      <SelectContent className="max-h-[300px]">{daysList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={handleClearFilter} className="flex-1 h-9 text-[10px] font-bold uppercase"><Eraser className="h-3.5 w-3.5 mr-1" /> {t('clear')}</Button>
+                <Button size="sm" onClick={handleApplyFilter} className="flex-1 h-9 text-[10px] font-bold uppercase"><Filter className="h-3.5 w-3.5 mr-1" /> {t('filter')}</Button>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card className="border-none shadow-xl overflow-hidden w-full">
              <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-4 md:px-6 pb-2 min-w-0">
                 <div className="min-w-0 flex-1">
@@ -402,7 +377,7 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
                         <TableHead className="pl-4 md:pl-6 text-[10px] font-bold uppercase tracking-widest w-[140px] text-muted-foreground">{t('dateBs')}</TableHead>
                         <TableHead className="text-[10px] font-bold uppercase tracking-widest w-[100px] text-muted-foreground">{t('type')}</TableHead>
                         <TableHead className="text-[10px] font-bold uppercase tracking-widest w-[80px] text-muted-foreground">{t('qty')}</TableHead>
-                        <TableHead className="text-[10px] font-bold uppercase tracking-widest w-[110px] text-muted-foreground">{t('ledger')}</TableHead>
+                        <TableHead className="text-[10px] font-bold uppercase tracking-widest w-[130px] text-muted-foreground">{t('running')}</TableHead>
                         <TableHead className="text-[10px] font-bold uppercase tracking-widest min-w-[150px] text-muted-foreground">{t('remarks')}</TableHead>
                         <TableHead className="text-right pr-4 md:pr-6 text-[10px] font-bold uppercase tracking-widest w-[60px] text-muted-foreground">{t('actions')}</TableHead>
                       </TableRow>
@@ -410,25 +385,25 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
                     <TableBody>
                       {transactionsWithBalance.map((txn) => (
                         <TableRow key={txn.id} className="hover:bg-muted/10 transition-colors border-b border-border/20 last:border-0">
-                          <TableCell className="pl-4 md:pl-6 font-medium text-xs py-4">{txn.bsDate}</TableCell>
-                          <TableCell className="py-4">
+                          <TableCell className="pl-4 md:pl-6 font-medium text-xs py-5">{txn.bsDate}</TableCell>
+                          <TableCell className="py-5">
                             <Badge variant="outline" className={cn("text-[9px] font-bold h-5 uppercase tracking-tighter", getTransactionColor(txn.type))}>
                               {getTransactionLabel(txn.type)}
                             </Badge>
                           </TableCell>
-                          <TableCell className={cn("font-bold text-xs py-4", getTransactionImpact(txn.type) > 0 ? "text-primary" : "text-emerald-500")}>
+                          <TableCell className={cn("font-bold text-xs py-5", getTransactionImpact(txn.type) > 0 ? "text-primary" : "text-emerald-500")}>
                             {getTransactionImpact(txn.type) > 0 ? '+' : '-'}{txn.quantity}
                           </TableCell>
-                          <TableCell className="font-bold text-xs py-4">
+                          <TableCell className="font-bold py-5">
                             {txn.runningBalance === 0 ? (
-                              <span className="text-emerald-500 uppercase tracking-tighter">{t('settled')}</span>
+                              <span className="text-emerald-500 uppercase tracking-tighter text-[10px] font-bold">{t('settled')}</span>
                             ) : (
-                              <div className="flex flex-col">
+                              <div className="flex flex-col gap-0.5">
                                 <span className={cn("text-sm", txn.runningBalance > 0 ? "text-primary" : "text-emerald-500")}>
                                   {Math.abs(txn.runningBalance)}
                                 </span>
                                 <span className={cn(
-                                  "text-[8px] font-normal leading-tight uppercase tracking-widest opacity-80",
+                                  "text-[8px] font-bold leading-tight uppercase tracking-widest opacity-80",
                                   txn.runningBalance > 0 ? "text-primary" : "text-emerald-500"
                                 )}>
                                   {txn.runningBalance > 0 ? t('toReceiveSuffix') : t('toGiveSuffix')}
@@ -436,8 +411,8 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
                               </div>
                             )}
                           </TableCell>
-                          <TableCell className="text-[10px] text-muted-foreground italic truncate max-w-[200px] py-4">{txn.remark || "-"}</TableCell>
-                          <TableCell className="text-right pr-4 md:pr-6 py-4">
+                          <TableCell className="text-[10px] text-muted-foreground italic truncate max-w-[200px] py-5">{txn.remark || "-"}</TableCell>
+                          <TableCell className="text-right pr-4 md:pr-6 py-5">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-muted/40 rounded-full transition-all"><MoreVertical className="h-4 w-4" /></Button>
