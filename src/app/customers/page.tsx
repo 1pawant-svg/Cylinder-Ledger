@@ -23,7 +23,7 @@ type StatusFilter = 'ALL' | 'ACTIVE' | 'INACTIVE' | 'TO_RECEIVE' | 'TO_GIVE' | '
 type SortOption = 'NAME_ASC' | 'NAME_DESC' | 'BALANCE_HIGH_TO_LOW' | 'BALANCE_LOW_TO_HIGH' | 'LATEST_ACTIVITY';
 
 const safePad = (val: string | number): string => {
-  const s = String(val || "");
+  const s = String(val || "").trim();
   if (s.length >= 2) return s;
   return ('0' + s).slice(-2);
 };
@@ -228,24 +228,64 @@ export default function CustomersPage() {
 
       <div className="bg-card border rounded-xl overflow-hidden shadow-xl w-full max-w-full">
         <div className="overflow-x-auto w-full">
-          <Table className="min-w-[600px] md:min-w-full">
+          <Table className="min-w-[450px] md:min-w-full">
             <TableHeader className="bg-muted/30">
-              <TableRow><TableHead className="pl-6 font-bold text-[10px] uppercase">{t('name')}</TableHead><TableHead className="font-bold text-[10px] uppercase">{t('netBalance')}</TableHead><TableHead className="text-right pr-6 font-bold text-[10px] uppercase">{t('actions')}</TableHead></TableRow>
+              <TableRow>
+                <TableHead className="pl-4 md:pl-6 font-bold text-[9px] md:text-[10px] uppercase">{t('name')}</TableHead>
+                <TableHead className="px-2 md:px-4 font-bold text-[9px] md:text-[10px] uppercase">{t('netBalance')}</TableHead>
+                <TableHead className="text-right pr-4 md:pr-6 font-bold text-[9px] md:text-[10px] uppercase">{t('actions')}</TableHead>
+              </TableRow>
             </TableHeader>
             <TableBody>
               {processedCustomers.map((customer) => {
                 const bal = customer.balance || 0;
                 return (
                   <TableRow key={customer.id} className={cn(!customer.status || customer.status === 'active' ? "" : "opacity-60")}>
-                    <TableCell className="pl-6">
-                      <Link href={`/customers/${customer.id}`} className="font-bold hover:text-primary transition-colors block truncate max-w-[180px] sm:max-w-[300px]">{customer.name}</Link>
-                      <div className="flex items-center gap-2 text-[10px] text-muted-foreground truncate max-w-[180px] sm:max-w-[300px]"><MapPin className="h-3 w-3 shrink-0" /> {customer.address} • {customer.phone}</div>
+                    <TableCell className="pl-4 md:pl-6 py-3 md:py-4">
+                      <Link href={`/customers/${customer.id}`} className="font-bold hover:text-primary transition-colors block truncate max-w-[140px] md:max-w-[300px] text-xs md:text-sm">{customer.name}</Link>
+                      <div className="flex items-center gap-1.5 text-[8px] md:text-[10px] text-muted-foreground truncate max-w-[140px] md:max-w-[300px] mt-0.5">
+                        <MapPin className="h-2.5 w-2.5 md:h-3 md:w-3 shrink-0" /> {customer.address} • {customer.phone}
+                      </div>
                     </TableCell>
-                    <TableCell><span className={cn("font-headline font-bold text-sm whitespace-nowrap", bal > 0 ? "text-primary" : bal < 0 ? "text-emerald-500" : "text-emerald-500")}>{bal === 0 ? t('settled') : bal > 0 ? `${bal} ${t('toReceiveSuffix')}` : `${Math.abs(bal)} ${t('toGiveSuffix')}`}</span></TableCell>
-                    <TableCell className="text-right pr-6"><DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem asChild><Link href={`/customers/${customer.id}`} className="cursor-pointer gap-2"><Eye className="h-4 w-4" /> {t('viewProfile')}</Link></DropdownMenuItem><DropdownMenuItem asChild><Link href={`/transactions?customerId=${customer.id}`} className="cursor-pointer gap-2 text-primary"><Plus className="h-4 w-4" /> {t('newEntry')}</Link></DropdownMenuItem></DropdownMenuContent></DropdownMenu></TableCell>
+                    <TableCell className="px-2 md:px-4">
+                      <span className={cn(
+                        "font-headline font-bold whitespace-nowrap text-[10px] md:text-sm", 
+                        bal > 0 ? "text-primary" : bal < 0 ? "text-emerald-500" : "text-emerald-500"
+                      )}>
+                        {bal === 0 ? t('settled') : bal > 0 ? `${bal} ${t('toReceiveSuffix')}` : `${Math.abs(bal)} ${t('toGiveSuffix')}`}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right pr-4 md:pr-6">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 md:h-9 md:w-9">
+                            <MoreHorizontal className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem asChild>
+                            <Link href={`/customers/${customer.id}`} className="cursor-pointer gap-2">
+                              <Eye className="h-4 w-4" /> {t('viewProfile')}
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/transactions?customerId=${customer.id}`} className="cursor-pointer gap-2 text-primary">
+                              <Plus className="h-4 w-4" /> {t('newEntry')}
+                            </Link>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
                   </TableRow>
                 );
               })}
+              {processedCustomers.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={3} className="h-32 text-center text-muted-foreground italic text-xs">
+                    No customers found matching your criteria.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </div>
