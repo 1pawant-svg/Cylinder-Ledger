@@ -381,33 +381,39 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
                   </div>
                 )}
                 <div className="overflow-x-auto w-full">
-                  <Table className="min-w-[600px] w-full">
-                    <TableHeader className="bg-muted/30">
-                      <TableRow>
-                        <TableHead className="pl-4 md:pl-6 text-[10px] font-bold uppercase tracking-wider w-[100px]">{t('dateBs')}</TableHead>
-                        <TableHead className="text-[10px] font-bold uppercase tracking-wider w-[70px]">{t('type')}</TableHead>
-                        <TableHead className="text-[10px] font-bold uppercase tracking-wider w-[60px]">{t('qty')}</TableHead>
-                        <TableHead className="text-[10px] font-bold uppercase tracking-wider w-[90px]">{t('running')}</TableHead>
-                        <TableHead className="text-[10px] font-bold uppercase tracking-wider min-w-[100px]">{t('remarks')}</TableHead>
-                        <TableHead className="text-right pr-4 md:pr-6 text-[10px] font-bold uppercase tracking-wider w-[60px]">{t('actions')}</TableHead>
+                  <Table className="min-w-[700px] w-full border-collapse">
+                    <TableHeader className="bg-muted/40">
+                      <TableRow className="border-b border-border/50">
+                        <TableHead className="pl-4 md:pl-6 text-[10px] font-bold uppercase tracking-widest w-[140px] text-muted-foreground">{t('dateBs')}</TableHead>
+                        <TableHead className="text-[10px] font-bold uppercase tracking-widest w-[80px] text-muted-foreground">{t('type')}</TableHead>
+                        <TableHead className="text-[10px] font-bold uppercase tracking-widest w-[70px] text-muted-foreground">{t('qty')}</TableHead>
+                        <TableHead className="text-[10px] font-bold uppercase tracking-widest w-[110px] text-muted-foreground">{t('ledger')}</TableHead>
+                        <TableHead className="text-[10px] font-bold uppercase tracking-widest min-w-[150px] text-muted-foreground">{t('remarks')}</TableHead>
+                        <TableHead className="text-right pr-4 md:pr-6 text-[10px] font-bold uppercase tracking-widest w-[60px] text-muted-foreground">{t('actions')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {transactionsWithBalance.map((txn) => (
-                        <TableRow key={txn.id}>
-                          <TableCell className="pl-4 md:pl-6 font-medium text-xs">{txn.bsDate}</TableCell>
-                          <TableCell><Badge variant="outline" className={cn("text-[9px] font-bold", getTransactionColor(txn.type))}>{getTransactionLabel(txn.type)}</Badge></TableCell>
-                          <TableCell className={cn("font-bold text-xs", getTransactionImpact(txn.type) > 0 ? "text-primary" : "text-emerald-500")}>{getTransactionImpact(txn.type) > 0 ? '+' : '-'}{txn.quantity}</TableCell>
-                          <TableCell className="font-bold text-xs">
+                        <TableRow key={txn.id} className="hover:bg-muted/10 transition-colors border-b border-border/20 last:border-0">
+                          <TableCell className="pl-4 md:pl-6 font-medium text-xs py-4">{txn.bsDate}</TableCell>
+                          <TableCell className="py-4">
+                            <Badge variant="outline" className={cn("text-[9px] font-bold h-5 uppercase tracking-tighter", getTransactionColor(txn.type))}>
+                              {getTransactionLabel(txn.type)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className={cn("font-bold text-xs py-4", getTransactionImpact(txn.type) > 0 ? "text-primary" : "text-emerald-500")}>
+                            {getTransactionImpact(txn.type) > 0 ? '+' : '-'}{txn.quantity}
+                          </TableCell>
+                          <TableCell className="font-bold text-xs py-4">
                             {txn.runningBalance === 0 ? (
-                              t('settled')
+                              <span className="text-emerald-500 uppercase tracking-tighter">{t('settled')}</span>
                             ) : (
                               <div className="flex flex-col">
-                                <span className={cn(txn.runningBalance > 0 ? "text-primary" : "text-emerald-500")}>
+                                <span className={cn("text-sm", txn.runningBalance > 0 ? "text-primary" : "text-emerald-500")}>
                                   {Math.abs(txn.runningBalance)}
                                 </span>
                                 <span className={cn(
-                                  "text-[9px] font-normal leading-tight uppercase tracking-tighter",
+                                  "text-[8px] font-normal leading-tight uppercase tracking-widest opacity-80",
                                   txn.runningBalance > 0 ? "text-primary" : "text-emerald-500"
                                 )}>
                                   {txn.runningBalance > 0 ? t('toReceiveSuffix') : t('toGiveSuffix')}
@@ -415,11 +421,11 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
                               </div>
                             )}
                           </TableCell>
-                          <TableCell className="text-[10px] text-muted-foreground italic truncate max-w-[120px]">{txn.remark || "-"}</TableCell>
-                          <TableCell className="text-right pr-4 md:pr-6">
+                          <TableCell className="text-[10px] text-muted-foreground italic truncate max-w-[200px] py-4">{txn.remark || "-"}</TableCell>
+                          <TableCell className="text-right pr-4 md:pr-6 py-4">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-muted/40 rounded-full transition-all"><MoreVertical className="h-4 w-4" /></Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
                                 <DropdownMenuItem onClick={() => router.push(`/transactions?editId=${txn.id}&customerId=${id}`)}>
@@ -435,7 +441,7 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
                       ))}
                       {transactionsWithBalance.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={6} className="h-24 text-center text-muted-foreground italic text-xs">No transactions found for this selection.</TableCell>
+                          <TableCell colSpan={6} className="h-32 text-center text-muted-foreground italic text-xs">No transactions found for this selection.</TableCell>
                         </TableRow>
                       )}
                     </TableBody>
