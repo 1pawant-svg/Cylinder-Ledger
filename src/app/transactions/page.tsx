@@ -53,7 +53,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { cn } from "@/lib/utils";
 
 const safePad = (val: string | number): string => {
-  const s = String(val || "");
+  const s = String(val || "").trim();
   if (s.length >= 2) return s;
   return ('0' + s).slice(-2);
 };
@@ -98,7 +98,7 @@ export default function TransactionsPage() {
     return getTodayBSParts();
   };
 
-  // Hydration-safe initial state
+  const [mounted, setMounted] = useState(false);
   const [bsParts, setBsParts] = useState({ year: '2081', month: '01', day: '01' });
   const [dueBsParts, setDueBsParts] = useState({ year: '2081', month: '01', day: '08' });
   
@@ -110,7 +110,7 @@ export default function TransactionsPage() {
 
   const [formData, setFormData] = useState({
     customerId: urlCustomerId || '',
-    date: getCurrentADDate(), 
+    date: '', 
     type: 'OUT_FULL' as TransactionType,
     quantity: 1,
     returnQuantity: 0, 
@@ -122,9 +122,14 @@ export default function TransactionsPage() {
   }, [customers, formData.customerId]);
 
   useEffect(() => {
-    setBsParts(getTodayBSParts());
+    const today = getTodayBSParts();
+    setBsParts(today);
     setDueBsParts(getFutureBSParts(7));
-    setFormData(prev => ({ ...prev, date: getCurrentADDate() }));
+    setFormData(prev => ({ 
+      ...prev, 
+      date: bsToAd(today.year, today.month, today.day) 
+    }));
+    setMounted(true);
   }, []);
 
   useEffect(() => {
@@ -289,7 +294,7 @@ export default function TransactionsPage() {
   const daysList = Array.from({ length: 32 }, (_, i) => safePad(i + 1));
   const isPositiveImpact = formData.type === 'OUT_FULL' || formData.type === 'OUT';
 
-  if (loading) {
+  if (!mounted || loading) {
     return <div className="flex h-full w-full items-center justify-center p-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
 
@@ -417,15 +422,15 @@ export default function TransactionsPage() {
                   </Label>
                   <div className="grid grid-cols-3 gap-2">
                     <Select value={bsParts.year} onValueChange={(v) => handleBSChange('year', v)}>
-                      <SelectTrigger className="h-12 bg-background border-border text-xs px-2"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="h-12 bg-background border-border text-xs px-2"><SelectValue placeholder="Year" /></SelectTrigger>
                       <SelectContent className="max-h-[300px]">{years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
                     </Select>
                     <Select value={bsParts.month} onValueChange={(v) => handleBSChange('month', v)}>
-                      <SelectTrigger className="h-12 bg-background border-border text-xs px-2"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="h-12 bg-background border-border text-xs px-2"><SelectValue placeholder="Month" /></SelectTrigger>
                       <SelectContent>{BS_MONTHS.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
                     </Select>
                     <Select value={bsParts.day} onValueChange={(v) => handleBSChange('day', v)}>
-                      <SelectTrigger className="h-12 bg-background border-border text-xs px-2"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="h-12 bg-background border-border text-xs px-2"><SelectValue placeholder="Day" /></SelectTrigger>
                       <SelectContent className="max-h-[300px]">{daysList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
@@ -470,15 +475,15 @@ export default function TransactionsPage() {
                       <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
                         <div className="grid grid-cols-3 gap-2">
                           <Select value={dueBsParts.year} onValueChange={(v) => handleDueBSChange('year', v)}>
-                            <SelectTrigger className="h-12 bg-background border-border text-xs px-2"><SelectValue /></SelectTrigger>
+                            <SelectTrigger className="h-12 bg-background border-border text-xs px-2"><SelectValue placeholder="Year" /></SelectTrigger>
                             <SelectContent className="max-h-[300px]">{years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
                           </Select>
                           <Select value={dueBsParts.month} onValueChange={(v) => handleDueBSChange('month', v)}>
-                            <SelectTrigger className="h-12 bg-background border-border text-xs px-2"><SelectValue /></SelectTrigger>
+                            <SelectTrigger className="h-12 bg-background border-border text-xs px-2"><SelectValue placeholder="Month" /></SelectTrigger>
                             <SelectContent>{BS_MONTHS.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
                           </Select>
                           <Select value={dueBsParts.day} onValueChange={(v) => handleDueBSChange('day', v)}>
-                            <SelectTrigger className="h-12 bg-background border-border text-xs px-2"><SelectValue /></SelectTrigger>
+                            <SelectTrigger className="h-12 bg-background border-border text-xs px-2"><SelectValue placeholder="Day" /></SelectTrigger>
                             <SelectContent className="max-h-[300px]">{daysList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
                           </Select>
                         </div>
