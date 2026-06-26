@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -106,11 +107,14 @@ export default function SettingsPage() {
         description: "Business configuration has been updated successfully.",
       });
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Save Failed",
-        description: error.message,
-      });
+      // Permission errors are handled by the global listener
+      if (error.code !== 'permission-denied') {
+        toast({
+          variant: "destructive",
+          title: "Save Failed",
+          description: error.message,
+        });
+      }
     } finally {
       setSaving(false);
     }
@@ -121,17 +125,21 @@ export default function SettingsPage() {
     setBackingUp(true);
     try {
       const data = await exportBackup(db, user.uid, profile.fullName || 'User');
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `cylindera_backup_${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      toast({ title: t('success'), description: "JSON backup file has been downloaded." });
+      if (data) {
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `cylindera_backup_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast({ title: t('success'), description: "JSON backup file has been downloaded." });
+      }
     } catch (error: any) {
-      toast({ variant: "destructive", title: t('error'), description: error.message });
+      if (error.code !== 'permission-denied') {
+        toast({ variant: "destructive", title: t('error'), description: error.message });
+      }
     } finally {
       setBackingUp(false);
     }
@@ -160,7 +168,9 @@ export default function SettingsPage() {
         toast({ title: t('success'), description: "Database has been synchronized with the backup." });
         setTimeout(() => window.location.reload(), 1500);
       } catch (error: any) {
-        toast({ variant: "destructive", title: t('error'), description: error.message });
+        if (error.code !== 'permission-denied') {
+          toast({ variant: "destructive", title: t('error'), description: error.message });
+        }
       } finally {
         setRestoring(false);
         if (fileInputRef.current) fileInputRef.current.value = '';
@@ -184,7 +194,6 @@ export default function SettingsPage() {
         <p className="text-muted-foreground mt-1 font-medium">Configure business identity and manage system data</p>
       </header>
 
-      {/* Language Selection Card */}
       <Card className="border-none shadow-2xl bg-card border-l-4 border-l-primary">
         <CardHeader>
           <CardTitle className="font-headline text-2xl font-bold flex items-center gap-2 text-primary">

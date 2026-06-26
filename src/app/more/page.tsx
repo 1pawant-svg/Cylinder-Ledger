@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -89,17 +90,21 @@ export default function MorePage() {
     setBackingUp(true);
     try {
       const data = await exportBackup(db, user.uid, profile.fullName || 'User');
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `cylindera_backup_${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      toast({ title: t('success') });
+      if (data) {
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `cylindera_backup_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast({ title: t('success') });
+      }
     } catch (error: any) {
-      toast({ variant: "destructive", title: t('error'), description: error.message });
+      if (error.code !== 'permission-denied') {
+        toast({ variant: "destructive", title: t('error'), description: error.message });
+      }
     } finally {
       setBackingUp(false);
     }
@@ -119,7 +124,9 @@ export default function MorePage() {
         toast({ title: t('success') });
         setTimeout(() => window.location.reload(), 1500);
       } catch (error: any) {
-        toast({ variant: "destructive", title: t('error'), description: error.message });
+        if (error.code !== 'permission-denied') {
+          toast({ variant: "destructive", title: t('error'), description: error.message });
+        }
       } finally {
         setRestoring(false);
       }
@@ -142,7 +149,6 @@ export default function MorePage() {
         <p className="text-muted-foreground text-xs uppercase tracking-widest font-bold">{t('systemOptions')}</p>
       </header>
 
-      {/* Language Section */}
       <section className="space-y-3">
         <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground px-1">{t('language')}</h2>
         <Card className="border-none shadow-md bg-card p-4">
@@ -161,7 +167,6 @@ export default function MorePage() {
         </Card>
       </section>
 
-      {/* User Profile Section */}
       <Card className="border-none shadow-lg bg-card overflow-hidden">
         <CardContent className="p-0">
           <div className="p-4 flex items-center gap-4 bg-muted/20">
@@ -179,7 +184,6 @@ export default function MorePage() {
         </CardContent>
       </Card>
 
-      {/* Business Info Section */}
       <section className="space-y-3">
         <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground px-1">{t('businessIdentity')}</h2>
         <Card className="border-none shadow-md bg-card">
@@ -204,7 +208,6 @@ export default function MorePage() {
         </Card>
       </section>
 
-      {/* Data Management */}
       <section className="space-y-3">
         <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground px-1">{t('systemMaintenance')}</h2>
         <div className="grid grid-cols-2 gap-3">
@@ -248,7 +251,6 @@ export default function MorePage() {
         </div>
       </section>
 
-      {/* Settings & Audit Log Redirects */}
       <section className="space-y-3">
         <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground px-1">Quick Links</h2>
         <Card className="border-none shadow-md bg-card">
@@ -281,7 +283,6 @@ export default function MorePage() {
         </Card>
       </section>
 
-      {/* Logout */}
       <div className="pt-4">
         <Button 
           variant="destructive" 
