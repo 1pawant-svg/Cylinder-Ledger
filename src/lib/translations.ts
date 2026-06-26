@@ -107,6 +107,8 @@ export const translations = {
     leakageReturn: "Leakage Return",
     cylinderLost: "Cylinder Lost",
     balanceAdjustment: "Balance Adjustment",
+    labelIn: "IN",
+    labelOut: "OUT",
     
     // Settings & More
     systemOptions: "System Options",
@@ -158,12 +160,12 @@ export const translations = {
     menu: "मेनु",
     
     // Dashboard
-    toReceive: "पाउनु पर्ने",
-    toGive: "दिनु पर्ने",
+    toReceive: "लिन",
+    toGive: "दिन",
     totalOutstanding: "कुल बाँकी सिलिन्डर",
     owedToCustomers: "ग्राहकलाई दिनु पर्ने सिलिन्डर",
-    topToReceive: "मुख्य पाउनु पर्ने",
-    topToReceiveNonRetailers: "पाउनु पर्ने (गैर-खुद्रा)",
+    topToReceive: "मुख्य लिनु पर्ने",
+    topToReceiveNonRetailers: "लिनु पर्ने (गैर-खुद्रा)",
     nonRetailersOutstanding: "उच्चतम बाँकी (प्यान बिना)",
     topToGive: "मुख्य दिनु पर्ने",
     highestOutstanding: "उच्चतम बाँकी मौज्दात",
@@ -206,8 +208,8 @@ export const translations = {
     netBalance: "कुल मौज्दात",
     actions: "कार्यहरू",
     profileAdded: "प्रोफाइल थपियो",
-    toReceiveSuffix: "पाउनु पर्ने",
-    toGiveSuffix: "दिनु पर्ने",
+    toReceiveSuffix: "लिन",
+    toGiveSuffix: "दिन",
     
     // Customer Profile
     ledger: "खाता (लेजर)",
@@ -251,6 +253,8 @@ export const translations = {
     leakageReturn: "लिकेज फिर्ता",
     cylinderLost: "सिलिन्डर हराएको",
     balanceAdjustment: "मौज्दात मिलान",
+    labelIn: "आयो",
+    labelOut: "गयो",
     
     // Settings & More
     systemOptions: "प्रणाली विकल्पहरू",

@@ -26,18 +26,6 @@ import { generateCustomerLedgerPDF, sharePDF } from "@/lib/services/pdf-service"
 import { TransactionType, Transaction, Setting } from "@/lib/types";
 import { useI18n } from "@/lib/i18n-context";
 
-const getTransactionLabel = (type: TransactionType) => {
-  const t = type.toUpperCase();
-  switch(t) {
-    case 'OUT_FULL': return 'OUT';
-    case 'IN_EMPTY': return 'IN';
-    case 'LEAKAGE': return 'LEAKAGE';
-    case 'LOST': return 'LOST';
-    case 'ADJUSTMENT': return 'ADJ';
-    default: return t;
-  }
-};
-
 const getTransactionColor = (type: TransactionType) => {
   const t = type.toUpperCase();
   if (t === 'OUT' || t === 'OUT_FULL') return 'text-primary';
@@ -102,6 +90,18 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
     remarks: '',
     specialInstructions: ''
   });
+
+  const getTransactionLabel = (type: TransactionType) => {
+    const tLabel = type.toUpperCase();
+    switch(tLabel) {
+      case 'OUT_FULL': return t('labelOut');
+      case 'IN_EMPTY': return t('labelIn');
+      case 'LEAKAGE': return t('leakageReturn');
+      case 'LOST': return t('cylinderLost');
+      case 'ADJUSTMENT': return t('balanceAdjustment');
+      default: return tLabel;
+    }
+  };
 
   useEffect(() => {
     if (db) getSettings(db).then(setSettings);
@@ -219,6 +219,20 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
       
       const closingBalance = openingBalance + totalOut - totalIn;
 
+      const pdfLabels = {
+        toReceive: t('toReceiveSuffix'),
+        toGive: t('toGiveSuffix'),
+        in: t('labelIn'),
+        out: t('labelOut'),
+        settled: t('settled'),
+        dateBs: t('dateBs'),
+        eventType: t('eventType'),
+        qtyIn: t('labelIn'),
+        qtyOut: t('labelOut'),
+        balance: t('running'),
+        remarks: t('remarks')
+      };
+
       const doc = await generateCustomerLedgerPDF(
         customer, 
         displayTxns, 
@@ -230,7 +244,8 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
           isFiltered: !!activeFilter,
           openingBalance,
           dateRange: activeFilter ? `${activeFilter.from} to ${activeFilter.to} (BS)` : undefined
-        }
+        },
+        pdfLabels
       );
       await sharePDF(doc, `${customer.name.replace(/\s+/g, '_')}_Ledger.pdf`, customer.phone, customer.name);
       toast({ title: t('success') });
@@ -366,7 +381,7 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
                 </div>
                 <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-2 border-t md:border-t-0 pt-3 md:pt-0 mt-2 md:mt-0 w-full md:w-auto shrink-0 min-w-0">
                   <p className="text-[10px] uppercase font-bold text-muted-foreground shrink-0">{t('statedBalance')}</p>
-                  <Badge className={cn("text-[10px] font-bold shrink-0 truncate", balance > 0 ? "bg-primary" : balance < 0 ? "bg-emerald-500" : "bg-emerald-500")}>
+                  <Badge className={cn("text-[10px] font-bold shrink-0 truncate", balance > 0 ? "bg-primary text-primary-foreground" : balance < 0 ? "bg-emerald-500 text-emerald-foreground" : "bg-emerald-500 text-emerald-foreground")}>
                     {balance === 0 ? t('settled') : `${Math.abs(balance)} ${balance > 0 ? t('toReceiveSuffix') : t('toGiveSuffix')}`}
                   </Badge>
                 </div>
@@ -385,8 +400,8 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
                     <TableHeader className="bg-muted/40">
                       <TableRow className="border-b border-border/50">
                         <TableHead className="pl-4 md:pl-6 text-[10px] font-bold uppercase tracking-widest w-[140px] text-muted-foreground">{t('dateBs')}</TableHead>
-                        <TableHead className="text-[10px] font-bold uppercase tracking-widest w-[80px] text-muted-foreground">{t('type')}</TableHead>
-                        <TableHead className="text-[10px] font-bold uppercase tracking-widest w-[70px] text-muted-foreground">{t('qty')}</TableHead>
+                        <TableHead className="text-[10px] font-bold uppercase tracking-widest w-[100px] text-muted-foreground">{t('type')}</TableHead>
+                        <TableHead className="text-[10px] font-bold uppercase tracking-widest w-[80px] text-muted-foreground">{t('qty')}</TableHead>
                         <TableHead className="text-[10px] font-bold uppercase tracking-widest w-[110px] text-muted-foreground">{t('ledger')}</TableHead>
                         <TableHead className="text-[10px] font-bold uppercase tracking-widest min-w-[150px] text-muted-foreground">{t('remarks')}</TableHead>
                         <TableHead className="text-right pr-4 md:pr-6 text-[10px] font-bold uppercase tracking-widest w-[60px] text-muted-foreground">{t('actions')}</TableHead>

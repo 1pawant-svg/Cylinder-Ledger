@@ -23,6 +23,19 @@ export async function generateCustomerLedgerPDF(
     isFiltered?: boolean;
     openingBalance?: number;
     dateRange?: string;
+  },
+  labels?: {
+    toReceive: string;
+    toGive: string;
+    in: string;
+    out: string;
+    settled: string;
+    dateBs: string;
+    eventType: string;
+    qtyIn: string;
+    qtyOut: string;
+    balance: string;
+    remarks: string;
   }
 ) {
   const doc = new jsPDF({
@@ -34,6 +47,20 @@ export async function generateCustomerLedgerPDF(
   const businessName = settings?.businessName || 'Cylindera LPG Pro';
   const businessAddress = settings?.address || '';
   const businessPhone = settings?.phone || '';
+
+  const l = labels || {
+    toReceive: 'To Receive',
+    toGive: 'To Give',
+    in: 'IN',
+    out: 'OUT',
+    settled: 'SETTLED',
+    dateBs: 'Date (BS)',
+    eventType: 'Event Type',
+    qtyIn: 'In Qty',
+    qtyOut: 'Out Qty',
+    balance: 'Balance',
+    remarks: 'Remarks'
+  };
 
   // Header
   doc.setFontSize(18);
@@ -83,25 +110,25 @@ export async function generateCustomerLedgerPDF(
     yOffset += 5;
   }
 
-  doc.text('Period Issues (Out):', 18, yOffset);
+  doc.text(`${l.qtyOut}:`, 18, yOffset);
   doc.text(`${summary.totalOut} PCS`, 55, yOffset);
   yOffset += 5;
   
-  doc.text('Period Returns (In):', 18, yOffset);
+  doc.text(`${l.qtyIn}:`, 18, yOffset);
   doc.text(`${summary.totalIn} PCS`, 55, yOffset);
 
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
   doc.text('Net Balance:', 110, 88);
-  const balText = summary.balance === 0 
-    ? 'SETTLED' 
+  const balLabel = summary.balance === 0 
+    ? l.settled 
     : summary.balance > 0 
-      ? `${summary.balance} To Receive` 
-      : `${Math.abs(summary.balance)} To Give`;
+      ? `${summary.balance} ${l.toReceive}` 
+      : `${Math.abs(summary.balance)} ${l.toGive}`;
   
-  doc.setTextColor(summary.balance > 0 ? 190 : (summary.balance < 0 ? 220 : 0), 0, 0);
+  doc.setTextColor(summary.balance > 0 ? 190 : (summary.balance < 0 ? 0 : 0), 0, summary.balance < 0 ? 150 : 0);
   if (summary.balance === 0) doc.setTextColor(0, 150, 0);
-  doc.text(balText, 145, 88);
+  doc.text(balLabel, 145, 88);
   doc.setTextColor(0, 0, 0);
 
   // Transaction Table
@@ -110,17 +137,21 @@ export async function generateCustomerLedgerPDF(
     const inQty = impact < 0 ? t.quantity : '-';
     const outQty = impact > 0 ? t.quantity : '-';
     
-    // Updated shorthand R/G to full To Receive/To Give with newline for PDF
+    let displayType = t.type.replace('_', ' ');
+    const upper = t.type.toUpperCase();
+    if (upper === 'OUT' || upper === 'OUT_FULL') displayType = l.out;
+    else if (upper === 'IN' || upper === 'IN_EMPTY') displayType = l.in;
+
     const balanceLabel = t.runningBalance === 0 
       ? '0' 
       : (t.runningBalance > 0 
-          ? `${t.runningBalance}\nTo Receive` 
-          : `${Math.abs(t.runningBalance)}\nTo Give`
+          ? `${t.runningBalance}\n${l.toReceive}` 
+          : `${Math.abs(t.runningBalance)}\n${l.toGive}`
         );
 
     return [
       t.bsDate,
-      t.type.replace('_', ' '),
+      displayType,
       inQty,
       outQty,
       balanceLabel,
@@ -130,7 +161,7 @@ export async function generateCustomerLedgerPDF(
 
   autoTable(doc, {
     startY: 110,
-    head: [['Date (BS)', 'Event Type', 'In Qty', 'Out Qty', 'Balance', 'Remarks']],
+    head: [[l.dateBs, l.eventType, l.qtyIn, l.qtyOut, l.balance, l.remarks]],
     body: tableRows,
     theme: 'grid',
     headStyles: {
