@@ -15,8 +15,7 @@ const getTransactionImpact = (type: TransactionType): number => {
 
 /**
  * Generates a professional Customer Ledger PDF.
- * Note: Uses Romanized Nepali (Nepali words in English script) for structural labels
- * to ensure 100% compatibility across all PDF viewers without font corruption.
+ * Note: Uses English structural labels to ensure 100% compatibility across all PDF viewers.
  */
 export async function generateCustomerLedgerPDF(
   customer: Customer,
@@ -41,19 +40,19 @@ export async function generateCustomerLedgerPDF(
   const businessAddress = settings?.address || '';
   const businessPhone = settings?.phone || '';
 
-  // Use Romanized Nepali labels to prevent "gibberish" while respecting the user's terms
+  // Labels used in the PDF
   const l = {
-    toReceive: 'LIN (To Receive)',
-    toGive: 'DIN (To Give)',
-    in: 'AAYO (IN)',
-    out: 'GAYO (OUT)',
-    settled: 'CHUKTA (Settled)',
-    dateBs: 'Miti (Date BS)',
-    eventType: 'Bibaran (Type)',
-    qtyIn: 'AAYO',
-    qtyOut: 'GAYO',
-    balance: 'Baaki (Balance)',
-    remarks: 'Kaifiyat (Remarks)'
+    toReceive: 'To Receive',
+    toGive: 'To Give',
+    in: 'IN',
+    out: 'OUT',
+    settled: 'Settled',
+    dateBs: 'Date (BS)',
+    eventType: 'Type',
+    qtyIn: 'IN',
+    qtyOut: 'OUT',
+    balance: 'Balance',
+    remarks: 'Remarks'
   };
 
   // Header
@@ -109,32 +108,32 @@ export async function generateCustomerLedgerPDF(
   
   let yOffset = 90;
   if (summary.isFiltered) {
-    doc.text('Opening Baaki:', 20, yOffset);
+    doc.text('Opening Balance:', 20, yOffset);
     doc.text(`${summary.openingBalance || 0} PCS`, 60, yOffset);
     yOffset += 5;
   }
 
-  doc.text(`Total Gayo (${l.qtyOut}):`, 20, yOffset);
+  doc.text(`Total Issued (${l.out}):`, 20, yOffset);
   doc.text(`${summary.totalOut} PCS`, 60, yOffset);
   yOffset += 5;
   
-  doc.text(`Total Aayo (${l.qtyIn}):`, 20, yOffset);
+  doc.text(`Total Returned (${l.in}):`, 20, yOffset);
   doc.text(`${summary.totalIn} PCS`, 60, yOffset);
 
   // Net Balance Highlight
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0);
-  doc.text('Net Baaki (Current Balance):', 110, 93);
+  doc.text('Net Balance (Current):', 110, 93);
   
   const balValue = Math.abs(summary.balance);
   const balLabel = summary.balance === 0 
     ? l.settled 
     : summary.balance > 0 
-      ? `${balValue} LIN` 
-      : `${balValue} DIN`;
+      ? `${balValue} ${l.toReceive}` 
+      : `${balValue} ${l.toGive}`;
   
-  // Color coding for balance (Golden for Lin, Emerald for Din)
+  // Color coding for balance (Golden for Receive, Emerald for Give)
   if (summary.balance > 0) doc.setTextColor(184, 134, 11); // Dark Golden Rod
   else if (summary.balance < 0) doc.setTextColor(16, 185, 129); // Emerald
   else doc.setTextColor(16, 185, 129);
@@ -150,14 +149,14 @@ export async function generateCustomerLedgerPDF(
     
     let displayType = t.type.replace('_', ' ');
     const upper = t.type.toUpperCase();
-    if (upper === 'OUT' || upper === 'OUT_FULL') displayType = 'GAYO';
-    else if (upper === 'IN' || upper === 'IN_EMPTY') displayType = 'AAYO';
+    if (upper === 'OUT' || upper === 'OUT_FULL') displayType = 'OUT';
+    else if (upper === 'IN' || upper === 'IN_EMPTY') displayType = 'IN';
 
     const balanceLabel = t.runningBalance === 0 
       ? '0' 
       : (t.runningBalance > 0 
-          ? `${t.runningBalance} LIN` 
-          : `${Math.abs(t.runningBalance)} DIN`
+          ? `${t.runningBalance} Receive` 
+          : `${Math.abs(t.runningBalance)} Give`
         );
 
     return [
@@ -189,7 +188,7 @@ export async function generateCustomerLedgerPDF(
       valign: 'middle'
     },
     columnStyles: {
-      0: { cellWidth: 32 }, // Increased width for date
+      0: { cellWidth: 32 }, // Fixed width for date
       1: { cellWidth: 22, halign: 'center' },
       2: { cellWidth: 15, halign: 'center' },
       3: { cellWidth: 15, halign: 'center' },
