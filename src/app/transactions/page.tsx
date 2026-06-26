@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useLedger } from "@/lib/ledger-context";
 import { 
   Calendar, 
@@ -11,7 +11,11 @@ import {
   ArrowLeft,
   X,
   History,
-  BellRing
+  BellRing,
+  Search,
+  Check,
+  ChevronsUpDown,
+  UserPlus
 } from "lucide-react";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -32,14 +36,21 @@ import {
   DialogTitle, 
   DialogFooter 
 } from "@/components/ui/dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { adToBs, bsToAd, BS_MONTHS, getBSYears, getCurrentADDate } from "@/lib/date-utils";
 import { useToast } from "@/hooks/use-toast";
-import { TransactionType } from "@/lib/types";
+import { TransactionType, Customer } from "@/lib/types";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useFirestore } from "@/firebase";
 import { doc, getDoc } from "firebase/firestore";
+import { cn } from "@/lib/utils";
 
 const safePad = (val: string | number): string => {
   const s = String(val || "");
@@ -94,6 +105,8 @@ export default function TransactionsPage() {
   const [useDueDate, setUseDueDate] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(!!editTransactionId);
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [isCustomerPopoverOpen, setIsCustomerPopoverOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     customerId: urlCustomerId || '',
@@ -103,6 +116,10 @@ export default function TransactionsPage() {
     returnQuantity: 0, 
     remark: '',
   });
+
+  const selectedCustomer = useMemo(() => {
+    return customers.find(c => c.id === formData.customerId);
+  }, [customers, formData.customerId]);
 
   useEffect(() => {
     setBsParts(getTodayBSParts());
@@ -202,6 +219,8 @@ export default function TransactionsPage() {
     });
     setFormData(prev => ({ ...prev, customerId }));
     setIsAddCustomerOpen(false);
+    setIsCustomerPopoverOpen(false);
+    toast({ title: "Customer created and selected" });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -256,6 +275,16 @@ export default function TransactionsPage() {
     }
   };
 
+  const filteredCustomers = useMemo(() => {
+    if (!customerSearch) return customers;
+    const s = customerSearch.toLowerCase();
+    return customers.filter(c => 
+      c.name.toLowerCase().includes(s) || 
+      c.phone.includes(s) || 
+      c.address.toLowerCase().includes(s)
+    );
+  }, [customers, customerSearch]);
+
   const years = getBSYears();
   const daysList = Array.from({ length: 32 }, (_, i) => safePad(i + 1));
   const isPositiveImpact = formData.type === 'OUT_FULL' || formData.type === 'OUT';
@@ -299,27 +328,87 @@ export default function TransactionsPage() {
                   <Label className="flex items-center gap-2 text-muted-foreground uppercase text-[10px] tracking-widest font-bold mb-1">
                     <User className="h-3 w-3" /> Customer
                   </Label>
-                  <Select 
-                    value={formData.customerId} 
-                    onValueChange={(v) => v === "ADD_NEW" ? setIsAddCustomerOpen(true) : setFormData({...formData, customerId: v})}
-                  >
-                    <SelectTrigger className="h-12 bg-background border-border w-full">
-                      <SelectValue placeholder="Select customer..." />
-                    </SelectTrigger>
-                    <SelectContent className="bg-card border-border max-h-[300px]">
-                      {!editTransactionId && (
-                        <>
-                          <SelectItem value="ADD_NEW" className="text-primary font-bold"><Plus className="h-4 w-4 mr-2" /> Add New Customer</SelectItem>
-                          <SelectSeparator />
-                        </>
-                      )}
-                      {customers.map(c => (
-                        <SelectItem key={c.id} value={c.id}>
-                          {c.name} ({c.phone})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  
+                  <Popover open={isCustomerPopoverOpen} onOpenChange={setIsCustomerPopoverOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={isCustomerPopoverOpen}
+                        className="h-12 w-full justify-between bg-background border-border"
+                      >
+                        <span className="truncate">
+                          {selectedCustomer ? `${selectedCustomer.name} (${selectedCustomer.phone})` : "Find customer..."}
+                        </span>
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[300px] sm:w-[400px] p-0" align="start">
+                      <div className="flex flex-col">
+                        <div className="flex items-center border-b px-3">
+                          <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                          <Input
+                            placeholder="Type name, phone or address..."
+                            value={customerSearch}
+                            onChange={(e) => setCustomerSearch(e.target.value)}
+                            className="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none border-none focus-visible:ring-0"
+                          />
+                        </div>
+                        <ScrollArea className="h-72">
+                          <div className="p-1">
+                            {filteredCustomers.length > 0 ? (
+                              filteredCustomers.map((customer) => (
+                                <Button
+                                  key={customer.id}
+                                  variant="ghost"
+                                  className={cn(
+                                    "w-full justify-start font-normal h-auto py-3 px-2",
+                                    formData.customerId === customer.id && "bg-muted"
+                                  )}
+                                  onClick={() => {
+                                    setFormData({ ...formData, customerId: customer.id });
+                                    setIsCustomerPopoverOpen(false);
+                                  }}
+                                >
+                                  <div className="flex items-center gap-3 w-full">
+                                    <div className={cn(
+                                      "h-8 w-8 rounded-full flex items-center justify-center shrink-0",
+                                      formData.customerId === customer.id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                                    )}>
+                                      <User className="h-4 w-4" />
+                                    </div>
+                                    <div className="flex flex-col items-start overflow-hidden text-left">
+                                      <span className="font-bold text-sm truncate w-full">{customer.name}</span>
+                                      <span className="text-[10px] text-muted-foreground truncate w-full">{customer.phone} • {customer.address}</span>
+                                    </div>
+                                    {formData.customerId === customer.id && (
+                                      <Check className="ml-auto h-4 w-4 shrink-0 text-primary" />
+                                    )}
+                                  </div>
+                                </Button>
+                              ))
+                            ) : (
+                              <div className="py-6 text-center text-sm text-muted-foreground">
+                                No customer found matching "{customerSearch}"
+                              </div>
+                            )}
+                          </div>
+                        </ScrollArea>
+                        <div className="p-2 border-t bg-muted/30">
+                          <Button 
+                            className="w-full h-11 gap-2 font-bold bg-primary shadow-lg shadow-primary/20"
+                            onClick={() => {
+                              setNewCust({ ...newCust, name: customerSearch });
+                              setIsAddCustomerOpen(true);
+                            }}
+                          >
+                            <UserPlus className="h-4 w-4" />
+                            Add "{customerSearch || 'New Customer'}"
+                          </Button>
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 <div className="space-y-2">
@@ -454,6 +543,10 @@ export default function TransactionsPage() {
             <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Phone</Label>
               <Input value={newCust.phone} onChange={e => setNewCust({...newCust, phone: e.target.value.replace(/\D/g, '').slice(0, 10)})} placeholder="98XXXXXXXX" className="h-12" maxLength={10} />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Address</Label>
+              <Input value={newCust.address} onChange={e => setNewCust({...newCust, address: e.target.value})} placeholder="Kathmandu, Nepal" className="h-12" />
             </div>
           </div>
           <DialogFooter>
