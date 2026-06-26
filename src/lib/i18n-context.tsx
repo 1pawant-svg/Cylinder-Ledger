@@ -39,14 +39,13 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     t
   }), [language, t]);
 
-  // Prevent hydration mismatches by not rendering children until mounted on client
-  if (!mounted) {
-    return null;
-  }
-
   return (
     <I18nContext.Provider value={value}>
-      {children}
+      {mounted ? children : (
+        <div className="flex h-screen w-screen items-center justify-center bg-background">
+          <div className="animate-pulse font-headline text-xl font-bold text-primary">Cylindera...</div>
+        </div>
+      )}
     </I18nContext.Provider>
   );
 }

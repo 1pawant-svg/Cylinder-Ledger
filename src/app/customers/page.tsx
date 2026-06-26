@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useLedger } from "@/lib/ledger-context";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -55,7 +55,13 @@ export default function CustomersPage() {
   const [newCust, setNewCust] = useState({ 
     name: '', address: '', phone: '', pan: '', notes: '', openingToReceive: '', openingToGive: ''
   });
-  const [openingDateBS, setOpeningDateBS] = useState(getTodayBSParts());
+  
+  // Hydration-safe initial state
+  const [openingDateBS, setOpeningDateBS] = useState({ year: '2081', month: '01', day: '01' });
+
+  useEffect(() => {
+    setOpeningDateBS(getTodayBSParts());
+  }, [getTodayBSParts, isAddOpen]);
 
   const processedCustomers = useMemo(() => {
     const today = getCurrentADDate();

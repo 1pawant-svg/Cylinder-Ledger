@@ -87,8 +87,10 @@ export default function TransactionsPage() {
     return getTodayBSParts();
   };
 
-  const [bsParts, setBsParts] = useState(getTodayBSParts);
-  const [dueBsParts, setDueBsParts] = useState(() => getFutureBSParts(7));
+  // Hydration-safe initial state
+  const [bsParts, setBsParts] = useState({ year: '2081', month: '01', day: '01' });
+  const [dueBsParts, setDueBsParts] = useState({ year: '2081', month: '01', day: '08' });
+  
   const [useDueDate, setUseDueDate] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(!!editTransactionId);
@@ -101,6 +103,12 @@ export default function TransactionsPage() {
     returnQuantity: 0, 
     remark: '',
   });
+
+  useEffect(() => {
+    setBsParts(getTodayBSParts());
+    setDueBsParts(getFutureBSParts(7));
+    setFormData(prev => ({ ...prev, date: getCurrentADDate() }));
+  }, []);
 
   useEffect(() => {
     async function fetchTxn() {

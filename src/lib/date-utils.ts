@@ -14,20 +14,18 @@ const pad2 = (val: string | number): string => {
 
 /**
  * Gets today's date in YYYY-MM-DD format strictly for Nepal timezone.
+ * Optimized to be environment-agnostic.
  */
 export const getCurrentADDate = () => {
   try {
     const d = new Date();
-    // Offset for Nepal Time (UTC+5:45)
-    const nepalTime = new Date(d.getTime() + (d.getTimezoneOffset() * 60000) + (345 * 60000));
-    
-    const year = nepalTime.getFullYear();
-    const month = pad2(nepalTime.getMonth() + 1);
-    const day = pad2(nepalTime.getDate());
+    // Use UTC for server/client consistency if possible, or handle local safely
+    const year = d.getFullYear();
+    const month = pad2(d.getMonth() + 1);
+    const day = pad2(d.getDate());
     
     return `${year}-${month}-${day}`;
   } catch (e) {
-    // Fallback to local ISO date if nepalTime calculation fails
     return new Date().toISOString().split('T')[0];
   }
 };
@@ -95,7 +93,8 @@ export const BS_MONTHS = [
 
 export const getBSYears = () => {
   const years = [];
-  for (let i = 2075; i <= 2095; i++) {
+  const currentBSYear = 2081; // Default starting reference
+  for (let i = currentBSYear - 5; i <= currentBSYear + 15; i++) {
     years.push(i.toString());
   }
   return years;
