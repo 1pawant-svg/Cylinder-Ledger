@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -53,7 +54,7 @@ export default function CustomersPage() {
   }, []);
 
   const [newCust, setNewCust] = useState({ 
-    name: '', address: '', phone: '', pan: '', notes: '', openingToReceive: '', openingToGive: ''
+    name: '', address: '', phone: '', pan: '', remarks: '', openingToReceive: '', openingToGive: ''
   });
   
   // Hydration-safe initial state
@@ -118,7 +119,7 @@ export default function CustomersPage() {
     if (newCust.pan && newCust.pan.length !== 9) return;
     
     const customerId = addCustomer({
-      name: newCust.name, address: newCust.address, phone: cleanPhone, pan: newCust.pan, notes: newCust.notes
+      name: newCust.name, address: newCust.address, phone: cleanPhone, pan: newCust.pan, remarks: newCust.remarks
     });
 
     if (!customerId) return;
@@ -132,7 +133,7 @@ export default function CustomersPage() {
     if (toReceive > 0) addTransaction({ customerId, date: openingAD, bsDate: openingBSStr, type: 'OUT_FULL', quantity: toReceive, remark: 'Initial Balance' });
     if (toGive > 0) addTransaction({ customerId, date: openingAD, bsDate: openingBSStr, type: 'IN_EMPTY', quantity: toGive, remark: 'Initial Balance' });
 
-    setNewCust({ name: '', address: '', phone: '', pan: '', notes: '', openingToReceive: '', openingToGive: '' });
+    setNewCust({ name: '', address: '', phone: '', pan: '', remarks: '', openingToReceive: '', openingToGive: '' });
     setOpeningDateBS(getTodayBSParts());
     setIsAddOpen(false);
     toast({ title: t('profileAdded') });
@@ -163,6 +164,17 @@ export default function CustomersPage() {
                 <div className="space-y-2"><Label className="text-[10px] uppercase font-bold">{t('address')}</Label><Input value={newCust.address} onChange={e => setNewCust({...newCust, address: e.target.value})} /></div>
                 <div className="space-y-2"><Label className="text-[10px] uppercase font-bold">{t('pan')}</Label><Input value={newCust.pan} maxLength={9} onChange={e => setNewCust({...newCust, pan: e.target.value.replace(/\D/g, '')})} /></div>
               </div>
+              
+              <div className="space-y-2">
+                <Label className="text-[10px] uppercase font-bold">{t('remarks')}</Label>
+                <Textarea 
+                  value={newCust.remarks} 
+                  onChange={e => setNewCust({...newCust, remarks: e.target.value})} 
+                  placeholder="Optional background notes about this customer"
+                  className="min-h-[80px]"
+                />
+              </div>
+
               <div className="p-4 rounded-xl bg-muted/20 border border-border/50 space-y-4">
                  <Label className="text-primary font-bold text-xs">{t('initialBalances')}</Label>
                  <div className="grid grid-cols-2 gap-4">
