@@ -12,6 +12,18 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
           className
         )}
         ref={ref}
+        onWheel={(e) => {
+          if (type === 'number') {
+            // Disable value change on mouse wheel scroll
+            (e.target as HTMLInputElement).blur();
+          }
+        }}
+        onKeyDown={(e) => {
+          if (type === 'number' && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+            // Disable increment/decrement via arrow keys
+            e.preventDefault();
+          }
+        }}
         {...props}
       />
     )
