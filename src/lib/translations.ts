@@ -107,8 +107,12 @@ export const translations = {
     leakageReturn: "Leakage Return",
     cylinderLost: "Cylinder Lost",
     balanceAdjustment: "Balance Adjustment",
-    labelIn: "IN",
-    labelOut: "OUT",
+    labelIn: "आयो",
+    labelOut: "गयो",
+    customerSummary: "Customer Summary",
+    lastTxn: "Last Transaction",
+    recentActivity: "Recent Activity",
+    balanceAfter: "Bal After",
     
     // Settings & More
     systemOptions: "System Options",
@@ -255,6 +259,10 @@ export const translations = {
     balanceAdjustment: "मौज्दात मिलान",
     labelIn: "आयो",
     labelOut: "गयो",
+    customerSummary: "ग्राहक सारांश",
+    lastTxn: "अन्तिम कारोबार",
+    recentActivity: "हालको गतिविधि",
+    balanceAfter: "पछिको बाँकी",
     
     // Settings & More
     systemOptions: "प्रणाली विकल्पहरू",
