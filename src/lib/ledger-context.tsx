@@ -27,13 +27,13 @@ interface LedgerContextType {
   inactiveCustomers: Customer[];
   transactions: Transaction[];
   loading: boolean;
-  addCustomer: (customer: Omit<Customer, 'id' | 'createdAt' | 'status' | 'balance'>) => string;
-  updateCustomer: (id: string, customer: Partial<Customer>) => void;
-  updateCustomerStatus: (id: string, status: CustomerStatus) => void;
-  deleteCustomer: (id: string) => void;
-  addTransaction: (transaction: Omit<Transaction, 'id' | 'createdAt' | 'status'>) => void;
-  updateTransaction: (id: string, data: Partial<Transaction>) => void;
-  deleteTransaction: (id: string, reason?: string) => void;
+  addCustomer: (customer: Omit<Customer, 'id' | 'createdAt' | 'status' | 'balance'>) => Promise<string>;
+  updateCustomer: (id: string, customer: Partial<Customer>) => Promise<void>;
+  updateCustomerStatus: (id: string, status: CustomerStatus) => Promise<void>;
+  deleteCustomer: (id: string) => Promise<void>;
+  addTransaction: (transaction: Omit<Transaction, 'id' | 'createdAt' | 'status'>) => Promise<string>;
+  updateTransaction: (id: string, data: Partial<Transaction>) => Promise<void>;
+  deleteTransaction: (id: string, reason?: string) => Promise<void>;
   recalculateBalance: (customerId: string) => Promise<number>;
   getCustomerBalance: (customerId: string) => number;
   getCustomerTransactions: (customerId: string) => Transaction[];
@@ -84,45 +84,45 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return map;
   }, [transactions]);
 
-  const addCustomer = useCallback((customer: Omit<Customer, 'id' | 'createdAt' | 'status' | 'balance'>): string => {
+  const addCustomer = useCallback(async (customer: Omit<Customer, 'id' | 'createdAt' | 'status' | 'balance'>): Promise<string> => {
     if (!db) return '';
-    return fsAddCustomer(db, customer, user?.uid, userProfile?.fullName || user?.email || undefined);
+    return await fsAddCustomer(db, customer, user?.uid, userProfile?.fullName || user?.email || undefined);
   }, [db, user, userProfile]);
 
-  const updateCustomer = useCallback((id: string, updated: Partial<Customer>) => {
+  const updateCustomer = useCallback(async (id: string, updated: Partial<Customer>) => {
     if (!db) return;
     const { id: _, createdAt: __, balance: ___, ...rest } = updated as any;
-    fsUpdateCustomer(db, id, rest, user?.uid, userProfile?.fullName || user?.email || undefined);
+    await fsUpdateCustomer(db, id, rest, user?.uid, userProfile?.fullName || user?.email || undefined);
   }, [db, user, userProfile]);
 
-  const updateCustomerStatus = useCallback((id: string, status: CustomerStatus) => {
+  const updateCustomerStatus = useCallback(async (id: string, status: CustomerStatus) => {
     if (!db) return;
-    fsUpdateCustomerStatus(db, id, status, user?.uid, userProfile?.fullName || user?.email || undefined);
+    await fsUpdateCustomerStatus(db, id, status, user?.uid, userProfile?.fullName || user?.email || undefined);
   }, [db, user, userProfile]);
 
-  const deleteCustomer = useCallback((id: string) => {
+  const deleteCustomer = useCallback(async (id: string) => {
     if (!db) return;
-    fsDeleteCustomer(db, id, user?.uid, userProfile?.fullName || user?.email || undefined);
+    await fsDeleteCustomer(db, id, user?.uid, userProfile?.fullName || user?.email || undefined);
   }, [db, user, userProfile]);
 
-  const addTransaction = useCallback((txn: Omit<Transaction, 'id' | 'createdAt' | 'status'>) => {
-    if (!db) return;
-    fsAddTransaction(db, txn, user?.uid, userProfile?.fullName || user?.email || undefined);
+  const addTransaction = useCallback(async (txn: Omit<Transaction, 'id' | 'createdAt' | 'status'>) => {
+    if (!db) return '';
+    return await fsAddTransaction(db, txn, user?.uid, userProfile?.fullName || user?.email || undefined);
   }, [db, user, userProfile]);
 
-  const updateTransaction = useCallback((id: string, data: Partial<Transaction>) => {
+  const updateTransaction = useCallback(async (id: string, data: Partial<Transaction>) => {
     if (!db || !user || !userProfile) return;
-    fsUpdateTransaction(db, id, data, user.uid, userProfile.fullName || user.email || "User");
+    await fsUpdateTransaction(db, id, data, user.uid, userProfile.fullName || user.email || "User");
   }, [db, user, userProfile]);
 
-  const deleteTransaction = useCallback((id: string, reason?: string) => {
+  const deleteTransaction = useCallback(async (id: string, reason?: string) => {
     if (!db || !user || !userProfile) return;
-    fsDeleteTransaction(db, id, user.uid, userProfile.fullName || user.email || "User", reason);
+    await fsDeleteTransaction(db, id, user.uid, userProfile.fullName || user.email || "User", reason);
   }, [db, user, userProfile]);
 
   const recalculateBalance = useCallback(async (customerId: string) => {
     if (!db || !user || !userProfile) return 0;
-    return fsRecalculateCustomerBalance(db, customerId, allTransactions, user.uid, userProfile.fullName || user.email || "User");
+    return await fsRecalculateCustomerBalance(db, customerId, allTransactions, user.uid, userProfile.fullName || user.email || "User");
   }, [db, user, userProfile, allTransactions]);
 
   const getCustomerTransactions = useCallback((customerId: string) => {

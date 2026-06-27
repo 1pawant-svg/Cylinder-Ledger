@@ -17,7 +17,7 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import { logAction } from './audit-service';
 import { cleanFirestoreData } from '@/lib/utils';
 
-export function addCustomer(db: Firestore, data: Omit<Customer, 'id' | 'createdAt' | 'status' | 'balance'>, userId?: string, userName?: string) {
+export async function addCustomer(db: Firestore, data: Omit<Customer, 'id' | 'createdAt' | 'status' | 'balance'>, userId?: string, userName?: string) {
   const colRef = collection(db, 'customers');
   const docRef = doc(colRef);
   const rawPayload = {
@@ -29,7 +29,8 @@ export function addCustomer(db: Firestore, data: Omit<Customer, 'id' | 'createdA
 
   const payload = cleanFirestoreData(rawPayload);
 
-  setDoc(docRef, payload).then(() => {
+  try {
+    await setDoc(docRef, payload);
     if (userId && userName) {
       logAction(db, {
         userId,
@@ -40,23 +41,24 @@ export function addCustomer(db: Firestore, data: Omit<Customer, 'id' | 'createdA
         details: `Created customer profile for ${data.name}`,
       });
     }
-  }).catch(async (error) => {
+    return docRef.id;
+  } catch (error: any) {
     errorEmitter.emit('permission-error', new FirestorePermissionError({
       path: docRef.path,
       operation: 'create',
       requestResourceData: payload,
     }));
-  });
-
-  return docRef.id;
+    throw error;
+  }
 }
 
-export function updateCustomer(db: Firestore, id: string, data: Partial<Omit<Customer, 'id' | 'createdAt' | 'balance'>>, userId?: string, userName?: string) {
+export async function updateCustomer(db: Firestore, id: string, data: Partial<Omit<Customer, 'id' | 'createdAt' | 'balance'>>, userId?: string, userName?: string) {
   const docRef = doc(db, 'customers', id);
   const { id: _, createdAt: __, balance: ___, ...sanitizedData } = data as any;
   const updateData = cleanFirestoreData(sanitizedData);
 
-  updateDoc(docRef, updateData).then(() => {
+  try {
+    await updateDoc(docRef, updateData);
     if (userId && userName) {
       const isNoteUpdate = Object.keys(data).length === 1 && ('notes' in data || 'remarks' in data || 'collectionNotes' in data || 'specialInstructions' in data);
       logAction(db, {
@@ -68,20 +70,22 @@ export function updateCustomer(db: Firestore, id: string, data: Partial<Omit<Cus
         details: `Updated details for customer ${id}`,
       });
     }
-  }).catch(async (error) => {
+  } catch (error: any) {
     errorEmitter.emit('permission-error', new FirestorePermissionError({
       path: docRef.path,
       operation: 'update',
       requestResourceData: updateData,
     }));
-  });
+    throw error;
+  }
 }
 
-export function updateCustomerStatus(db: Firestore, id: string, status: CustomerStatus, userId?: string, userName?: string) {
+export async function updateCustomerStatus(db: Firestore, id: string, status: CustomerStatus, userId?: string, userName?: string) {
   const docRef = doc(db, 'customers', id);
   const updateData = cleanFirestoreData({ status });
 
-  updateDoc(docRef, updateData).then(() => {
+  try {
+    await updateDoc(docRef, updateData);
     if (userId && userName) {
       logAction(db, {
         userId,
@@ -92,18 +96,20 @@ export function updateCustomerStatus(db: Firestore, id: string, status: Customer
         details: `Status changed to ${status} for customer ${id}`,
       });
     }
-  }).catch(async (error) => {
+  } catch (error: any) {
     errorEmitter.emit('permission-error', new FirestorePermissionError({
       path: docRef.path,
       operation: 'update',
       requestResourceData: updateData,
     }));
-  });
+    throw error;
+  }
 }
 
-export function deleteCustomer(db: Firestore, id: string, userId?: string, userName?: string) {
+export async function deleteCustomer(db: Firestore, id: string, userId?: string, userName?: string) {
   const docRef = doc(db, 'customers', id);
-  deleteDoc(docRef).then(() => {
+  try {
+    await deleteDoc(docRef);
     if (userId && userName) {
       logAction(db, {
         userId,
@@ -114,12 +120,13 @@ export function deleteCustomer(db: Firestore, id: string, userId?: string, userN
         details: `Deleted customer profile ${id}`,
       });
     }
-  }).catch(async (error) => {
+  } catch (error: any) {
     errorEmitter.emit('permission-error', new FirestorePermissionError({
       path: docRef.path,
       operation: 'delete',
     }));
-  });
+    throw error;
+  }
 }
 
 /**

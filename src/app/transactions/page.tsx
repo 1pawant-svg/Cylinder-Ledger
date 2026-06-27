@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -256,22 +257,26 @@ export default function TransactionsPage() {
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
   const [newCust, setNewCust] = useState({ name: '', address: '', phone: '', notes: '' });
 
-  const handleAddCustomer = () => {
+  const handleAddCustomer = async () => {
     if (!newCust.name || !newCust.phone) {
       toast({ variant: "destructive", title: t('incompleteForm') });
       return;
     }
-    const customerId = addCustomer({
-      name: newCust.name,
-      address: newCust.address,
-      phone: newCust.phone,
-      notes: newCust.notes,
-      status: 'active'
-    });
-    setFormData(prev => ({ ...prev, customerId }));
-    setIsAddCustomerOpen(false);
-    setIsCustomerPopoverOpen(false);
-    toast({ title: t('profileAdded') });
+    try {
+      const customerId = await addCustomer({
+        name: newCust.name,
+        address: newCust.address,
+        phone: newCust.phone,
+        notes: newCust.notes,
+        status: 'active'
+      });
+      setFormData(prev => ({ ...prev, customerId }));
+      setIsAddCustomerOpen(false);
+      setIsCustomerPopoverOpen(false);
+      toast({ title: t('profileAdded') });
+    } catch (err) {
+      toast({ variant: "destructive", title: t('error'), description: "Could not create profile." });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

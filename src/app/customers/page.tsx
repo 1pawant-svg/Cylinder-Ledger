@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -38,6 +39,7 @@ export default function CustomersPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ACTIVE');
   const [sortBy, setSortBy] = useState<SortOption>('NAME_ASC');
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const getTodayBSParts = useCallback(() => {
     const todayAD = getCurrentADDate();
@@ -57,7 +59,6 @@ export default function CustomersPage() {
     name: '', address: '', phone: '', pan: '', remarks: '', openingToReceive: '', openingToGive: ''
   });
   
-  // Hydration-safe initial state
   const [openingDateBS, setOpeningDateBS] = useState({ year: '2081', month: '01', day: '01' });
 
   useEffect(() => {
@@ -111,32 +112,49 @@ export default function CustomersPage() {
     return result;
   }, [customers, search, statusFilter, sortBy, getCustomerTransactions]);
 
-  const handleAdd = useCallback(() => {
+  const handleAdd = useCallback(async () => {
     if (!newCust.name || !newCust.phone) return;
     const cleanPhone = newCust.phone.replace(/\D/g, '');
     if (cleanPhone.length !== 10) return;
 
     if (newCust.pan && newCust.pan.length !== 9) return;
     
-    const customerId = addCustomer({
-      name: newCust.name, address: newCust.address, phone: cleanPhone, pan: newCust.pan, remarks: newCust.remarks
-    });
+    setIsSubmitting(true);
+    try {
+      // 1. Create the customer and WAIT for confirmation
+      const customerId = await addCustomer({
+        name: newCust.name, address: newCust.address, phone: cleanPhone, pan: newCust.pan, remarks: newCust.remarks
+      });
 
-    if (!customerId) return;
+      if (!customerId) {
+        setIsSubmitting(false);
+        return;
+      }
 
-    const openingAD = bsToAd(openingDateBS.year, openingDateBS.month, openingDateBS.day);
-    const openingBSStr = `${openingDateBS.year}-${openingDateBS.month}-${openingDateBS.day}`;
-    
-    const toReceive = parseInt(newCust.openingToReceive) || 0;
-    const toGive = parseInt(newCust.openingToGive) || 0;
+      // 2. Prepare opening balance transactions
+      const openingAD = bsToAd(openingDateBS.year, openingDateBS.month, openingDateBS.day);
+      const openingBSStr = `${openingDateBS.year}-${openingDateBS.month}-${openingDateBS.day}`;
+      
+      const toReceive = parseInt(newCust.openingToReceive) || 0;
+      const toGive = parseInt(newCust.openingToGive) || 0;
 
-    if (toReceive > 0) addTransaction({ customerId, date: openingAD, bsDate: openingBSStr, type: 'OUT_FULL', quantity: toReceive, remark: 'Initial Balance' });
-    if (toGive > 0) addTransaction({ customerId, date: openingAD, bsDate: openingBSStr, type: 'IN_EMPTY', quantity: toGive, remark: 'Initial Balance' });
+      // 3. Log initial balances sequentially to avoid race conditions
+      if (toReceive > 0) {
+        await addTransaction({ customerId, date: openingAD, bsDate: openingBSStr, type: 'OUT_FULL', quantity: toReceive, remark: 'Initial Balance' });
+      }
+      if (toGive > 0) {
+        await addTransaction({ customerId, date: openingAD, bsDate: openingBSStr, type: 'IN_EMPTY', quantity: toGive, remark: 'Initial Balance' });
+      }
 
-    setNewCust({ name: '', address: '', phone: '', pan: '', remarks: '', openingToReceive: '', openingToGive: '' });
-    setOpeningDateBS(getTodayBSParts());
-    setIsAddOpen(false);
-    toast({ title: t('profileAdded') });
+      setNewCust({ name: '', address: '', phone: '', pan: '', remarks: '', openingToReceive: '', openingToGive: '' });
+      setOpeningDateBS(getTodayBSParts());
+      setIsAddOpen(false);
+      toast({ title: t('profileAdded') });
+    } catch (err) {
+      toast({ variant: "destructive", title: t('error'), description: "Could not create profile. Please try again." });
+    } finally {
+      setIsSubmitting(false);
+    }
   }, [newCust, openingDateBS, addCustomer, addTransaction, getTodayBSParts, toast, t]);
 
   if (loading) return <div className="flex h-full w-full items-center justify-center p-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
@@ -203,7 +221,12 @@ export default function CustomersPage() {
                 />
               </div>
             </div>
-            <DialogFooter><Button onClick={handleAdd} className="w-full h-12 font-bold">{t('saveProfile')}</Button></DialogFooter>
+            <DialogFooter>
+              <Button onClick={handleAdd} disabled={isSubmitting} className="w-full h-12 font-bold">
+                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                {t('saveProfile')}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </header>
