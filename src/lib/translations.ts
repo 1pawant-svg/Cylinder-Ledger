@@ -98,7 +98,7 @@ export const translations = {
     directEntryMode: "Direct Entry Mode",
     eventType: "Event Type",
     quantityPcs: "Quantity (PCS)",
-    returnOwed: "Return Owed (PCS)",
+    returnOwed: "Empty Return (PCS)",
     remarks: "Remarks",
     cancel: "Cancel",
     saveTransaction: "Save Transaction",

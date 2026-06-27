@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -650,7 +649,7 @@ export default function TransactionsPage() {
                       </div>
                     )}
 
-                    {isPositiveImpact && !editTransactionId && (
+                    {isPositiveImpact && (
                       <div className="space-y-2 md:col-span-2 p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
                         <Label className="text-emerald-500 uppercase text-[10px] tracking-widest font-bold">{t('returnOwed')}</Label>
                         <Input type="number" min="0" className="h-12 bg-background text-emerald-500 font-bold" value={formData.returnQuantity} onChange={e => setFormData({...formData, returnQuantity: parseInt(e.target.value) || 0})} />
