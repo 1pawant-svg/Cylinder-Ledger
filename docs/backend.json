@@ -8,6 +8,7 @@
       "properties": {
         "name": { "type": "string" },
         "phone": { "type": "string" },
+        "altPhone": { "type": "string", "description": "Alternative phone number." },
         "address": { "type": "string" },
         "pan": { "type": "string", "description": "Customer's PAN number." },
         "notes": { "type": "string" },

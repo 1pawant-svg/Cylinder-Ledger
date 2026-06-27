@@ -86,6 +86,7 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
   const [editProfileData, setEditProfileData] = useState({
     name: '',
     phone: '',
+    altPhone: '',
     address: '',
     pan: '',
     remarks: '',
@@ -113,6 +114,7 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
       setEditProfileData({
         name: customer.name,
         phone: customer.phone,
+        altPhone: customer.altPhone || '',
         address: customer.address,
         pan: customer.pan || '',
         remarks: customer.remarks || '',
@@ -270,10 +272,18 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 min-w-0">
           <div className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-xs min-w-0">
             <span className="flex items-center truncate max-w-[200px]"><MapPin className="h-3 w-3 mr-1 shrink-0" />{customer.address}</span>
-            <a href={`tel:${customer.phone}`} className="flex items-center shrink-0 hover:text-primary transition-colors hover:underline">
-              <Phone className="h-3 w-3 mr-1 shrink-0" />
-              {customer.phone}
-            </a>
+            <div className="flex flex-wrap gap-3">
+              <a href={`tel:${customer.phone}`} className="flex items-center shrink-0 hover:text-primary transition-colors hover:underline">
+                <Phone className="h-3 w-3 mr-1 shrink-0" />
+                {customer.phone}
+              </a>
+              {customer.altPhone && (
+                <a href={`tel:${customer.altPhone}`} className="flex items-center shrink-0 hover:text-primary transition-colors hover:underline opacity-80">
+                  <Phone className="h-3 w-3 mr-1 shrink-0" />
+                  {customer.altPhone}
+                </a>
+              )}
+            </div>
             {customer.pan && <span className="flex items-center shrink-0"><Hash className="h-3 w-3 mr-1 shrink-0" />PAN: {customer.pan}</span>}
           </div>
           
@@ -481,9 +491,10 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
                 <div className="space-y-2"><Label>Phone</Label><Input value={editProfileData.phone} onChange={e => setEditProfileData({...editProfileData, phone: e.target.value.replace(/\D/g, '')})} /></div>
              </div>
              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2"><Label>Address</Label><Input value={editProfileData.address} onChange={e => setEditProfileData({...editProfileData, address: e.target.value})} /></div>
+                <div className="space-y-2"><Label>Alt Phone</Label><Input value={editProfileData.altPhone} onChange={e => setEditProfileData({...editProfileData, altPhone: e.target.value.replace(/\D/g, '')})} /></div>
                 <div className="space-y-2"><Label>PAN</Label><Input value={editProfileData.pan} onChange={e => setEditProfileData({...editProfileData, pan: e.target.value.replace(/\D/g, '')})} /></div>
              </div>
+             <div className="space-y-2"><Label>Address</Label><Input value={editProfileData.address} onChange={e => setEditProfileData({...editProfileData, address: e.target.value})} /></div>
              <div className="space-y-2"><Label>General Notes</Label><Textarea value={editProfileData.remarks} onChange={e => setEditProfileData({...editProfileData, remarks: e.target.value})} /></div>
              <div className="space-y-2"><Label>Special Instructions</Label><Textarea value={editProfileData.specialInstructions} onChange={e => setEditProfileData({...editProfileData, specialInstructions: e.target.value})} /></div>
           </div>

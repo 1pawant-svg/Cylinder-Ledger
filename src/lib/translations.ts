@@ -1,3 +1,4 @@
+
 export type Language = 'en' | 'ne';
 
 export const translations = {
@@ -48,6 +49,7 @@ export const translations = {
     search: "Search...",
     name: "Full Name",
     phone: "Phone Number",
+    altPhone: "Alt Phone Number",
     address: "Address",
     pan: "PAN Number",
     initialBalances: "Initial Balances",
@@ -198,6 +200,7 @@ export const translations = {
     search: "खोज्नुहोस्...",
     name: "पूरा नाम",
     phone: "फोन नम्बर",
+    altPhone: "बैकल्पिक फोन",
     address: "ठेगाना",
     pan: "प्यान नम्बर",
     initialBalances: "सुरुको मौज्दात",

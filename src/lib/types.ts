@@ -1,3 +1,4 @@
+
 import { Timestamp } from 'firebase/firestore';
 
 export type TransactionType = 'IN' | 'OUT' | 'OUT_FULL' | 'IN_EMPTY' | 'LEAKAGE' | 'LOST' | 'ADJUSTMENT';
@@ -7,6 +8,7 @@ export interface Customer {
   id: string;
   name: string;
   phone: string;
+  altPhone?: string;
   address: string;
   pan?: string;
   notes?: string;

@@ -56,7 +56,7 @@ export default function CustomersPage() {
   }, []);
 
   const [newCust, setNewCust] = useState({ 
-    name: '', address: '', phone: '', pan: '', remarks: '', openingToReceive: '', openingToGive: ''
+    name: '', address: '', phone: '', altPhone: '', pan: '', remarks: '', openingToReceive: '', openingToGive: ''
   });
   
   const [openingDateBS, setOpeningDateBS] = useState({ year: '2081', month: '01', day: '01' });
@@ -72,6 +72,7 @@ export default function CustomersPage() {
     let result = customers.filter(c => 
       c.name.toLowerCase().includes(s) || 
       c.phone.includes(search) ||
+      (c.altPhone && c.altPhone.includes(search)) ||
       c.address.toLowerCase().includes(s) ||
       (c.pan && c.pan.toLowerCase().includes(s))
     );
@@ -115,15 +116,21 @@ export default function CustomersPage() {
   const handleAdd = useCallback(async () => {
     if (!newCust.name || !newCust.phone) return;
     const cleanPhone = newCust.phone.replace(/\D/g, '');
+    const cleanAltPhone = newCust.altPhone.replace(/\D/g, '');
+    
     if (cleanPhone.length !== 10) return;
-
     if (newCust.pan && newCust.pan.length !== 9) return;
     
     setIsSubmitting(true);
     try {
       // 1. Create the customer and WAIT for confirmation
       const customerId = await addCustomer({
-        name: newCust.name, address: newCust.address, phone: cleanPhone, pan: newCust.pan, remarks: newCust.remarks
+        name: newCust.name, 
+        address: newCust.address, 
+        phone: cleanPhone, 
+        altPhone: cleanAltPhone,
+        pan: newCust.pan, 
+        remarks: newCust.remarks
       });
 
       if (!customerId) {
@@ -146,7 +153,7 @@ export default function CustomersPage() {
         await addTransaction({ customerId, date: openingAD, bsDate: openingBSStr, type: 'IN_EMPTY', quantity: toGive, remark: 'Initial Balance' });
       }
 
-      setNewCust({ name: '', address: '', phone: '', pan: '', remarks: '', openingToReceive: '', openingToGive: '' });
+      setNewCust({ name: '', address: '', phone: '', altPhone: '', pan: '', remarks: '', openingToReceive: '', openingToGive: '' });
       setOpeningDateBS(getTodayBSParts());
       setIsAddOpen(false);
       toast({ title: t('profileAdded') });
@@ -179,9 +186,10 @@ export default function CustomersPage() {
                 <div className="space-y-2"><Label className="text-[10px] uppercase font-bold">{t('phone')}</Label><Input value={newCust.phone} maxLength={10} onChange={e => setNewCust({...newCust, phone: e.target.value.replace(/\D/g, '')})} /></div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2"><Label className="text-[10px] uppercase font-bold">{t('address')}</Label><Input value={newCust.address} onChange={e => setNewCust({...newCust, address: e.target.value})} /></div>
+                <div className="space-y-2"><Label className="text-[10px] uppercase font-bold">{t('altPhone')}</Label><Input value={newCust.altPhone} maxLength={10} onChange={e => setNewCust({...newCust, altPhone: e.target.value.replace(/\D/g, '')})} /></div>
                 <div className="space-y-2"><Label className="text-[10px] uppercase font-bold">{t('pan')}</Label><Input value={newCust.pan} maxLength={9} onChange={e => setNewCust({...newCust, pan: e.target.value.replace(/\D/g, '')})} /></div>
               </div>
+              <div className="space-y-2"><Label className="text-[10px] uppercase font-bold">{t('address')}</Label><Input value={newCust.address} onChange={e => setNewCust({...newCust, address: e.target.value})} /></div>
 
               <div className="p-4 rounded-xl bg-muted/20 border border-border/50 space-y-4">
                  <Label className="text-primary font-bold text-xs">{t('initialBalances')}</Label>
@@ -279,7 +287,7 @@ export default function CustomersPage() {
                     <TableCell className="pl-4 md:pl-6 py-3 md:py-4">
                       <Link href={`/customers/${customer.id}`} className="font-bold hover:text-primary transition-colors block truncate max-w-[140px] md:max-w-[300px] text-xs md:text-sm">{customer.name}</Link>
                       <div className="flex items-center gap-1.5 text-[8px] md:text-[10px] text-muted-foreground truncate max-w-[140px] md:max-w-[300px] mt-0.5">
-                        <MapPin className="h-2.5 w-2.5 md:h-3 md:w-3 shrink-0" /> {customer.address} • {customer.phone}
+                        <MapPin className="h-2.5 w-2.5 md:h-3 md:w-3 shrink-0" /> {customer.address} • {customer.phone} {customer.altPhone ? `(${customer.altPhone})` : ''}
                       </div>
                     </TableCell>
                     <TableCell className="px-2 md:px-4">
