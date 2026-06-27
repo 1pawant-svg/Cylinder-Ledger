@@ -164,16 +164,6 @@ export default function CustomersPage() {
                 <div className="space-y-2"><Label className="text-[10px] uppercase font-bold">{t('address')}</Label><Input value={newCust.address} onChange={e => setNewCust({...newCust, address: e.target.value})} /></div>
                 <div className="space-y-2"><Label className="text-[10px] uppercase font-bold">{t('pan')}</Label><Input value={newCust.pan} maxLength={9} onChange={e => setNewCust({...newCust, pan: e.target.value.replace(/\D/g, '')})} /></div>
               </div>
-              
-              <div className="space-y-2">
-                <Label className="text-[10px] uppercase font-bold">{t('remarks')}</Label>
-                <Textarea 
-                  value={newCust.remarks} 
-                  onChange={e => setNewCust({...newCust, remarks: e.target.value})} 
-                  placeholder="Optional background notes about this customer"
-                  className="min-h-[80px]"
-                />
-              </div>
 
               <div className="p-4 rounded-xl bg-muted/20 border border-border/50 space-y-4">
                  <Label className="text-primary font-bold text-xs">{t('initialBalances')}</Label>
@@ -201,6 +191,16 @@ export default function CustomersPage() {
                     <SelectContent className="max-h-[300px]">{daysList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label className="text-[10px] uppercase font-bold">{t('remarks')}</Label>
+                <Textarea 
+                  value={newCust.remarks} 
+                  onChange={e => setNewCust({...newCust, remarks: e.target.value})} 
+                  placeholder="Optional background notes about this customer"
+                  className="min-h-[80px]"
+                />
               </div>
             </div>
             <DialogFooter><Button onClick={handleAdd} className="w-full h-12 font-bold">{t('saveProfile')}</Button></DialogFooter>
