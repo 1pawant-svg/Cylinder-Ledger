@@ -385,36 +385,36 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
                   <Table className="min-w-[700px] w-full border-collapse">
                     <TableHeader className="bg-muted/40">
                       <TableRow className="border-b border-border/50">
-                        <TableHead className="pl-4 md:pl-6 text-[10px] font-bold uppercase tracking-widest w-[180px] text-muted-foreground">{t('dateBs')}</TableHead>
-                        <TableHead className="text-[10px] font-bold uppercase tracking-widest w-[100px] text-muted-foreground">{t('type')}</TableHead>
-                        <TableHead className="text-[10px] font-bold uppercase tracking-widest w-[80px] text-muted-foreground">{t('qty')}</TableHead>
-                        <TableHead className="text-[10px] font-bold uppercase tracking-widest w-[130px] text-muted-foreground">{t('running')}</TableHead>
-                        <TableHead className="text-[10px] font-bold uppercase tracking-widest min-w-[150px] text-muted-foreground">{t('remarks')}</TableHead>
-                        <TableHead className="text-right pr-4 md:pr-6 text-[10px] font-bold uppercase tracking-widest w-[60px] text-muted-foreground">{t('actions')}</TableHead>
+                        <TableHead className="pl-4 md:pl-6 text-xs font-bold uppercase tracking-widest w-[180px] text-muted-foreground">{t('dateBs')}</TableHead>
+                        <TableHead className="text-xs font-bold uppercase tracking-widest w-[100px] text-muted-foreground">{t('type')}</TableHead>
+                        <TableHead className="text-xs font-bold uppercase tracking-widest w-[80px] text-muted-foreground">{t('qty')}</TableHead>
+                        <TableHead className="text-xs font-bold uppercase tracking-widest w-[130px] text-muted-foreground">{t('running')}</TableHead>
+                        <TableHead className="text-xs font-bold uppercase tracking-widest min-w-[150px] text-muted-foreground">{t('remarks')}</TableHead>
+                        <TableHead className="text-right pr-4 md:pr-6 text-xs font-bold uppercase tracking-widest w-[60px] text-muted-foreground">{t('actions')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {transactionsWithBalance.map((txn) => (
                         <TableRow key={txn.id} className="hover:bg-muted/10 transition-colors border-b border-border/20 last:border-0">
-                          <TableCell className="pl-4 md:pl-6 font-medium text-xs py-5">{txn.bsDate}</TableCell>
+                          <TableCell className="pl-4 md:pl-6 font-medium text-sm py-5">{txn.bsDate}</TableCell>
                           <TableCell className="py-5">
-                            <Badge variant="outline" className={cn("text-[9px] font-bold h-5 uppercase tracking-tighter", getTransactionColor(txn.type))}>
+                            <Badge variant="outline" className={cn("text-[11px] font-bold h-5 uppercase tracking-tighter", getTransactionColor(txn.type))}>
                               {getTransactionLabel(txn.type)}
                             </Badge>
                           </TableCell>
-                          <TableCell className={cn("font-bold text-xs py-5", getTransactionImpact(txn.type) > 0 ? "text-primary" : "text-emerald-500")}>
+                          <TableCell className={cn("font-bold text-sm py-5", getTransactionImpact(txn.type) > 0 ? "text-primary" : "text-emerald-500")}>
                             {getTransactionImpact(txn.type) > 0 ? '+' : '-'}{txn.quantity}
                           </TableCell>
                           <TableCell className="font-bold py-5">
                             {txn.runningBalance === 0 ? (
-                              <span className="text-emerald-500 uppercase tracking-tighter text-[10px] font-bold">{t('settled')}</span>
+                              <span className="text-emerald-500 uppercase tracking-tighter text-xs font-bold">{t('settled')}</span>
                             ) : (
                               <div className="flex flex-col gap-0.5">
-                                <span className={cn("text-sm", txn.runningBalance > 0 ? "text-primary" : "text-emerald-500")}>
+                                <span className={cn("text-base", txn.runningBalance > 0 ? "text-primary" : "text-emerald-500")}>
                                   {Math.abs(txn.runningBalance)}
                                 </span>
                                 <span className={cn(
-                                  "text-[8px] font-bold leading-tight uppercase tracking-widest opacity-80",
+                                  "text-[10px] font-bold leading-tight uppercase tracking-widest opacity-80",
                                   txn.runningBalance > 0 ? "text-primary" : "text-emerald-500"
                                 )}>
                                   {txn.runningBalance > 0 ? t('toReceiveSuffix') : t('toGiveSuffix')}
@@ -422,7 +422,7 @@ export default function CustomerProfile(props: { params: Promise<{ id: string }>
                               </div>
                             )}
                           </TableCell>
-                          <TableCell className="text-[10px] text-muted-foreground italic truncate max-w-[200px] py-5">{txn.remark || "-"}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground italic truncate max-w-[200px] py-5">{txn.remark || "-"}</TableCell>
                           <TableCell className="text-right pr-4 md:pr-6 py-5">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
