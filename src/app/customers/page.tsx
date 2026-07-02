@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -39,7 +38,7 @@ export default function CustomersPage() {
   
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ACTIVE');
-  const [sortBy, setSortBy] = useState<SortOption>('NAME_ASC');
+  const [sortBy, setSortBy] = useState<SortOption>('BALANCE_HIGH_TO_LOW');
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
