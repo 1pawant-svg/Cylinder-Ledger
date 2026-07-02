@@ -102,8 +102,9 @@ export default function CustomersPage() {
       if (statusFilter === 'TO_RECEIVE') return balance > 0;
       if (statusFilter === 'TO_GIVE') return balance < 0;
       if (statusFilter === 'SETTLED') return balance === 0;
-      if (statusFilter === 'RETAILERS') return !!c.pan && c.pan.trim().length > 0;
-      if (statusFilter === 'NON_RETAILERS') return !c.pan || c.pan.trim().length === 0;
+      // Filter by category AND ensure they have an outstanding balance (as linked from dashboard)
+      if (statusFilter === 'RETAILERS') return (!!c.pan && c.pan.trim().length > 0) && balance > 0;
+      if (statusFilter === 'NON_RETAILERS') return (!c.pan || c.pan.trim().length === 0) && balance > 0;
       if (statusFilter === 'OVERDUE') {
         const txns = getCustomerTransactions(c.id);
         return balance > 0 && txns.some(t => t.dueDate && t.dueDate < today);
@@ -136,7 +137,6 @@ export default function CustomersPage() {
     const cleanAltPhone = newCust.altPhone.replace(/\D/g, '');
     
     if (cleanPhone.length !== 10) return;
-    if (newCust.pan && newCust.pan.length !== 9) return;
     
     setIsSubmitting(true);
     try {
