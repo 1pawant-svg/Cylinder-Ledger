@@ -10,6 +10,7 @@ import {AuthGuard} from '@/components/auth-guard';
 import {MobileNav} from '@/components/mobile-nav';
 import {I18nProvider} from '@/lib/i18n-context';
 import {BackupReminderBanner} from '@/components/backup-reminder-banner';
+import {PWARegistration} from '@/components/pwa-registration';
 
 export const metadata: Metadata = {
   title: 'PGS Cylinder Ledger',
@@ -34,8 +35,10 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover" />
         <meta name="theme-color" content="#12110e" />
+        <link rel="apple-touch-icon" href="/icon-512.png" />
       </head>
       <body className="font-body antialiased pb-24 md:pb-0 min-h-screen bg-background overflow-x-hidden">
+        <PWARegistration />
         <I18nProvider>
           <FirebaseClientProvider>
             <FirebaseErrorListener />
