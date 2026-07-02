@@ -36,24 +36,9 @@ export async function generateCustomerLedgerPDF(
     format: 'a4',
   });
 
-  const businessName = settings?.businessName || 'Cylindera LPG Pro';
+  const businessName = settings?.businessName || 'PGS Cylinder Ledger';
   const businessAddress = settings?.address || '';
   const businessPhone = settings?.phone || '';
-
-  // Labels used in the PDF
-  const l = {
-    toReceive: 'To Receive',
-    toGive: 'To Give',
-    in: 'IN',
-    out: 'OUT',
-    settled: 'Settled',
-    dateBs: 'Date (BS)',
-    eventType: 'Type',
-    qtyIn: 'IN',
-    qtyOut: 'OUT',
-    balance: 'Balance',
-    remarks: 'Remarks'
-  };
 
   // Header
   doc.setFontSize(22);
@@ -113,11 +98,11 @@ export async function generateCustomerLedgerPDF(
     yOffset += 5;
   }
 
-  doc.text(`Total Issued (${l.out}):`, 20, yOffset);
+  doc.text(`Total Issued (OUT):`, 20, yOffset);
   doc.text(`${summary.totalOut} PCS`, 60, yOffset);
   yOffset += 5;
   
-  doc.text(`Total Returned (${l.in}):`, 20, yOffset);
+  doc.text(`Total Returned (IN):`, 20, yOffset);
   doc.text(`${summary.totalIn} PCS`, 60, yOffset);
 
   // Net Balance Highlight
@@ -128,14 +113,13 @@ export async function generateCustomerLedgerPDF(
   
   const balValue = Math.abs(summary.balance);
   const balLabel = summary.balance === 0 
-    ? l.settled 
+    ? 'Settled' 
     : summary.balance > 0 
-      ? `${balValue} ${l.toReceive}` 
-      : `${balValue} ${l.toGive}`;
+      ? `${balValue} To Receive` 
+      : `${balValue} To Give`;
   
-  // Color coding for balance (Golden for Receive, Emerald for Give)
-  if (summary.balance > 0) doc.setTextColor(184, 134, 11); // Dark Golden Rod
-  else if (summary.balance < 0) doc.setTextColor(16, 185, 129); // Emerald
+  if (summary.balance > 0) doc.setTextColor(184, 134, 11); 
+  else if (summary.balance < 0) doc.setTextColor(16, 185, 129); 
   else doc.setTextColor(16, 185, 129);
   
   doc.text(balLabel, 110, 100);
@@ -171,7 +155,7 @@ export async function generateCustomerLedgerPDF(
 
   autoTable(doc, {
     startY: 118,
-    head: [[l.dateBs, l.eventType, l.qtyIn, l.qtyOut, l.balance, l.remarks]],
+    head: [['Date (BS)', 'Type', 'IN', 'OUT', 'Balance', 'Remarks']],
     body: tableRows,
     theme: 'grid',
     headStyles: {
@@ -188,7 +172,7 @@ export async function generateCustomerLedgerPDF(
       valign: 'middle'
     },
     columnStyles: {
-      0: { cellWidth: 32 }, // Fixed width for date
+      0: { cellWidth: 32 }, 
       1: { cellWidth: 22, halign: 'center' },
       2: { cellWidth: 15, halign: 'center' },
       3: { cellWidth: 15, halign: 'center' },
@@ -197,7 +181,6 @@ export async function generateCustomerLedgerPDF(
     },
     margin: { top: 20 },
     didDrawPage: (data) => {
-      // Footer
       doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(150);
@@ -208,7 +191,7 @@ export async function generateCustomerLedgerPDF(
         { align: 'center' }
       );
       doc.text(
-        'Computer generated ledger. Powered by Cylindera LPG Pro.',
+        'Computer generated ledger. Powered by PGS Cylinder Ledger.',
         14,
         doc.internal.pageSize.getHeight() - 10
       );

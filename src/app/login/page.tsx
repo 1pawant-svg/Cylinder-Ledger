@@ -42,7 +42,7 @@ export default function LoginPage() {
         fullName: userCredential.user.displayName || "User"
       });
 
-      toast({ title: "Logged In", description: "Welcome back to Cylindera!" });
+      toast({ title: "Logged In", description: "Welcome back to PGS Ledger!" });
       router.push("/");
     } catch (error: any) {
       let message = "Could not sign you in. Please check your credentials.";
@@ -84,7 +84,7 @@ export default function LoginPage() {
         <div className="bg-primary rounded-lg p-2">
           <Flame className="text-primary-foreground h-6 w-6" />
         </div>
-        <span className="font-headline text-2xl font-bold text-primary">Cylindera</span>
+        <span className="font-headline text-2xl font-bold text-primary">PGS Ledger</span>
       </div>
 
       <Card className="w-full max-w-md border-none shadow-2xl bg-card relative z-10">
@@ -125,7 +125,7 @@ export default function LoginPage() {
               />
             </div>
           </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
+          <form-footer className="flex flex-col p-6 pt-0 space-y-4">
             <Button className="w-full h-12 font-bold" type="submit" disabled={loading}>
               {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Login
@@ -133,10 +133,10 @@ export default function LoginPage() {
             
             <div className="w-full text-center">
                <p className="text-muted-foreground text-[10px] uppercase tracking-widest font-bold">
-                 Managed LPG Ledger System
+                 PGS Cylinder Ledger System
                </p>
             </div>
-          </CardFooter>
+          </form-footer>
         </form>
       </Card>
     </div>

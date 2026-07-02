@@ -53,7 +53,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-10 w-10 animate-spin text-primary" />
-          <p className="font-headline font-bold text-muted-foreground animate-pulse">Initializing Cylindera...</p>
+          <p className="font-headline font-bold text-muted-foreground animate-pulse">Initializing PGS Ledger...</p>
         </div>
       </div>
     );

@@ -4,7 +4,7 @@ import { Customer, Setting } from '@/lib/types';
  * Generates a reminder message for a customer based on their balance.
  */
 export function generateReminderMessage(customer: Customer, settings: Setting | null): string {
-  const businessName = settings?.businessName || 'Cylindera LPG Pro';
+  const businessName = settings?.businessName || 'PGS Cylinder Ledger';
   const toReceive = customer.balance > 0 ? customer.balance : 0;
   const toGive = customer.balance < 0 ? Math.abs(customer.balance) : 0;
 

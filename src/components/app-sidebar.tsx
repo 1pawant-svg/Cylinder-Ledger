@@ -1,3 +1,4 @@
+
 "use client";
 
 import { 
@@ -71,8 +72,8 @@ export function AppSidebar() {
             <Flame className="text-primary-foreground h-6 w-6" />
           </div>
           <div className="flex flex-col group-data-[collapsible=icon]:hidden">
-            <span className="font-headline text-xl font-bold tracking-tight text-primary">Cylindera</span>
-            <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">LPG Ledger Pro</span>
+            <span className="font-headline text-xl font-bold tracking-tight text-primary">PGS Ledger</span>
+            <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">Cylinder Ledger Pro</span>
           </div>
         </div>
       </SidebarHeader>
