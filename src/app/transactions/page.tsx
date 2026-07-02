@@ -375,11 +375,11 @@ export default function TransactionsPage() {
           <div className="grid grid-cols-2 gap-3">
             <div className="p-3 bg-primary/5 rounded-lg border border-primary/10">
               <p className="text-[8px] uppercase font-bold text-primary mb-1">{t('toReceive')}</p>
-              <p className="text-sm font-bold">{totalToReceive} PCS</p>
+              <p className="text-sm font-bold">{totalToReceive} थान</p>
             </div>
             <div className="p-3 bg-emerald-500/5 rounded-lg border border-emerald-500/10">
               <p className="text-[8px] uppercase font-bold text-emerald-500 mb-1">{t('toGive')}</p>
-              <p className="text-sm font-bold">{totalToGive} PCS</p>
+              <p className="text-sm font-bold">{totalToGive} थान</p>
             </div>
           </div>
 
@@ -396,7 +396,7 @@ export default function TransactionsPage() {
                   </Badge>
                   <span className="text-[10px] text-muted-foreground">{lastTxn.bsDate}</span>
                 </div>
-                <p className="text-xs font-bold">{lastTxn.quantity} PCS</p>
+                <p className="text-xs font-bold">{lastTxn.quantity} थान</p>
               </div>
             </div>
           )}
@@ -488,18 +488,24 @@ export default function TransactionsPage() {
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-[300px] sm:w-[400px] p-0" align="start">
-                          <div className="flex flex-col">
-                            <div className="flex items-center border-b px-3">
+                        <PopoverContent 
+                          className="w-[95vw] sm:w-[400px] p-0 shadow-2xl" 
+                          align="start" 
+                          sideOffset={5}
+                          collisionPadding={10}
+                        >
+                          <div className="flex flex-col max-h-[60vh]">
+                            <div className="flex items-center border-b px-3 shrink-0">
                               <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
                               <Input
                                 placeholder={t('search')}
                                 value={customerSearch}
                                 onChange={(e) => setCustomerSearch(e.target.value)}
                                 className="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none border-none focus-visible:ring-0"
+                                autoFocus
                               />
                             </div>
-                            <ScrollArea className="h-72">
+                            <ScrollArea className="flex-1 overflow-y-auto min-h-0">
                               <div className="p-1">
                                 {filteredCustomers.length > 0 ? (
                                   filteredCustomers.map((customer) => (
@@ -539,7 +545,7 @@ export default function TransactionsPage() {
                                 )}
                               </div>
                             </ScrollArea>
-                            <div className="p-2 border-t bg-muted/30">
+                            <div className="p-2 border-t bg-muted/30 shrink-0">
                               <Button 
                                 className="w-full h-11 gap-2 font-bold bg-primary shadow-lg shadow-primary/20"
                                 onClick={() => {
@@ -612,6 +618,11 @@ export default function TransactionsPage() {
                       <Input type="number" min="1" className="h-12 bg-background font-headline font-bold text-lg" value={formData.quantity} onChange={e => setFormData({...formData, quantity: parseInt(e.target.value) || 0})} />
                     </div>
 
+                    <div className="space-y-2 md:col-span-2 p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
+                      <Label className="text-emerald-500 uppercase text-[10px] tracking-widest font-bold">{t('returnOwed')}</Label>
+                      <Input type="number" min="0" className="h-12 bg-background text-emerald-500 font-bold" value={formData.returnQuantity} onChange={e => setFormData({...formData, returnQuantity: parseInt(e.target.value) || 0})} />
+                    </div>
+
                     {isPositiveImpact && (
                       <div className="md:col-span-2 p-4 rounded-xl bg-primary/5 border border-primary/20 space-y-4">
                         <div className="flex items-center justify-between">
@@ -646,13 +657,6 @@ export default function TransactionsPage() {
                             </div>
                           </div>
                         )}
-                      </div>
-                    )}
-
-                    {isPositiveImpact && (
-                      <div className="space-y-2 md:col-span-2 p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
-                        <Label className="text-emerald-500 uppercase text-[10px] tracking-widest font-bold">{t('returnOwed')}</Label>
-                        <Input type="number" min="0" className="h-12 bg-background text-emerald-500 font-bold" value={formData.returnQuantity} onChange={e => setFormData({...formData, returnQuantity: parseInt(e.target.value) || 0})} />
                       </div>
                     )}
 
