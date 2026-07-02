@@ -20,6 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils";
 import { getCurrentADDate, adToBs, bsToAd, toMillis, BS_MONTHS, getBSYears } from "@/lib/date-utils";
 import { useI18n } from "@/lib/i18n-context";
+import { useSearchParams } from "next/navigation";
 
 type StatusFilter = 'ALL' | 'ACTIVE' | 'INACTIVE' | 'TO_RECEIVE' | 'TO_GIVE' | 'SETTLED' | 'OVERDUE' | 'RETAILERS' | 'NON_RETAILERS';
 type SortOption = 'NAME_ASC' | 'NAME_DESC' | 'BALANCE_HIGH_TO_LOW' | 'BALANCE_LOW_TO_HIGH' | 'LATEST_ACTIVITY';
@@ -34,12 +35,28 @@ export default function CustomersPage() {
   const { customers, addCustomer, addTransaction, getCustomerTransactions, loading } = useLedger();
   const { toast } = useToast();
   const { t } = useI18n();
+  const searchParams = useSearchParams();
   
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ACTIVE');
   const [sortBy, setSortBy] = useState<SortOption>('NAME_ASC');
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Sync state with query parameters
+  useEffect(() => {
+    const filter = searchParams?.get('filter');
+    if (filter) {
+      const upper = filter.toUpperCase() as StatusFilter;
+      const validFilters: StatusFilter[] = [
+        'ALL', 'ACTIVE', 'INACTIVE', 'TO_RECEIVE', 'TO_GIVE', 
+        'SETTLED', 'OVERDUE', 'RETAILERS', 'NON_RETAILERS'
+      ];
+      if (validFilters.includes(upper)) {
+        setStatusFilter(upper);
+      }
+    }
+  }, [searchParams]);
 
   const getTodayBSParts = useCallback(() => {
     const todayAD = getCurrentADDate();
@@ -123,7 +140,6 @@ export default function CustomersPage() {
     
     setIsSubmitting(true);
     try {
-      // 1. Create the customer and WAIT for confirmation
       const customerId = await addCustomer({
         name: newCust.name, 
         address: newCust.address, 
@@ -138,14 +154,12 @@ export default function CustomersPage() {
         return;
       }
 
-      // 2. Prepare opening balance transactions
       const openingAD = bsToAd(openingDateBS.year, openingDateBS.month, openingDateBS.day);
       const openingBSStr = `${openingDateBS.year}-${openingDateBS.month}-${openingDateBS.day}`;
       
       const toReceive = parseInt(newCust.openingToReceive) || 0;
       const toGive = parseInt(newCust.openingToGive) || 0;
 
-      // 3. Log initial balances sequentially to avoid race conditions
       if (toReceive > 0) {
         await addTransaction({ customerId, date: openingAD, bsDate: openingBSStr, type: 'OUT_FULL', quantity: toReceive, remark: 'Initial Balance' });
       }

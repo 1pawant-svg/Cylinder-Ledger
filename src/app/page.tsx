@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -23,7 +24,8 @@ import {
   CalendarDays,
   ChevronRight,
   Phone,
-  UserCheck
+  UserCheck,
+  Building2
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -85,11 +87,15 @@ export default function Dashboard() {
     const topToReceive = sortedByBalance.filter(c => (c.balance || 0) > 0).slice(0, 5);
     const topToGive = sortedByBalance.filter(c => (c.balance || 0) < 0).reverse().slice(0, 5);
     
+    const topToReceiveRetailers = sortedByBalance
+      .filter(c => (c.balance || 0) > 0 && (c.pan && c.pan.trim().length > 0))
+      .slice(0, 5);
+
     const topToReceiveNonRetailers = sortedByBalance
       .filter(c => (c.balance || 0) > 0 && (!c.pan || c.pan.trim().length === 0))
       .slice(0, 5);
 
-    return { toReceiveTotal, toGiveTotal, topToReceive, topToGive, topToReceiveNonRetailers };
+    return { toReceiveTotal, toGiveTotal, topToReceive, topToGive, topToReceiveRetailers, topToReceiveNonRetailers };
   }, [customers]);
 
   const collectionData = useMemo(() => {
@@ -171,7 +177,7 @@ export default function Dashboard() {
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         <Card className="border-none shadow-xl bg-card min-w-0">
           <CardHeader className="pb-3 px-4 md:px-6">
             <div className="flex items-center justify-between gap-2">
@@ -195,6 +201,33 @@ export default function Dashboard() {
             ))}
             {coreStats.topToReceive.length === 0 && (
               <div className="py-8 text-center text-muted-foreground text-xs italic">No outstanding balances.</div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="border-none shadow-xl bg-card min-w-0">
+          <CardHeader className="pb-3 px-4 md:px-6">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <CardTitle className="font-headline text-lg font-bold flex items-center gap-2">
+                  <Building2 className="h-5 w-5 text-primary shrink-0" /> <span className="truncate">{t('topToReceiveRetailers')}</span>
+                </CardTitle>
+                <CardDescription className="text-xs truncate">{t('retailersOutstanding')}</CardDescription>
+              </div>
+              <Button variant="ghost" size="sm" className="text-[10px] uppercase font-bold tracking-widest shrink-0" asChild>
+                <Link href="/customers?filter=RETAILERS">{t('fullList')}</Link>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="px-4 md:px-6 space-y-2">
+            {coreStats.topToReceiveRetailers.map((c) => (
+              <Link key={c.id} href={`/customers/${c.id}`} className="flex items-center justify-between p-3 rounded-xl bg-muted/20 hover:bg-muted/40 transition-colors group gap-2">
+                <span className="font-bold text-xs truncate group-hover:text-primary min-w-0">{c.name}</span>
+                <Badge className="bg-primary/10 text-primary border-none font-bold shrink-0">{c.balance} {t('pcs')}</Badge>
+              </Link>
+            ))}
+            {coreStats.topToReceiveRetailers.length === 0 && (
+              <div className="py-8 text-center text-muted-foreground text-xs italic">No retail outstanding.</div>
             )}
           </CardContent>
         </Card>
