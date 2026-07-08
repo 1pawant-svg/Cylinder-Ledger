@@ -5,6 +5,36 @@ import autoTable from 'jspdf-autotable';
 import { Customer, TransactionType, Setting } from '@/lib/types';
 import { adToBs, getCurrentADDate } from '@/lib/date-utils';
 
+/**
+ * Utility to load and register Noto Sans Devanagari font for Nepali support.
+ * This function fetches the TTF from /fonts/ directory and adds it to jsPDF VFS.
+ */
+async function registerNepaliFont(doc: jsPDF): Promise<boolean> {
+  try {
+    const fontUrl = '/fonts/NotoSansDevanagari-Regular.ttf';
+    const response = await fetch(fontUrl);
+    if (!response.ok) {
+      console.warn('Nepali font file not found at /public/fonts/NotoSansDevanagari-Regular.ttf. Falling back to default font.');
+      return false;
+    }
+    
+    const arrayBuffer = await response.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+    let binary = '';
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    const base64Font = btoa(binary);
+    
+    doc.addFileToVFS('NotoSansDevanagari-Regular.ttf', base64Font);
+    doc.addFont('NotoSansDevanagari-Regular.ttf', 'NotoSansDevanagari', 'normal');
+    return true;
+  } catch (error) {
+    console.error('Error registering Nepali font:', error);
+    return false;
+  }
+}
+
 const getTransactionImpact = (type: TransactionType): number => {
   const t = type.toUpperCase();
   if (t === 'OUT' || t === 'OUT_FULL') return 1;
@@ -34,17 +64,21 @@ export async function generateCustomerLedgerPDF(
     format: 'a4',
   });
 
+  // Load and register Nepali font
+  const hasNepaliFont = await registerNepaliFont(doc);
+  const mainFont = hasNepaliFont ? 'NotoSansDevanagari' : 'helvetica';
+
   const businessName = settings?.businessName || 'PGS Cylinder Ledger';
   const businessAddress = settings?.address || '';
   const businessPhone = settings?.phone || '';
 
   // Header
   doc.setFontSize(22);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(mainFont, 'bold');
   doc.text(businessName.toUpperCase(), 14, 22);
 
   doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(mainFont, 'normal');
   doc.setTextColor(100);
   doc.text(`${businessAddress}${businessPhone ? ` | Tel: ${businessPhone}` : ''}`, 14, 28);
   
@@ -54,13 +88,13 @@ export async function generateCustomerLedgerPDF(
   // Customer Info Section
   doc.setTextColor(0);
   doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(mainFont, 'bold');
   const title = summary.isFiltered ? 'FILTERED ACCOUNT STATEMENT' : 'CUSTOMER LEDGER STATEMENT';
   doc.text(title, 14, 42);
 
   doc.setFontSize(10);
   doc.text(`Customer Name: ${customer.name}`, 14, 50);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(mainFont, 'normal');
   doc.setTextColor(80);
   doc.text(`Address: ${customer.address}`, 14, 55);
   doc.text(`Phone: ${customer.phone}`, 14, 60);
@@ -81,12 +115,12 @@ export async function generateCustomerLedgerPDF(
   doc.rect(14, 75, 182, 35, 'S');
   
   doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(mainFont, 'bold');
   doc.setTextColor(0);
   doc.text('ACCOUNT SUMMARY', 20, 83);
   
   doc.setFontSize(9);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(mainFont, 'normal');
   doc.setTextColor(80);
   
   let yOffset = 90;
@@ -105,7 +139,7 @@ export async function generateCustomerLedgerPDF(
 
   // Net Balance Highlight
   doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(mainFont, 'bold');
   doc.setTextColor(0);
   doc.text('Net Balance (Current):', 110, 93);
   
@@ -162,12 +196,14 @@ export async function generateCustomerLedgerPDF(
       fontSize: 9,
       fontStyle: 'bold',
       halign: 'center',
-      valign: 'middle'
+      valign: 'middle',
+      font: mainFont
     },
     bodyStyles: {
       fontSize: 8,
       textColor: [45, 45, 45],
-      valign: 'middle'
+      valign: 'middle',
+      font: mainFont
     },
     columnStyles: {
       0: { cellWidth: 32 }, 
@@ -180,7 +216,7 @@ export async function generateCustomerLedgerPDF(
     margin: { top: 20 },
     didDrawPage: (data) => {
       doc.setFontSize(8);
-      doc.setFont('helvetica', 'normal');
+      doc.setFont(mainFont, 'normal');
       doc.setTextColor(150);
       doc.text(
         `Page ${data.pageNumber}`,
@@ -216,17 +252,21 @@ export async function generateCustomerListPDF(
     format: 'a4',
   });
 
+  // Load and register Nepali font
+  const hasNepaliFont = await registerNepaliFont(doc);
+  const mainFont = hasNepaliFont ? 'NotoSansDevanagari' : 'helvetica';
+
   const businessName = settings?.businessName || 'PGS Cylinder Ledger';
   const businessAddress = settings?.address || '';
   const businessPhone = settings?.phone || '';
 
   // Header
   doc.setFontSize(20);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(mainFont, 'bold');
   doc.text(businessName.toUpperCase(), 14, 20);
 
   doc.setFontSize(9);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont(mainFont, 'normal');
   doc.setTextColor(100);
   doc.text(`${businessAddress}${businessPhone ? ` | Tel: ${businessPhone}` : ''}`, 14, 25);
   
@@ -236,12 +276,12 @@ export async function generateCustomerListPDF(
   // Title
   doc.setTextColor(0);
   doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(mainFont, 'bold');
   doc.text(options.title.toUpperCase(), 14, 38);
 
   if (options.filterLabel) {
     doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
+    doc.setFont(mainFont, 'normal');
     doc.setTextColor(80);
     doc.text(`Filter Applied: ${options.filterLabel}`, 14, 43);
   }
@@ -274,11 +314,13 @@ export async function generateCustomerListPDF(
       textColor: [255, 255, 255],
       fontSize: 9,
       fontStyle: 'bold',
-      halign: 'center'
+      halign: 'center',
+      font: mainFont
     },
     bodyStyles: {
       fontSize: 8,
-      textColor: [45, 45, 45]
+      textColor: [45, 45, 45],
+      font: mainFont
     },
     columnStyles: {
       0: { cellWidth: 'auto' },
@@ -288,7 +330,7 @@ export async function generateCustomerListPDF(
     },
     didDrawPage: (data) => {
       doc.setFontSize(8);
-      doc.setFont('helvetica', 'normal');
+      doc.setFont(mainFont, 'normal');
       doc.setTextColor(150);
       doc.text(
         `Page ${data.pageNumber} | PGS Cylinder Ledger System`,
