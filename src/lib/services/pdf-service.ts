@@ -1,4 +1,3 @@
-
 'use client';
 
 import jsPDF from 'jspdf';
@@ -14,8 +13,7 @@ const getTransactionImpact = (type: TransactionType): number => {
 };
 
 /**
- * Generates a professional Customer Ledger PDF.
- * Note: Uses English structural labels to ensure 100% compatibility across all PDF viewers.
+ * Generates a professional Customer Ledger PDF (for individual customers).
  */
 export async function generateCustomerLedgerPDF(
   customer: Customer,
@@ -201,6 +199,109 @@ export async function generateCustomerLedgerPDF(
   return doc;
 }
 
+/**
+ * Generates a PDF of the Customer List (Summary report).
+ */
+export async function generateCustomerListPDF(
+  customers: any[],
+  settings: Setting | null,
+  options: {
+    title: string;
+    filterLabel?: string;
+  }
+) {
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4',
+  });
+
+  const businessName = settings?.businessName || 'PGS Cylinder Ledger';
+  const businessAddress = settings?.address || '';
+  const businessPhone = settings?.phone || '';
+
+  // Header
+  doc.setFontSize(20);
+  doc.setFont('helvetica', 'bold');
+  doc.text(businessName.toUpperCase(), 14, 20);
+
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(100);
+  doc.text(`${businessAddress}${businessPhone ? ` | Tel: ${businessPhone}` : ''}`, 14, 25);
+  
+  doc.setDrawColor(200);
+  doc.line(14, 28, 196, 28);
+
+  // Title
+  doc.setTextColor(0);
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text(options.title.toUpperCase(), 14, 38);
+
+  if (options.filterLabel) {
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(80);
+    doc.text(`Filter Applied: ${options.filterLabel}`, 14, 43);
+  }
+
+  doc.setFontSize(9);
+  doc.setTextColor(100);
+  doc.text(`Report Generated: ${adToBs(getCurrentADDate())} BS`, 140, 38);
+
+  const tableRows = customers.map((c) => {
+    const bal = c.balance || 0;
+    const balanceLabel = bal === 0 
+      ? 'Settled' 
+      : (bal > 0 ? `${bal} To Receive` : `${Math.abs(bal)} To Give`);
+    
+    return [
+      c.name,
+      c.phone,
+      c.address,
+      balanceLabel
+    ];
+  });
+
+  autoTable(doc, {
+    startY: 48,
+    head: [['Customer Name', 'Phone Number', 'Address', 'Current Balance']],
+    body: tableRows,
+    theme: 'grid',
+    headStyles: {
+      fillColor: [45, 45, 45],
+      textColor: [255, 255, 255],
+      fontSize: 9,
+      fontStyle: 'bold',
+      halign: 'center'
+    },
+    bodyStyles: {
+      fontSize: 8,
+      textColor: [45, 45, 45]
+    },
+    columnStyles: {
+      0: { cellWidth: 'auto' },
+      1: { cellWidth: 28, halign: 'center' },
+      2: { cellWidth: 45 },
+      3: { cellWidth: 35, halign: 'center' }
+    },
+    didDrawPage: (data) => {
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(150);
+      doc.text(
+        `Page ${data.pageNumber} | PGS Cylinder Ledger System`,
+        doc.internal.pageSize.getWidth() / 2,
+        doc.internal.pageSize.getHeight() - 10,
+        { align: 'center' }
+      );
+    }
+  });
+
+  return doc;
+}
+
 export async function sharePDF(doc: jsPDF, filename: string, customerPhone?: string, customerName?: string) {
   const blob = doc.output('blob');
   const file = new File([blob], filename, { type: 'application/pdf' });
@@ -209,8 +310,8 @@ export async function sharePDF(doc: jsPDF, filename: string, customerPhone?: str
     try {
       await navigator.share({
         files: [file],
-        title: `Ledger: ${customerName || 'Customer'}`,
-        text: `Cylinder ledger statement for ${customerName}.`,
+        title: `Ledger: ${customerName || 'Summary report'}`,
+        text: `Cylinder ledger statement for ${customerName || 'multiple accounts'}.`,
       });
       return true;
     } catch (err) {

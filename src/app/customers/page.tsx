@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -6,7 +5,7 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import { useLedger } from "@/lib/ledger-context";
 import { useToast } from "@/hooks/use-toast";
 import { 
-  Plus, Search, MoreHorizontal, Eye, MapPin, Loader2, Calendar
+  Plus, Search, MoreHorizontal, Eye, MapPin, Loader2, Calendar, Share2
 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
@@ -21,6 +20,10 @@ import { cn } from "@/lib/utils";
 import { getCurrentADDate, adToBs, bsToAd, toMillis, BS_MONTHS, getBSYears } from "@/lib/date-utils";
 import { useI18n } from "@/lib/i18n-context";
 import { useSearchParams } from "next/navigation";
+import { useFirestore } from "@/firebase";
+import { getSettings } from "@/lib/services/settings-service";
+import { generateCustomerListPDF, sharePDF } from "@/lib/services/pdf-service";
+import { Setting } from "@/lib/types";
 
 type StatusFilter = 'ALL' | 'ACTIVE' | 'INACTIVE' | 'TO_RECEIVE' | 'TO_GIVE' | 'SETTLED' | 'OVERDUE' | 'RETAILERS' | 'NON_RETAILERS';
 type SortOption = 'NAME_ASC' | 'NAME_DESC' | 'BALANCE_HIGH_TO_LOW' | 'BALANCE_LOW_TO_HIGH' | 'LATEST_ACTIVITY';
@@ -36,12 +39,20 @@ export default function CustomersPage() {
   const { toast } = useToast();
   const { t } = useI18n();
   const searchParams = useSearchParams();
+  const db = useFirestore();
   
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ACTIVE');
   const [sortBy, setSortBy] = useState<SortOption>('BALANCE_HIGH_TO_LOW');
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [settings, setSettings] = useState<Setting | null>(null);
+
+  // Fetch business settings for PDF header
+  useEffect(() => {
+    if (db) getSettings(db).then(setSettings);
+  }, [db]);
 
   // Sync state with query parameters
   useEffect(() => {
@@ -113,7 +124,6 @@ export default function CustomersPage() {
       if (statusFilter === 'TO_RECEIVE') return balance > 0;
       if (statusFilter === 'TO_GIVE') return balance < 0;
       if (statusFilter === 'SETTLED') return balance === 0;
-      // Filter by category AND ensure they have an outstanding balance (as linked from dashboard)
       if (statusFilter === 'RETAILERS') return (!!c.pan && c.pan.trim().length > 0) && balance > 0;
       if (statusFilter === 'NON_RETAILERS') return (!c.pan || c.pan.trim().length === 0) && balance > 0;
       if (statusFilter === 'OVERDUE') {
@@ -189,6 +199,31 @@ export default function CustomersPage() {
     }
   }, [newCust, openingDateBS, addCustomer, addTransaction, getTodayBSParts, toast, t]);
 
+  const handleShareListPDF = async () => {
+    setIsGeneratingPDF(true);
+    try {
+      let filterTitle = "Customer Ledger Report";
+      if (statusFilter === 'TO_RECEIVE') filterTitle = "Debtors List (To Receive)";
+      if (statusFilter === 'TO_GIVE') filterTitle = "Creditors List (To Give)";
+      if (statusFilter === 'RETAILERS') filterTitle = "Retailers Summary";
+      if (statusFilter === 'NON_RETAILERS') filterTitle = "Individual Accounts Summary";
+      if (statusFilter === 'SETTLED') filterTitle = "Settled Accounts";
+
+      const doc = await generateCustomerListPDF(processedCustomers, settings, {
+        title: filterTitle,
+        filterLabel: statusFilter !== 'ALL' ? statusFilter.replace('_', ' ') : undefined
+      });
+      
+      const filename = `Customer_List_${getCurrentADDate()}.pdf`;
+      await sharePDF(doc, filename);
+      toast({ title: t('success') });
+    } catch (err: any) {
+      toast({ variant: "destructive", title: t('error'), description: err.message });
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
   if (loading) return <div className="flex h-full w-full items-center justify-center p-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
 
   const years = getBSYears();
@@ -201,67 +236,78 @@ export default function CustomersPage() {
           <h1 className="font-headline text-2xl md:text-4xl font-bold text-primary truncate">{t('customerLedger')}</h1>
           <p className="text-muted-foreground text-xs font-medium truncate">{t('manageAccounts')}</p>
         </div>
-        <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-          <DialogTrigger asChild><Button className="w-full md:w-auto bg-primary font-bold shadow-lg shrink-0"><Plus className="h-4 w-4 mr-2" /> {t('newProfile')}</Button></DialogTrigger>
-          <DialogContent className="sm:max-w-[500px] w-[95vw] rounded-xl overflow-y-auto max-h-[90vh]">
-            <DialogHeader><DialogTitle className="font-headline text-2xl font-bold">{t('createProfile')}</DialogTitle></DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2"><Label className="text-[10px] uppercase font-bold">{t('name')}</Label><Input value={newCust.name} onChange={e => setNewCust({...newCust, name: e.target.value})} /></div>
-                <div className="space-y-2"><Label className="text-[10px] uppercase font-bold">{t('phone')}</Label><Input value={newCust.phone} maxLength={10} onChange={e => setNewCust({...newCust, phone: e.target.value.replace(/\D/g, '')})} /></div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2"><Label className="text-[10px] uppercase font-bold">{t('altPhone')}</Label><Input value={newCust.altPhone} maxLength={10} onChange={e => setNewCust({...newCust, altPhone: e.target.value.replace(/\D/g, '')})} /></div>
-                <div className="space-y-2"><Label className="text-[10px] uppercase font-bold">{t('pan')}</Label><Input value={newCust.pan} maxLength={9} onChange={e => setNewCust({...newCust, pan: e.target.value.replace(/\D/g, '')})} /></div>
-              </div>
-              <div className="space-y-2"><Label className="text-[10px] uppercase font-bold">{t('address')}</Label><Input value={newCust.address} onChange={e => setNewCust({...newCust, address: e.target.value})} /></div>
+        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+          <Button 
+            variant="outline" 
+            className="w-full sm:flex-1 md:w-auto font-bold gap-2 bg-muted/10 border-border/50"
+            onClick={handleShareListPDF}
+            disabled={isGeneratingPDF}
+          >
+            {isGeneratingPDF ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" />}
+            {t('shareStatement')}
+          </Button>
+          <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+            <DialogTrigger asChild><Button className="w-full sm:flex-1 md:w-auto bg-primary font-bold shadow-lg shrink-0"><Plus className="h-4 w-4 mr-2" /> {t('newProfile')}</Button></DialogTrigger>
+            <DialogContent className="sm:max-w-[500px] w-[95vw] rounded-xl overflow-y-auto max-h-[90vh]">
+              <DialogHeader><DialogTitle className="font-headline text-2xl font-bold">{t('createProfile')}</DialogTitle></DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2"><Label className="text-[10px] uppercase font-bold">{t('name')}</Label><Input value={newCust.name} onChange={e => setNewCust({...newCust, name: e.target.value})} /></div>
+                  <div className="space-y-2"><Label className="text-[10px] uppercase font-bold">{t('phone')}</Label><Input value={newCust.phone} maxLength={10} onChange={e => setNewCust({...newCust, phone: e.target.value.replace(/\D/g, '')})} /></div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2"><Label className="text-[10px] uppercase font-bold">{t('altPhone')}</Label><Input value={newCust.altPhone} maxLength={10} onChange={e => setNewCust({...newCust, altPhone: e.target.value.replace(/\D/g, '')})} /></div>
+                  <div className="space-y-2"><Label className="text-[10px] uppercase font-bold">{t('pan')}</Label><Input value={newCust.pan} maxLength={9} onChange={e => setNewCust({...newCust, pan: e.target.value.replace(/\D/g, '')})} /></div>
+                </div>
+                <div className="space-y-2"><Label className="text-[10px] uppercase font-bold">{t('address')}</Label><Input value={newCust.address} onChange={e => setNewCust({...newCust, address: e.target.value})} /></div>
 
-              <div className="p-4 rounded-xl bg-muted/20 border border-border/50 space-y-4">
-                 <Label className="text-primary font-bold text-xs">{t('initialBalances')}</Label>
-                 <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2"><Label className="text-[9px] uppercase font-bold">{t('toReceiveSuffix')}</Label><Input type="number" value={newCust.openingToReceive} onChange={e => setNewCust({...newCust, openingToReceive: e.target.value})} /></div>
-                    <div className="space-y-2"><Label className="text-[9px] uppercase font-bold">{t('toGiveSuffix')}</Label><Input type="number" value={newCust.openingToGive} onChange={e => setNewCust({...newCust, openingToGive: e.target.value})} /></div>
-                 </div>
-              </div>
+                <div className="p-4 rounded-xl bg-muted/20 border border-border/50 space-y-4">
+                   <Label className="text-primary font-bold text-xs">{t('initialBalances')}</Label>
+                   <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2"><Label className="text-[9px] uppercase font-bold">{t('toReceiveSuffix')}</Label><Input type="number" value={newCust.openingToReceive} onChange={e => setNewCust({...newCust, openingToReceive: e.target.value})} /></div>
+                      <div className="space-y-2"><Label className="text-[9px] uppercase font-bold">{t('toGiveSuffix')}</Label><Input type="number" value={newCust.openingToGive} onChange={e => setNewCust({...newCust, openingToGive: e.target.value})} /></div>
+                   </div>
+                </div>
 
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2 text-muted-foreground uppercase text-[10px] tracking-widest font-bold mb-1">
-                  <Calendar className="h-3 w-3" /> Opening Date (BS)
-                </Label>
-                <div className="grid grid-cols-3 gap-2">
-                  <Select value={openingDateBS.year} onValueChange={(v) => setOpeningDateBS(prev => ({...prev, year: v}))}>
-                    <SelectTrigger className="h-10 bg-background border-border text-xs px-2"><SelectValue /></SelectTrigger>
-                    <SelectContent className="max-h-[300px]">{years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
-                  </Select>
-                  <Select value={openingDateBS.month} onValueChange={(v) => setOpeningDateBS(prev => ({...prev, month: v}))}>
-                    <SelectTrigger className="h-10 bg-background border-border text-xs px-2"><SelectValue /></SelectTrigger>
-                    <SelectContent>{BS_MONTHS.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
-                  </Select>
-                  <Select value={openingDateBS.day} onValueChange={(v) => setOpeningDateBS(prev => ({...prev, day: v}))}>
-                    <SelectTrigger className="h-10 bg-background border-border text-xs px-2"><SelectValue /></SelectTrigger>
-                    <SelectContent className="max-h-[300px]">{daysList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
-                  </Select>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2 text-muted-foreground uppercase text-[10px] tracking-widest font-bold mb-1">
+                    <Calendar className="h-3 w-3" /> Opening Date (BS)
+                  </Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <Select value={openingDateBS.year} onValueChange={(v) => setOpeningDateBS(prev => ({...prev, year: v}))}>
+                      <SelectTrigger className="h-10 bg-background border-border text-xs px-2"><SelectValue /></SelectTrigger>
+                      <SelectContent className="max-h-[300px]">{years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <Select value={openingDateBS.month} onValueChange={(v) => setOpeningDateBS(prev => ({...prev, month: v}))}>
+                      <SelectTrigger className="h-10 bg-background border-border text-xs px-2"><SelectValue /></SelectTrigger>
+                      <SelectContent>{BS_MONTHS.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <Select value={openingDateBS.day} onValueChange={(v) => setOpeningDateBS(prev => ({...prev, day: v}))}>
+                      <SelectTrigger className="h-10 bg-background border-border text-xs px-2"><SelectValue /></SelectTrigger>
+                      <SelectContent className="max-h-[300px]">{daysList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase font-bold">{t('remarks')}</Label>
+                  <Textarea 
+                    value={newCust.remarks} 
+                    onChange={e => setNewCust({...newCust, remarks: e.target.value})} 
+                    placeholder="Optional background notes about this customer"
+                    className="min-h-[80px]"
+                  />
                 </div>
               </div>
-              
-              <div className="space-y-2">
-                <Label className="text-[10px] uppercase font-bold">{t('remarks')}</Label>
-                <Textarea 
-                  value={newCust.remarks} 
-                  onChange={e => setNewCust({...newCust, remarks: e.target.value})} 
-                  placeholder="Optional background notes about this customer"
-                  className="min-h-[80px]"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button onClick={handleAdd} disabled={isSubmitting} className="w-full h-12 font-bold">
-                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                {t('saveProfile')}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+              <DialogFooter>
+                <Button onClick={handleAdd} disabled={isSubmitting} className="w-full h-12 font-bold">
+                  {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  {t('saveProfile')}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </header>
 
       <div className="flex flex-col md:flex-row gap-3 min-w-0">
