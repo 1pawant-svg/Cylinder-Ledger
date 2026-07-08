@@ -11,25 +11,25 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: '#ca9a30',
     icons: [
       {
-        src: '/icon-192.png',
+        src: '/PabinaGas.png',
         sizes: '192x192',
         type: 'image/png',
         purpose: 'maskable',
       },
       {
-        src: '/icon-192.png',
+        src: '/PabinaGas.png',
         sizes: '192x192',
         type: 'image/png',
         purpose: 'any',
       },
       {
-        src: '/icon-512.png',
+        src: '/PabinaGas.png',
         sizes: '512x512',
         type: 'image/png',
         purpose: 'maskable',
       },
       {
-        src: '/icon-512.png',
+        src: '/PabinaGas.png',
         sizes: '512x512',
         type: 'image/png',
         purpose: 'any',

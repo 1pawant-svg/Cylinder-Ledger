@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { useFirestore, useUser, useCollection } from "@/firebase";
 import { saveSettings, getSettings } from "@/lib/services/settings-service";
 import { logAction, getRecentLogsQuery } from "@/lib/services/audit-service";
-import { exportBackup, restoreBackup, clearDatabase, BackupData } from "@/lib/services/backup-service";
+import { exportBackup, restoreBackup, BackupData } from "@/lib/services/backup-service";
 import { Setting, UserProfile, AuditLog } from "@/lib/types";
 import { getUserProfile } from "@/lib/services/user-service";
 import { useI18n } from "@/lib/i18n-context";
@@ -30,7 +30,6 @@ import {
   AlertTriangle,
   History,
   Languages,
-  Trash2,
   CalendarCheck,
   CheckCircle2
 } from "lucide-react";
@@ -67,7 +66,6 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [backingUp, setBackingUp] = useState(false);
   const [restoring, setRestoring] = useState(false);
-  const [wiping, setWiping] = useState(false);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [settings, setSettings] = useState<Setting>({
     businessName: "",
@@ -221,22 +219,6 @@ export default function SettingsPage() {
       }
     };
     reader.readAsText(file);
-  };
-
-  const handleWipeData = async () => {
-    if (!db || !user || !profile) return;
-    setWiping(true);
-    try {
-      await clearDatabase(db, user.uid, profile.fullName || 'User');
-      toast({ title: t('dataWiped'), description: "All business records have been removed." });
-      setTimeout(() => window.location.reload(), 1000);
-    } catch (error: any) {
-      if (error.code !== 'permission-denied') {
-        toast({ variant: "destructive", title: t('error'), description: error.message });
-      }
-    } finally {
-      setWiping(false);
-    }
   };
 
   if (loading) {
@@ -493,50 +475,6 @@ export default function SettingsPage() {
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction onClick={handleRestoreClick} className="bg-primary text-primary-foreground hover:bg-primary/90">
                     Proceed
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="border-none shadow-2xl bg-card border-l-4 border-l-destructive">
-        <CardHeader>
-          <CardTitle className="font-headline text-2xl font-bold flex items-center gap-2 text-destructive">
-            <Trash2 className="h-6 w-6" /> {t('dangerZone')}
-          </CardTitle>
-          <CardDescription>Permanently remove all business data to start fresh.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="p-4 rounded-xl bg-destructive/5 border border-destructive/20 space-y-4">
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              {t('wipeDescription')}
-            </p>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button 
-                  variant="destructive" 
-                  className="w-full h-12 font-bold shadow-lg shadow-destructive/20"
-                  disabled={wiping}
-                >
-                  {wiping ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
-                  {t('wipeData')}
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle className="flex items-center gap-2">
-                    <AlertTriangle className="h-5 w-5 text-destructive" /> Final Warning
-                  </AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This is a factory reset. You will lose all your customers and transaction logs. Are you absolutely sure?
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter className="flex-col gap-2 sm:flex-row">
-                  <AlertDialogCancel className="w-full sm:w-auto">Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleWipeData} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 w-full sm:w-auto">
-                    {t('confirmWipe')}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
