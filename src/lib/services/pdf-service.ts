@@ -6,17 +6,12 @@ import { Customer, TransactionType, Setting } from '@/lib/types';
 import { adToBs, getCurrentADDate } from '@/lib/date-utils';
 
 /**
- * Utility to load and register Noto Sans Devanagari font for Nepali support.
- * This function fetches the TTF from /fonts/ directory and adds it to jsPDF VFS.
+ * Internal helper to fetch a TTF file and register it with jsPDF.
  */
-async function registerNepaliFont(doc: jsPDF): Promise<boolean> {
+async function addFont(doc: jsPDF, url: string, name: string, style: string): Promise<boolean> {
   try {
-    const fontUrl = '/fonts/NotoSansDevanagari-Regular.ttf';
-    const response = await fetch(fontUrl);
-    if (!response.ok) {
-      console.warn('Nepali font file not found at /public/fonts/NotoSansDevanagari-Regular.ttf. Falling back to default font.');
-      return false;
-    }
+    const response = await fetch(url);
+    if (!response.ok) return false;
     
     const arrayBuffer = await response.arrayBuffer();
     const bytes = new Uint8Array(arrayBuffer);
@@ -26,13 +21,50 @@ async function registerNepaliFont(doc: jsPDF): Promise<boolean> {
     }
     const base64Font = btoa(binary);
     
-    doc.addFileToVFS('NotoSansDevanagari-Regular.ttf', base64Font);
-    doc.addFont('NotoSansDevanagari-Regular.ttf', 'NotoSansDevanagari', 'normal');
+    // Use a unique VFS filename for each style
+    const vfsName = `${name}-${style}.ttf`;
+    doc.addFileToVFS(vfsName, base64Font);
+    doc.addFont(vfsName, name, style);
     return true;
   } catch (error) {
-    console.error('Error registering Nepali font:', error);
+    console.warn(`Failed to load font from ${url}:`, error);
     return false;
   }
+}
+
+/**
+ * Utility to load and register Noto Sans Devanagari fonts for Nepali support.
+ */
+async function registerNepaliFonts(doc: jsPDF): Promise<string> {
+  const fontName = 'NotoSansDevanagari';
+  
+  // Try to load regular font
+  const hasRegular = await addFont(doc, '/fonts/NotoSansDevanagari-Regular.ttf', fontName, 'normal');
+  
+  if (!hasRegular) {
+    console.warn('Nepali regular font not found. Falling back to Helvetica.');
+    return 'helvetica';
+  }
+
+  // Try to load bold font
+  const hasBold = await addFont(doc, '/fonts/NotoSansDevanagari-Bold.ttf', fontName, 'bold');
+  
+  // If bold is missing, map regular to bold style to prevent "font label" errors
+  if (!hasBold) {
+    console.info('Bold Nepali font not found. Mapping regular font to bold style.');
+    const response = await fetch('/fonts/NotoSansDevanagari-Regular.ttf');
+    const arrayBuffer = await response.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+    let binary = '';
+    for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+    doc.addFileToVFS(`${fontName}-bold-fallback.ttf`, btoa(binary));
+    doc.addFont(`${fontName}-bold-fallback.ttf`, fontName, 'bold');
+  }
+
+  // Verification log as requested
+  console.log('Registered PDF Fonts:', doc.getFontList());
+  
+  return fontName;
 }
 
 const getTransactionImpact = (type: TransactionType): number => {
@@ -64,21 +96,20 @@ export async function generateCustomerLedgerPDF(
     format: 'a4',
   });
 
-  // Load and register Nepali font
-  const hasNepaliFont = await registerNepaliFont(doc);
-  const mainFont = hasNepaliFont ? 'NotoSansDevanagari' : 'helvetica';
+  // Load and register Nepali fonts
+  const mainFont = await registerNepaliFonts(doc);
 
   const businessName = settings?.businessName || 'PGS Cylinder Ledger';
   const businessAddress = settings?.address || '';
   const businessPhone = settings?.phone || '';
 
   // Header
-  doc.setFontSize(22);
   doc.setFont(mainFont, 'bold');
+  doc.setFontSize(22);
   doc.text(businessName.toUpperCase(), 14, 22);
 
-  doc.setFontSize(10);
   doc.setFont(mainFont, 'normal');
+  doc.setFontSize(10);
   doc.setTextColor(100);
   doc.text(`${businessAddress}${businessPhone ? ` | Tel: ${businessPhone}` : ''}`, 14, 28);
   
@@ -252,21 +283,20 @@ export async function generateCustomerListPDF(
     format: 'a4',
   });
 
-  // Load and register Nepali font
-  const hasNepaliFont = await registerNepaliFont(doc);
-  const mainFont = hasNepaliFont ? 'NotoSansDevanagari' : 'helvetica';
+  // Load and register Nepali fonts
+  const mainFont = await registerNepaliFonts(doc);
 
   const businessName = settings?.businessName || 'PGS Cylinder Ledger';
   const businessAddress = settings?.address || '';
   const businessPhone = settings?.phone || '';
 
   // Header
-  doc.setFontSize(20);
   doc.setFont(mainFont, 'bold');
+  doc.setFontSize(20);
   doc.text(businessName.toUpperCase(), 14, 20);
 
-  doc.setFontSize(9);
   doc.setFont(mainFont, 'normal');
+  doc.setFontSize(9);
   doc.setTextColor(100);
   doc.text(`${businessAddress}${businessPhone ? ` | Tel: ${businessPhone}` : ''}`, 14, 25);
   
