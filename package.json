@@ -5,10 +5,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack -p 9002",
-    "build": "NODE_ENV=production next build",
+    "build": "npm run build:fonts && NODE_ENV=production next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:fonts": "node scripts/generate-font-data.js"
   },
   "dependencies": {
     "@genkit-ai/google-genai": "^1.0.3",

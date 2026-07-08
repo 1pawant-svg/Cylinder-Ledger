@@ -8,19 +8,26 @@ import { adToBs, getCurrentADDate } from '@/lib/date-utils';
 import { notoParams } from '@/lib/fonts/noto-sans-devanagari-regular';
 
 /**
- * Registers the embedded Nepali font with jsPDF.
+ * Registers the embedded Nepali font with jsPDF using standard VFS approach.
  */
 function registerFonts(doc: jsPDF): string {
   try {
-    // Add the regular font to Virtual File System
+    // Check if the base64 data exists and isn't just a placeholder
+    if (!notoParams.base64 || notoParams.base64.startsWith('AAEAAA')) {
+      console.warn('Nepali font data is missing or empty. Using default fonts.');
+      return 'helvetica';
+    }
+
+    // Add the font to the Virtual File System
     doc.addFileToVFS(notoParams.fileName, notoParams.base64);
+    
+    // Register the 'normal' style
     doc.addFont(notoParams.fileName, notoParams.fontName, 'normal');
     
-    // Map 'bold' to the same font to prevent "Unable to look up font label" errors
-    // if a bold variant isn't explicitly provided.
+    // Explicitly map 'bold' to the same font to prevent "Unable to look up font label" warnings
+    // since we are using one comprehensive Unicode font for all styles.
     doc.addFont(notoParams.fileName, notoParams.fontName, 'bold');
     
-    console.log('Registered PDF Fonts:', doc.getFontList());
     return notoParams.fontName;
   } catch (error) {
     console.error('Failed to register embedded fonts:', error);
@@ -57,7 +64,6 @@ export async function generateCustomerLedgerPDF(
     format: 'a4',
   });
 
-  // Initialize and get the main font name
   const mainFont = registerFonts(doc);
 
   const businessName = settings?.businessName || 'PGS Cylinder Ledger';
