@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -53,6 +54,17 @@ export default function CustomersPage() {
       ];
       if (validFilters.includes(upper)) {
         setStatusFilter(upper);
+      }
+    }
+
+    const sort = searchParams?.get('sort');
+    if (sort) {
+      const upperSort = sort.toUpperCase() as SortOption;
+      const validSorts: SortOption[] = [
+        'NAME_ASC', 'NAME_DESC', 'BALANCE_HIGH_TO_LOW', 'BALANCE_LOW_TO_HIGH', 'LATEST_ACTIVITY'
+      ];
+      if (validSorts.includes(upperSort)) {
+        setSortBy(upperSort);
       }
     }
   }, [searchParams]);

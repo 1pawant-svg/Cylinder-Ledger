@@ -238,7 +238,7 @@ export default function Dashboard() {
                 <CardDescription className="text-xs truncate">{t('owedToCustomers')}</CardDescription>
               </div>
               <Button variant="ghost" size="sm" className="text-[10px] uppercase font-bold tracking-widest shrink-0" asChild>
-                <Link href="/customers?filter=TO_GIVE">{t('fullList')}</Link>
+                <Link href="/customers?filter=TO_GIVE&sort=BALANCE_LOW_TO_HIGH">{t('fullList')}</Link>
               </Button>
             </div>
           </CardHeader>
