@@ -419,7 +419,7 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
                               <span className="text-emerald-500 uppercase tracking-tighter text-sm font-bold">{t('settled')}</span>
                             ) : (
                               <div className="flex flex-col gap-0.5">
-                                <span className={cn("text-xl md:text-2xl", txn.runningBalance > 0 ? "text-primary" : "text-emerald-500")}>
+                                <span className={cn("text-xl md:text-xl", txn.runningBalance > 0 ? "text-primary" : "text-emerald-500")}>
                                   {Math.abs(txn.runningBalance)}
                                 </span>
                                 <span className={cn(
@@ -511,7 +511,7 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
              <div className="space-y-2"><Label>Special Instructions</Label><Textarea value={editProfileData.specialInstructions} onChange={e => setEditProfileData({...editProfileData, specialInstructions: e.target.value})} /></div>
           </div>
           <DialogFooter className="flex-col sm:flex-row gap-2">
-            <Button variant="outline" onClick={() => setIsEditProfileOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => editProfileData.name ? setIsEditProfileOpen(false) : null}>Cancel</Button>
             <Button onClick={handleEditProfileSave}>Save Changes</Button>
           </DialogFooter>
         </DialogContent>
