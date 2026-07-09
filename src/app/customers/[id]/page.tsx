@@ -6,7 +6,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useLedger } from "@/lib/ledger-context";
 import { useRouter } from "next/navigation";
 import { 
-  ArrowLeft, MapPin, Phone, Share2, Edit2, MoreVertical, AlertTriangle, UserX, UserCheck, Loader2, Plus, Filter, Eraser, Hash, Trash2, RefreshCw, ClipboardList
+  ArrowLeft, MapPin, Phone, Share2, Edit2, MoreVertical, UserX, UserCheck, Loader2, Plus, Filter, Eraser, Hash, Trash2, RefreshCw, ClipboardList
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,16 +14,6 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { 
-  AlertDialog, 
-  AlertDialogAction, 
-  AlertDialogCancel, 
-  AlertDialogContent, 
-  AlertDialogDescription, 
-  AlertDialogFooter, 
-  AlertDialogHeader, 
-  AlertDialogTitle 
-} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -85,7 +75,6 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
   const [settings, setSettings] = useState<Setting | null>(null);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isRecalculating, setIsRecalculating] = useState(false);
-  const [txnToDelete, setTxnToDelete] = useState<string | null>(null);
   
   const [filterDates, setFilterDates] = useState({
     from: { year: '', month: '', day: '' },
@@ -267,15 +256,12 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
     }
   };
 
-  const handleConfirmDelete = async () => {
-    if (!txnToDelete) return;
+  const handleDeleteTransaction = async (txnId: string) => {
     try {
-      await deleteTransaction(txnToDelete, "User requested delete");
+      await deleteTransaction(txnId, "User requested delete");
       toast({ title: t('success') });
     } catch (err) {
       toast({ variant: "destructive", title: t('error') });
-    } finally {
-      setTxnToDelete(null);
     }
   };
 
@@ -389,9 +375,9 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
                   </CardTitle>
                   <CardDescription className="text-xs truncate">{t('transactionTimeline')}</CardDescription>
                 </div>
-                <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-2 border-t md:border-t-0 pt-3 md:pt-0 mt-2 md:mt-0 w-full md:w-auto shrink-0 min-w-0">
+                <div className="flex flex-col items-end justify-center gap-2 shrink-0 min-w-0">
                   <p className="text-[10px] uppercase font-bold text-muted-foreground shrink-0">{t('statedBalance')}</p>
-                  <Badge className={cn("text-xs font-bold shrink-0 truncate", balance > 0 ? "bg-primary text-primary-foreground" : balance < 0 ? "bg-emerald-500 text-emerald-foreground" : "bg-emerald-500 text-emerald-foreground")}>
+                  <Badge className={cn("text-xs md:text-base font-bold shrink-0 truncate", balance > 0 ? "bg-primary text-primary-foreground" : balance < 0 ? "bg-emerald-500 text-emerald-foreground" : "bg-emerald-500 text-emerald-foreground")}>
                     {balance === 0 ? t('settled') : `${Math.abs(balance)} ${balance > 0 ? t('toReceiveSuffix') : t('toGiveSuffix')}`}
                   </Badge>
                 </div>
@@ -426,7 +412,7 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
                               {getTransactionLabel(txn.type)}
                             </Badge>
                           </TableCell>
-                          <TableCell className={cn("font-bold text-base py-5", getTransactionImpact(txn.type) > 0 ? "text-primary" : "text-emerald-500")}>
+                          <TableCell className={cn("font-bold text-base md:text-xl py-5", getTransactionImpact(txn.type) > 0 ? "text-primary" : "text-emerald-500")}>
                             {getTransactionImpact(txn.type) > 0 ? '+' : '-'}{txn.quantity}
                           </TableCell>
                           <TableCell className="font-bold py-5">
@@ -434,7 +420,7 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
                               <span className="text-emerald-500 uppercase tracking-tighter text-sm font-bold">{t('settled')}</span>
                             ) : (
                               <div className="flex flex-col gap-0.5">
-                                <span className={cn("text-xl", txn.runningBalance > 0 ? "text-primary" : "text-emerald-500")}>
+                                <span className={cn("text-xl md:text-2xl", txn.runningBalance > 0 ? "text-primary" : "text-emerald-500")}>
                                   {Math.abs(txn.runningBalance)}
                                 </span>
                                 <span className={cn(
@@ -456,7 +442,7 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
                                 <DropdownMenuItem onClick={() => router.push(`/transactions?editId=${txn.id}&customerId=${id}`)}>
                                   <Edit2 className="h-3 w-3 mr-2" />Edit
                                 </DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive" onSelect={() => setTxnToDelete(txn.id)}>
+                                <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteTransaction(txn.id)}>
                                   <Trash2 className="h-3 w-3 mr-2" />{t('delete')}
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
@@ -528,23 +514,6 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <AlertDialog open={!!txnToDelete} onOpenChange={(open) => !open && setTxnToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('confirmDelete')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('deleteWarning')}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              {t('delete')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
