@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -13,6 +14,16 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle 
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -74,6 +85,7 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
   const [settings, setSettings] = useState<Setting | null>(null);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isRecalculating, setIsRecalculating] = useState(false);
+  const [txnToDelete, setTxnToDelete] = useState<string | null>(null);
   
   const [filterDates, setFilterDates] = useState({
     from: { year: '', month: '', day: '' },
@@ -255,6 +267,18 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
     }
   };
 
+  const handleConfirmDelete = async () => {
+    if (!txnToDelete) return;
+    try {
+      await deleteTransaction(txnToDelete, "User requested delete");
+      toast({ title: t('success') });
+    } catch (err) {
+      toast({ variant: "destructive", title: t('error') });
+    } finally {
+      setTxnToDelete(null);
+    }
+  };
+
   if (!customer) return <div className="p-20 text-center">Not found</div>;
 
   const bsYears = getBSYears();
@@ -432,8 +456,8 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
                                 <DropdownMenuItem onClick={() => router.push(`/transactions?editId=${txn.id}&customerId=${id}`)}>
                                   <Edit2 className="h-3 w-3 mr-2" />Edit
                                 </DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive" onClick={() => deleteTransaction(txn.id, "User requested delete")}>
-                                  <Trash2 className="h-3 w-3 mr-2" />Delete
+                                <DropdownMenuItem className="text-destructive" onSelect={() => setTxnToDelete(txn.id)}>
+                                  <Trash2 className="h-3 w-3 mr-2" />{t('delete')}
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -504,6 +528,23 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!txnToDelete} onOpenChange={(open) => !open && setTxnToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('confirmDelete')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('deleteWarning')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {t('delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

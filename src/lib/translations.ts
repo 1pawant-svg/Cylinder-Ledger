@@ -96,6 +96,9 @@ export const translations = {
     openingBalance: "Opening Balance",
     closingBalance: "Closing Balance",
     filteredStatement: "Filtered Statement",
+    confirmDelete: "Confirm Delete",
+    deleteWarning: "Are you sure you want to delete this transaction? This will reverse the balance and inventory impact.",
+    delete: "Delete",
     
     // Transactions
     logMovements: "Log cylinder movements using accurate algorithmic Nepali calendar",
@@ -105,7 +108,7 @@ export const translations = {
     returnOwed: "Empty Return (PCS)",
     remarks: "Remarks",
     cancel: "Cancel",
-    saveTransaction: "Save Transaction",
+    saveTransaction: "Transaction Saved",
     saveAndNew: "Save & New",
     fullIssue: "Full Issue",
     emptyReturn: "Empty Return",
@@ -269,6 +272,9 @@ export const translations = {
     openingBalance: "पहिलेको बाँकी",
     closingBalance: "हालको बाँकी",
     filteredStatement: "फिल्टर गरिएको विवरण",
+    confirmDelete: "मेटाउने पुष्टि गर्नुहोस्",
+    deleteWarning: "के तपाईं यो कारोबार मेटाउन निश्चित हुनुहुन्छ? यसले मौज्दात र स्टकलाई पहिलेकै अवस्थामा फर्काउनेछ।",
+    delete: "मेटाउनुहोस्",
     
     // Transactions
     logMovements: "नेपाली पात्रो प्रयोग गरी सिलिन्डरको कारोबार रेकर्ड गर्नुहोस्",
@@ -278,7 +284,7 @@ export const translations = {
     returnOwed: "फिर्ता पाउनु पर्ने (थान)",
     remarks: "कैफियत",
     cancel: "रद्द गर्नुहोस्",
-    saveTransaction: "कारोबार सुरक्षित गर्नुहोस्",
+    saveTransaction: "कारोबार सुरक्षित भयो",
     saveAndNew: "सुरक्षित गरी नयाँ थप्नुहोस्",
     fullIssue: "भरिएको निकासी",
     emptyReturn: "खाली फिर्ता",
