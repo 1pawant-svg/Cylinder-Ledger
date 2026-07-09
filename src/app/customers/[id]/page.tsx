@@ -25,6 +25,7 @@ import { useFirestore } from "@/firebase";
 import { getSettings } from "@/lib/services/settings-service";
 import { generateCustomerLedgerPDF, sharePDF } from "@/lib/services/pdf-service";
 import { TransactionType, Setting } from "@/lib/types";
+import { useToast } from "@/hooks/use-toast";
 
 const getTransactionColor = (type: TransactionType) => {
   const t = type.toUpperCase();
