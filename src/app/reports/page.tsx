@@ -169,7 +169,7 @@ export default function ReportsPage() {
                     <span className="font-bold text-xs truncate group-hover:text-primary">{r.name}</span>
                   </div>
                   <div className="flex flex-col items-end shrink-0 whitespace-nowrap">
-                    <span className="font-headline font-bold text-[10px] text-primary">{r.balance}</span>
+                    <span className="font-headline font-bold text-xs text-primary">{r.balance}</span>
                     <span className="text-[8px] uppercase tracking-tighter text-muted-foreground">{t('toReceiveSuffix')}</span>
                   </div>
                 </div>
@@ -215,7 +215,7 @@ export default function ReportsPage() {
             <div className="space-y-2 min-w-0">
               <div className="flex justify-between text-[9px] font-bold text-muted-foreground uppercase tracking-widest gap-2 min-w-0">
                 <span className="shrink-0 mr-2">Total Issues (+)</span>
-                <span className="text-primary truncate">{totalOut} PCS</span>
+                <span className="text-xs font-bold text-primary truncate">{totalOut} PCS</span>
               </div>
               <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
                 <div className="h-full bg-primary transition-all duration-1000" style={{ width: `${outPercentage}%` }} />
@@ -224,7 +224,7 @@ export default function ReportsPage() {
             <div className="space-y-2 min-w-0">
               <div className="flex justify-between text-[9px] font-bold text-muted-foreground uppercase tracking-widest gap-2 min-w-0">
                 <span className="shrink-0 mr-2">Total Cleared (-)</span>
-                <span className="text-emerald-500 truncate">{totalIn} PCS</span>
+                <span className="text-xs font-bold text-emerald-500 truncate">{totalIn} PCS</span>
               </div>
               <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
                 <div className="h-full bg-emerald-500 transition-all duration-1000" style={{ width: `${inPercentage}%` }} />
@@ -300,7 +300,7 @@ export default function ReportsPage() {
                           {getTransactionLabel(txn.type).split(' ')[0]}
                         </Badge>
                       </TableCell>
-                      <TableCell className="px-2 md:px-4 font-headline font-bold text-[10px] whitespace-nowrap">{txn.quantity} PCS</TableCell>
+                      <TableCell className="px-2 md:px-4 font-headline font-bold text-xs whitespace-nowrap">{txn.quantity} PCS</TableCell>
                       <TableCell className="text-right pr-4 md:pr-6 print:hidden">
                         {customer && <Button variant="ghost" size="icon" asChild className="h-7 w-7"><Link href={`/customers/${customer.id}`}><ChevronRight className="h-4 w-4" /></Link></Button>}
                       </TableCell>

@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -267,7 +266,7 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
         <div className="flex items-center gap-2 min-w-0">
            <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full -ml-2 shrink-0"><ArrowLeft className="h-5 w-5" /></Button>
            <h1 className="font-headline text-lg md:text-3xl font-bold truncate flex-1 min-w-0">{customer.name}</h1>
-           <Badge variant={isInactive ? "secondary" : "default"} className="shrink-0 text-[10px] uppercase">{(customer.status || 'active').toUpperCase()}</Badge>
+           <Badge variant={isInactive ? "secondary" : "default"} className="shrink-0 text-xs uppercase">{(customer.status || 'active').toUpperCase()}</Badge>
         </div>
         
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 min-w-0">
@@ -368,7 +367,7 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
                 </div>
                 <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-2 border-t md:border-t-0 pt-3 md:pt-0 mt-2 md:mt-0 w-full md:w-auto shrink-0 min-w-0">
                   <p className="text-[10px] uppercase font-bold text-muted-foreground shrink-0">{t('statedBalance')}</p>
-                  <Badge className={cn("text-[10px] font-bold shrink-0 truncate", balance > 0 ? "bg-primary text-primary-foreground" : balance < 0 ? "bg-emerald-500 text-emerald-foreground" : "bg-emerald-500 text-emerald-foreground")}>
+                  <Badge className={cn("text-xs font-bold shrink-0 truncate", balance > 0 ? "bg-primary text-primary-foreground" : balance < 0 ? "bg-emerald-500 text-emerald-foreground" : "bg-emerald-500 text-emerald-foreground")}>
                     {balance === 0 ? t('settled') : `${Math.abs(balance)} ${balance > 0 ? t('toReceiveSuffix') : t('toGiveSuffix')}`}
                   </Badge>
                 </div>
@@ -411,7 +410,7 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
                               <span className="text-emerald-500 uppercase tracking-tighter text-sm font-bold">{t('settled')}</span>
                             ) : (
                               <div className="flex flex-col gap-0.5">
-                                <span className={cn("text-lg", txn.runningBalance > 0 ? "text-primary" : "text-emerald-500")}>
+                                <span className={cn("text-xl", txn.runningBalance > 0 ? "text-primary" : "text-emerald-500")}>
                                   {Math.abs(txn.runningBalance)}
                                 </span>
                                 <span className={cn(

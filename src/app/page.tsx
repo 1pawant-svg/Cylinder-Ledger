@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -192,7 +191,7 @@ export default function Dashboard() {
             {coreStats.topToReceive.map((c) => (
               <Link key={c.id} href={`/customers/${c.id}`} className="flex items-center justify-between p-3 rounded-xl bg-muted/20 hover:bg-muted/40 transition-colors group gap-2">
                 <span className="font-bold text-xs truncate group-hover:text-primary min-w-0">{c.name}</span>
-                <Badge className="bg-primary/10 text-primary border-none font-bold shrink-0">{c.balance} {t('pcs')}</Badge>
+                <Badge className="bg-primary/10 text-primary border-none font-bold shrink-0 text-sm">{c.balance} {t('pcs')}</Badge>
               </Link>
             ))}
             {coreStats.topToReceive.length === 0 && (
@@ -219,7 +218,7 @@ export default function Dashboard() {
             {coreStats.topToReceiveNonRetailers.map((c) => (
               <Link key={c.id} href={`/customers/${c.id}`} className="flex items-center justify-between p-3 rounded-xl bg-muted/20 hover:bg-muted/40 transition-colors group gap-2">
                 <span className="font-bold text-xs truncate group-hover:text-primary min-w-0">{c.name}</span>
-                <Badge className="bg-emerald-500/10 text-emerald-500 border-none font-bold shrink-0">{c.balance} {t('pcs')}</Badge>
+                <Badge className="bg-emerald-500/10 text-emerald-500 border-none font-bold shrink-0 text-sm">{c.balance} {t('pcs')}</Badge>
               </Link>
             ))}
             {coreStats.topToReceiveNonRetailers.length === 0 && (
@@ -246,7 +245,7 @@ export default function Dashboard() {
             {coreStats.topToGive.map((c) => (
               <Link key={c.id} href={`/customers/${c.id}`} className="flex items-center justify-between p-3 rounded-xl bg-muted/20 hover:bg-muted/40 transition-colors group gap-2">
                 <span className="font-bold text-xs truncate group-hover:text-primary min-w-0">{c.name}</span>
-                <Badge className="bg-emerald-500/10 text-emerald-500 border-none font-bold shrink-0">{Math.abs(c.balance)} {t('pcs')}</Badge>
+                <Badge className="bg-emerald-500/10 text-emerald-500 border-none font-bold shrink-0 text-sm">{Math.abs(c.balance)} {t('pcs')}</Badge>
               </Link>
             ))}
             {coreStats.topToGive.length === 0 && (
@@ -370,7 +369,7 @@ export default function Dashboard() {
                         </div>
                       </div>
                       <div className="text-right shrink-0">
-                        <p className={cn("font-headline font-bold text-sm", bal > 0 ? "text-primary" : "text-emerald-500")}>{txn.quantity} {t('pcs')}</p>
+                        <p className={cn("font-headline font-bold text-base", bal > 0 ? "text-primary" : "text-emerald-500")}>{txn.quantity} {t('pcs')}</p>
                       </div>
                     </div>
                   );
@@ -392,7 +391,7 @@ export default function Dashboard() {
                     <div key={txn.id} className="p-4 rounded-xl bg-muted/30 border border-border/50 space-y-4 hover:bg-muted/50 transition-colors">
                       <div className="flex justify-between items-start gap-2">
                         <div className="min-w-0 flex-1"><Link href={`/customers/${customer.id}`} className="font-bold text-sm truncate block">{customer.name}</Link>
-                          <p className="text-[10px] text-muted-foreground truncate">{t('owed')}: <span className="font-bold text-primary">{customer.balance} {t('pcs')}</span></p>
+                          <p className="text-[10px] text-muted-foreground truncate">{t('owed')}: <span className="font-bold text-sm text-primary">{customer.balance} {t('pcs')}</span></p>
                         </div>
                         <div className="shrink-0">{getOverdueBadge(txn.daysDiff, t)}</div>
                       </div>

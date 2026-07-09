@@ -48,7 +48,7 @@ export function StatCard({ title, value, icon: Icon, description, trend, variant
         </div>
         <div className="space-y-1">
           <p className="text-[10px] md:text-sm font-bold text-muted-foreground uppercase tracking-[0.1em]">{title}</p>
-          <h3 className="text-2xl md:text-3xl font-headline font-bold text-foreground tabular-nums leading-tight">
+          <h3 className="text-3xl md:text-4xl font-headline font-bold text-foreground tabular-nums leading-tight">
             {value}
           </h3>
           {description && (

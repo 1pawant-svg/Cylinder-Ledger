@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -364,7 +363,7 @@ export default function CustomersPage() {
                     </TableCell>
                     <TableCell className="px-2 md:px-4">
                       <span className={cn(
-                        "font-headline font-bold whitespace-nowrap text-[10px] md:text-sm", 
+                        "font-headline font-bold whitespace-nowrap text-[13px] md:text-base", 
                         bal > 0 ? "text-primary" : bal < 0 ? "text-emerald-500" : "text-emerald-500"
                       )}>
                         {bal === 0 ? t('settled') : bal > 0 ? `${bal} ${t('toReceiveSuffix')}` : `${Math.abs(bal)} ${t('toGiveSuffix')}`}

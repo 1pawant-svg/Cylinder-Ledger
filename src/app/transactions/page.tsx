@@ -364,7 +364,7 @@ export default function TransactionsPage() {
         <CardContent className="p-4 space-y-6">
           <div className="flex flex-col items-center justify-center py-4 bg-muted/20 rounded-xl border border-border/50">
             <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">{t('statedBalance')}</p>
-            <h3 className={cn("text-3xl font-headline font-bold", bal > 0 ? "text-primary" : "text-emerald-500")}>
+            <h3 className={cn("text-4xl font-headline font-bold", bal > 0 ? "text-primary" : "text-emerald-500")}>
               {Math.abs(bal)}
             </h3>
             <p className={cn("text-[10px] uppercase font-black", bal > 0 ? "text-primary" : "text-emerald-500")}>
