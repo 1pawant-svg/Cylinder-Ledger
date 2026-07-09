@@ -12,8 +12,8 @@ import { notoParams } from '@/lib/fonts/noto-sans-devanagari-regular';
  */
 function registerFonts(doc: jsPDF): string {
   try {
-    // Check if the base64 data exists and isn't just a placeholder
-    if (!notoParams.base64 || notoParams.base64.startsWith('AAEAAA')) {
+    // Check if the base64 data exists and isn't just a placeholder text
+    if (!notoParams.base64 || notoParams.base64.includes('(Paste Full Base64 Here)')) {
       console.warn('Nepali font data is missing or empty. Using default fonts.');
       return 'helvetica';
     }
@@ -27,6 +27,9 @@ function registerFonts(doc: jsPDF): string {
     // Explicitly map 'bold' to the same font to prevent "Unable to look up font label" warnings
     // since we are using one comprehensive Unicode font for all styles.
     doc.addFont(notoParams.fileName, notoParams.fontName, 'bold');
+    
+    console.log(`PDF Service: Registered ${notoParams.fontName}`);
+    console.log('Available Fonts:', doc.getFontList());
     
     return notoParams.fontName;
   } catch (error) {
