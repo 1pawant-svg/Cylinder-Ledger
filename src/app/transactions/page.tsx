@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -129,6 +130,7 @@ export default function TransactionsPage() {
   const [customerSearch, setCustomerSearch] = useState("");
   const [isCustomerPopoverOpen, setIsCustomerPopoverOpen] = useState(false);
   const [isSummaryExpanded, setIsSummaryExpanded] = useState(true);
+  const [isSaveAndNew, setIsSaveAndNew] = useState(false);
 
   const [formData, setFormData] = useState({
     customerId: urlCustomerId || '',
@@ -322,10 +324,21 @@ export default function TransactionsPage() {
       }
 
       toast({ title: t('movementLogged') });
-      router.push(`/customers/${formData.customerId}`);
+
+      if (isSaveAndNew) {
+        setFormData(prev => ({
+          ...prev,
+          quantity: 1,
+          returnQuantity: 0,
+          remark: '',
+        }));
+        setIsSaveAndNew(false);
+        setSubmitting(false);
+      } else {
+        router.push(`/customers/${formData.customerId}`);
+      }
     } catch (err) {
       toast({ variant: "destructive", title: t('error') });
-    } finally {
       setSubmitting(false);
     }
   };
@@ -675,12 +688,30 @@ export default function TransactionsPage() {
                     >
                       <X className="h-4 w-4 mr-2" /> {t('cancel')}
                     </Button>
+                    {!editTransactionId && (
+                      <Button 
+                        type="submit" 
+                        variant="outline"
+                        disabled={submitting}
+                        onClick={() => setIsSaveAndNew(true)}
+                        className="flex-1 h-14 font-bold uppercase tracking-widest border border-primary/50 text-primary hover:bg-primary/10"
+                      >
+                        {submitting && isSaveAndNew ? (
+                          <Loader2 className="h-6 w-6 animate-spin" />
+                        ) : (
+                          <>
+                            <Plus className="h-5 w-5 mr-2" /> {t('saveAndNew')}
+                          </>
+                        )}
+                      </Button>
+                    )}
                     <Button 
                       type="submit" 
                       disabled={submitting}
+                      onClick={() => setIsSaveAndNew(false)}
                       className="flex-[2] h-14 bg-primary text-primary-foreground font-headline text-lg font-bold shadow-lg shadow-primary/20"
                     >
-                      {submitting ? (
+                      {submitting && !isSaveAndNew ? (
                         <Loader2 className="h-6 w-6 animate-spin" />
                       ) : (
                         <>
