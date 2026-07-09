@@ -6,7 +6,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useLedger } from "@/lib/ledger-context";
 import { useRouter } from "next/navigation";
 import { 
-  ArrowLeft, MapPin, Phone, Share2, Edit2, MoreVertical, UserX, UserCheck, Loader2, Plus, Filter, Eraser, Hash, Trash2, RefreshCw, ClipboardList
+  ArrowLeft, MapPin, Phone, Share2, Edit2, MoreVertical, UserX, UserCheck, Loader2, Plus, Filter, Eraser, Hash, Trash2, RefreshCw, ClipboardList, AlertTriangle
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,16 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle 
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -92,6 +102,9 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
     remarks: '',
     specialInstructions: ''
   });
+
+  const [txnToDelete, setTxnToDelete] = useState<string | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const getTransactionLabel = (type: TransactionType) => {
     const tLabel = type.toUpperCase();
@@ -256,12 +269,16 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
     }
   };
 
-  const handleDeleteTransaction = async (txnId: string) => {
+  const confirmDelete = async () => {
+    if (!txnToDelete) return;
     try {
-      await deleteTransaction(txnId, "User requested delete");
+      await deleteTransaction(txnToDelete, "User requested delete");
       toast({ title: t('success') });
     } catch (err) {
       toast({ variant: "destructive", title: t('error') });
+    } finally {
+      setTxnToDelete(null);
+      setIsDeleteDialogOpen(false);
     }
   };
 
@@ -442,7 +459,13 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
                                 <DropdownMenuItem onClick={() => router.push(`/transactions?editId=${txn.id}&customerId=${id}`)}>
                                   <Edit2 className="h-3 w-3 mr-2" />Edit
                                 </DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteTransaction(txn.id)}>
+                                <DropdownMenuItem 
+                                  className="text-destructive" 
+                                  onClick={() => {
+                                    setTxnToDelete(txn.id);
+                                    setIsDeleteDialogOpen(true);
+                                  }}
+                                >
                                   <Trash2 className="h-3 w-3 mr-2" />{t('delete')}
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
@@ -514,6 +537,27 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent className="w-[95vw] sm:max-w-[400px] rounded-xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              {t('confirmDelete')}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-sm">
+              {t('deleteWarning')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel className="mt-0">{t('cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {t('delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
+
