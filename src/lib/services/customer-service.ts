@@ -21,16 +21,40 @@ import { cleanFirestoreData } from '@/lib/utils';
 
 /**
  * Checks if a phone number is already in use by another customer.
+ * Handles both string and numeric matches to ensure absolute uniqueness.
  */
 export async function isPhoneUnique(db: Firestore, phone: string, excludeCustomerId?: string): Promise<boolean> {
+  const normalizedPhone = phone.trim().replace(/\D/g, '');
+  if (!normalizedPhone) return true;
+
   const colRef = collection(db, 'customers');
-  const q = query(colRef, where('phone', '==', phone));
-  const snap = await getDocs(q);
   
-  if (snap.empty) return true;
+  // Query for string match
+  const qString = query(colRef, where('phone', '==', normalizedPhone));
   
-  // If we are updating an existing customer, the one result found should be them
-  if (excludeCustomerId && snap.docs.length === 1 && snap.docs[0].id === excludeCustomerId) {
+  // Also check for numeric match in case of legacy/manual data entries
+  const phoneAsNum = parseInt(normalizedPhone, 10);
+  const qNumber = !isNaN(phoneAsNum) 
+    ? query(colRef, where('phone', '==', phoneAsNum))
+    : null;
+
+  const [snapString, snapNumber] = await Promise.all([
+    getDocs(qString),
+    qNumber ? getDocs(qNumber) : Promise.resolve({ empty: true, docs: [] })
+  ]);
+  
+  // Combine unique results
+  const foundDocs = [...snapString.docs];
+  (snapNumber as any).docs?.forEach((d: any) => {
+    if (!foundDocs.find(fd => fd.id === d.id)) {
+      foundDocs.push(d);
+    }
+  });
+
+  if (foundDocs.length === 0) return true;
+  
+  // If we are updating an existing customer, it's fine if the only match is themselves
+  if (excludeCustomerId && foundDocs.length === 1 && foundDocs[0].id === excludeCustomerId) {
     return true;
   }
   
@@ -38,8 +62,10 @@ export async function isPhoneUnique(db: Firestore, phone: string, excludeCustome
 }
 
 export async function addCustomer(db: Firestore, data: Omit<Customer, 'id' | 'createdAt' | 'status' | 'balance'>, userId?: string, userName?: string) {
+  const normalizedPhone = data.phone.trim().replace(/\D/g, '');
+  
   // Check uniqueness
-  const isUnique = await isPhoneUnique(db, data.phone);
+  const isUnique = await isPhoneUnique(db, normalizedPhone);
   if (!isUnique) {
     throw new Error('DUPLICATE_PHONE');
   }
@@ -48,6 +74,7 @@ export async function addCustomer(db: Firestore, data: Omit<Customer, 'id' | 'cr
   const docRef = doc(colRef);
   const rawPayload = {
     ...data,
+    phone: normalizedPhone, // Store normalized
     status: 'active' as CustomerStatus,
     balance: 0, // Initial denormalized balance
     createdAt: serverTimestamp(),
@@ -79,9 +106,11 @@ export async function addCustomer(db: Firestore, data: Omit<Customer, 'id' | 'cr
 }
 
 export async function updateCustomer(db: Firestore, id: string, data: Partial<Omit<Customer, 'id' | 'createdAt' | 'balance'>>, userId?: string, userName?: string) {
+  const normalizedPhone = data.phone ? data.phone.trim().replace(/\D/g, '') : undefined;
+
   // Check uniqueness if phone is being changed
-  if (data.phone) {
-    const isUnique = await isPhoneUnique(db, data.phone, id);
+  if (normalizedPhone) {
+    const isUnique = await isPhoneUnique(db, normalizedPhone, id);
     if (!isUnique) {
       throw new Error('DUPLICATE_PHONE');
     }
@@ -89,6 +118,8 @@ export async function updateCustomer(db: Firestore, id: string, data: Partial<Om
 
   const docRef = doc(db, 'customers', id);
   const { id: _, createdAt: __, balance: ___, ...sanitizedData } = data as any;
+  if (normalizedPhone) sanitizedData.phone = normalizedPhone;
+  
   const updateData = cleanFirestoreData(sanitizedData);
 
   try {
@@ -173,7 +204,7 @@ export async function recalculateCustomerBalance(db: Firestore, customerId: stri
   activeTransactions.forEach(t => {
     const type = t.type.toUpperCase();
     if (type === 'OUT' || type === 'OUT_FULL') calculatedBalance += t.quantity;
-    else if (type === 'IN' || type === 'IN_EMPTY' || type === 'LEAKAGE' || type === 'LOST' || type === 'ADJUSTMENT') calculatedBalance -= t.quantity;
+    else if (type === 'IN' || type === 'IN_EMPTY' || type === 'LEAKAGE' || type === 'LOST' || t.type === 'ADJUSTMENT') calculatedBalance -= t.quantity;
   });
 
   const customerRef = doc(db, 'customers', customerId);
