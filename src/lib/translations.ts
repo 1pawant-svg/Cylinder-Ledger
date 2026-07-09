@@ -177,6 +177,7 @@ export const translations = {
     incompleteForm: "Please fill all required fields",
     panInvalid: "PAN must be exactly 9 digits",
     panConflict: "This PAN is already registered",
+    phoneConflict: "This phone number is already registered to another customer",
   },
   ne: {
     // Navigation
@@ -341,5 +342,6 @@ export const translations = {
     incompleteForm: "कृपया सबै आवश्यक विवरणहरू भर्नुहोस्",
     panInvalid: "प्यान ९ अंकको हुनुपर्छ",
     panConflict: "यो प्यान पहिले नै दर्ता छ",
+    phoneConflict: "यो फोन नम्बर पहिले नै अर्कै ग्राहकको नाममा दर्ता छ",
   }
 };

@@ -9,6 +9,8 @@ import {
   serverTimestamp,
   query,
   orderBy,
+  where,
+  getDocs,
   runTransaction
 } from 'firebase/firestore';
 import { Customer, CustomerStatus, Transaction } from '@/lib/types';
@@ -17,7 +19,31 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import { logAction } from './audit-service';
 import { cleanFirestoreData } from '@/lib/utils';
 
+/**
+ * Checks if a phone number is already in use by another customer.
+ */
+export async function isPhoneUnique(db: Firestore, phone: string, excludeCustomerId?: string): Promise<boolean> {
+  const colRef = collection(db, 'customers');
+  const q = query(colRef, where('phone', '==', phone));
+  const snap = await getDocs(q);
+  
+  if (snap.empty) return true;
+  
+  // If we are updating an existing customer, the one result found should be them
+  if (excludeCustomerId && snap.docs.length === 1 && snap.docs[0].id === excludeCustomerId) {
+    return true;
+  }
+  
+  return false;
+}
+
 export async function addCustomer(db: Firestore, data: Omit<Customer, 'id' | 'createdAt' | 'status' | 'balance'>, userId?: string, userName?: string) {
+  // Check uniqueness
+  const isUnique = await isPhoneUnique(db, data.phone);
+  if (!isUnique) {
+    throw new Error('DUPLICATE_PHONE');
+  }
+
   const colRef = collection(db, 'customers');
   const docRef = doc(colRef);
   const rawPayload = {
@@ -53,6 +79,14 @@ export async function addCustomer(db: Firestore, data: Omit<Customer, 'id' | 'cr
 }
 
 export async function updateCustomer(db: Firestore, id: string, data: Partial<Omit<Customer, 'id' | 'createdAt' | 'balance'>>, userId?: string, userName?: string) {
+  // Check uniqueness if phone is being changed
+  if (data.phone) {
+    const isUnique = await isPhoneUnique(db, data.phone, id);
+    if (!isUnique) {
+      throw new Error('DUPLICATE_PHONE');
+    }
+  }
+
   const docRef = doc(db, 'customers', id);
   const { id: _, createdAt: __, balance: ___, ...sanitizedData } = data as any;
   const updateData = cleanFirestoreData(sanitizedData);

@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -192,8 +193,9 @@ export default function CustomersPage() {
       setOpeningDateBS(getTodayBSParts());
       setIsAddOpen(false);
       toast({ title: t('profileAdded') });
-    } catch (err) {
-      toast({ variant: "destructive", title: t('error'), description: "Could not create profile. Please try again." });
+    } catch (err: any) {
+      const msg = err.message === 'DUPLICATE_PHONE' ? t('phoneConflict') : "Could not create profile. Please try again.";
+      toast({ variant: "destructive", title: t('error'), description: msg });
     } finally {
       setIsSubmitting(false);
     }

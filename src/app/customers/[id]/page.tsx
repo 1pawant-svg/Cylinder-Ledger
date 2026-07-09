@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -74,6 +75,7 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
   const [settings, setSettings] = useState<Setting | null>(null);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isRecalculating, setIsRecalculating] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [filterDates, setFilterDates] = useState({
     from: { year: '', month: '', day: '' },
@@ -246,12 +248,16 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
 
   const handleEditProfileSave = async () => {
     if (!customer) return;
+    setIsSubmitting(true);
     try {
       await updateCustomer(customer.id, editProfileData);
       setIsEditProfileOpen(false);
       toast({ title: t('success') });
-    } catch (err) {
-      toast({ variant: "destructive", title: t('error') });
+    } catch (err: any) {
+      const msg = err.message === 'DUPLICATE_PHONE' ? t('phoneConflict') : t('error');
+      toast({ variant: "destructive", title: t('error'), description: msg });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -419,7 +425,7 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
                               <span className="text-emerald-500 uppercase tracking-tighter text-sm font-bold">{t('settled')}</span>
                             ) : (
                               <div className="flex flex-col gap-0.5">
-                                <span className={cn("text-xl md:text-xl", txn.runningBalance > 0 ? "text-primary" : "text-emerald-500")}>
+                                <span className={cn("text-xl", txn.runningBalance > 0 ? "text-primary" : "text-emerald-500")}>
                                   {Math.abs(txn.runningBalance)}
                                 </span>
                                 <span className={cn(
@@ -512,7 +518,10 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
           </div>
           <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => editProfileData.name ? setIsEditProfileOpen(false) : null}>Cancel</Button>
-            <Button onClick={handleEditProfileSave}>Save Changes</Button>
+            <Button onClick={handleEditProfileSave} disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save Changes
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

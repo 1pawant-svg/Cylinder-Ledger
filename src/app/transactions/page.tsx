@@ -275,8 +275,9 @@ export default function TransactionsPage() {
       setIsAddCustomerOpen(false);
       setIsCustomerPopoverOpen(false);
       toast({ title: t('profileAdded') });
-    } catch (err) {
-      toast({ variant: "destructive", title: t('error'), description: "Could not create profile." });
+    } catch (err: any) {
+      const msg = err.message === 'DUPLICATE_PHONE' ? t('phoneConflict') : t('error');
+      toast({ variant: "destructive", title: t('error'), description: msg });
     }
   };
 
