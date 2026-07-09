@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -202,14 +203,14 @@ export default function CustomersPage() {
   const handleShareListPDF = async () => {
     setIsGeneratingPDF(true);
     try {
-      let filterTitle = "Customer Ledger Report";
-      if (statusFilter === 'TO_RECEIVE') filterTitle = "Debtors List (To Receive)";
-      if (statusFilter === 'TO_GIVE') filterTitle = "Creditors List (To Give)";
-      if (statusFilter === 'RETAILERS') filterTitle = "Retailers Summary";
-      if (statusFilter === 'NON_RETAILERS') filterTitle = "Individual Accounts Summary";
-      if (statusFilter === 'SETTLED') filterTitle = "Settled Accounts";
+      let filterTitle = t('customerLedgerReport');
+      if (statusFilter === 'TO_RECEIVE') filterTitle = t('debtorsList');
+      if (statusFilter === 'TO_GIVE') filterTitle = t('creditorsList');
+      if (statusFilter === 'RETAILERS') filterTitle = t('retailersSummary');
+      if (statusFilter === 'NON_RETAILERS') filterTitle = t('nonRetailersSummary');
+      if (statusFilter === 'SETTLED') filterTitle = t('settledAccounts');
 
-      const doc = await generateCustomerListPDF(processedCustomers, settings, {
+      const doc = await generateCustomerListPDF(t, processedCustomers, settings, {
         title: filterTitle,
         filterLabel: statusFilter !== 'ALL' ? statusFilter.replace('_', ' ') : undefined
       });

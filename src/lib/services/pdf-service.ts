@@ -12,25 +12,16 @@ import { notoParams } from '@/lib/fonts/noto-sans-devanagari-regular';
  */
 function registerFonts(doc: jsPDF): string {
   try {
-    // Check if the base64 data exists and isn't just a placeholder text
-    if (!notoParams.base64 || notoParams.base64.includes('(Paste Full Base64 Here)')) {
+    if (!notoParams.base64 || notoParams.base64.trim() === '' || notoParams.base64.includes('(Paste Full Base64 Here)')) {
       console.warn('Nepali font data is missing or empty. Using default fonts.');
       return 'helvetica';
     }
 
-    // Add the font to the Virtual File System
     doc.addFileToVFS(notoParams.fileName, notoParams.base64);
-    
-    // Register the 'normal' style
     doc.addFont(notoParams.fileName, notoParams.fontName, 'normal');
-    
-    // Explicitly map 'bold' to the same font to prevent "Unable to look up font label" warnings
-    // since we are using one comprehensive Unicode font for all styles.
     doc.addFont(notoParams.fileName, notoParams.fontName, 'bold');
     
     console.log(`PDF Service: Registered ${notoParams.fontName}`);
-    console.log('Available Fonts:', doc.getFontList());
-    
     return notoParams.fontName;
   } catch (error) {
     console.error('Failed to register embedded fonts:', error);
@@ -49,6 +40,7 @@ const getTransactionImpact = (type: TransactionType): number => {
  * Generates a professional Customer Ledger PDF.
  */
 export async function generateCustomerLedgerPDF(
+  t: (key: any) => string,
   customer: Customer,
   transactions: any[],
   settings: Setting | null,
@@ -81,7 +73,7 @@ export async function generateCustomerLedgerPDF(
   doc.setFont(mainFont, 'normal');
   doc.setFontSize(10);
   doc.setTextColor(100);
-  doc.text(`${businessAddress}${businessPhone ? ` | Tel: ${businessPhone}` : ''}`, 14, 28);
+  doc.text(`${businessAddress}${businessPhone ? ` | ${t('phone')}: ${businessPhone}` : ''}`, 14, 28);
   
   doc.setDrawColor(200);
   doc.line(14, 32, 196, 32);
@@ -90,23 +82,23 @@ export async function generateCustomerLedgerPDF(
   doc.setTextColor(0);
   doc.setFontSize(14);
   doc.setFont(mainFont, 'bold');
-  const title = summary.isFiltered ? 'FILTERED ACCOUNT STATEMENT' : 'CUSTOMER LEDGER STATEMENT';
+  const title = summary.isFiltered ? t('filteredStatement').toUpperCase() : t('ledgerStatement').toUpperCase();
   doc.text(title, 14, 42);
 
   doc.setFontSize(10);
-  doc.text(`Customer Name: ${customer.name}`, 14, 50);
+  doc.text(`${t('name')}: ${customer.name}`, 14, 50);
   doc.setFont(mainFont, 'normal');
   doc.setTextColor(80);
-  doc.text(`Address: ${customer.address}`, 14, 55);
-  doc.text(`Phone: ${customer.phone}`, 14, 60);
-  if (customer.pan) doc.text(`PAN: ${customer.pan}`, 14, 65);
+  doc.text(`${t('address')}: ${customer.address}`, 14, 55);
+  doc.text(`${t('phone')}: ${customer.phone}`, 14, 60);
+  if (customer.pan) doc.text(`${t('pan')}: ${customer.pan}`, 14, 65);
 
   // Report Info
   doc.setTextColor(100);
-  doc.text(`Report Date: ${adToBs(getCurrentADDate())} BS`, 140, 50);
+  doc.text(`${t('reportDate')}: ${adToBs(getCurrentADDate())} BS`, 140, 50);
   if (summary.dateRange) {
     doc.setFontSize(9);
-    doc.text(`Period: ${summary.dateRange}`, 140, 56);
+    doc.text(`${t('period')}: ${summary.dateRange}`, 140, 56);
   }
 
   // Summary Box
@@ -118,7 +110,7 @@ export async function generateCustomerLedgerPDF(
   doc.setFontSize(10);
   doc.setFont(mainFont, 'bold');
   doc.setTextColor(0);
-  doc.text('ACCOUNT SUMMARY', 20, 83);
+  doc.text(t('accountSummary').toUpperCase(), 20, 83);
   
   doc.setFontSize(9);
   doc.setFont(mainFont, 'normal');
@@ -126,30 +118,28 @@ export async function generateCustomerLedgerPDF(
   
   let yOffset = 90;
   if (summary.isFiltered) {
-    doc.text('Opening Balance:', 20, yOffset);
-    doc.text(`${summary.openingBalance || 0} PCS`, 60, yOffset);
+    doc.text(`${t('openingBalance')}:`, 20, yOffset);
+    doc.text(`${summary.openingBalance || 0} ${t('pcs')}`, 60, yOffset);
     yOffset += 5;
   }
 
-  doc.text(`Total Issued (OUT):`, 20, yOffset);
-  doc.text(`${summary.totalOut} PCS`, 60, yOffset);
+  doc.text(`${t('totalIssued')}:`, 20, yOffset);
+  doc.text(`${summary.totalOut} ${t('pcs')}`, 60, yOffset);
   yOffset += 5;
   
-  doc.text(`Total Returned (IN):`, 20, yOffset);
-  doc.text(`${summary.totalIn} PCS`, 60, yOffset);
+  doc.text(`${t('totalReturned')}:`, 20, yOffset);
+  doc.text(`${summary.totalIn} ${t('pcs')}`, 60, yOffset);
 
   // Net Balance Highlight
   doc.setFontSize(12);
   doc.setFont(mainFont, 'bold');
   doc.setTextColor(0);
-  doc.text('Net Balance (Current):', 110, 93);
+  doc.text(`${t('netBalanceCurrent')}:`, 110, 93);
   
   const balValue = Math.abs(summary.balance);
   const balLabel = summary.balance === 0 
-    ? 'Settled' 
-    : summary.balance > 0 
-      ? `${balValue} To Receive` 
-      : `${balValue} To Give`;
+    ? t('settled') 
+    : `${balValue} ${summary.balance > 0 ? t('toReceiveSuffix') : t('toGiveSuffix')}`;
   
   if (summary.balance > 0) doc.setTextColor(184, 134, 11); 
   else if (summary.balance < 0) doc.setTextColor(16, 185, 129); 
@@ -159,36 +149,36 @@ export async function generateCustomerLedgerPDF(
   doc.setTextColor(0);
 
   // Transaction Table
-  const tableRows = transactions.map((t) => {
-    const impact = getTransactionImpact(t.type);
-    const inQty = impact < 0 ? t.quantity : '-';
-    const outQty = impact > 0 ? t.quantity : '-';
+  const tableRows = transactions.map((txn) => {
+    const impact = getTransactionImpact(txn.type);
+    const inQty = impact < 0 ? txn.quantity : '-';
+    const outQty = impact > 0 ? txn.quantity : '-';
     
-    let displayType = t.type.replace('_', ' ');
-    const upper = t.type.toUpperCase();
-    if (upper === 'OUT' || upper === 'OUT_FULL') displayType = 'OUT';
-    else if (upper === 'IN' || upper === 'IN_EMPTY') displayType = 'IN';
+    let displayType = txn.type.replace('_', ' ');
+    const upper = txn.type.toUpperCase();
+    if (upper === 'OUT' || upper === 'OUT_FULL') displayType = t('labelOut');
+    else if (upper === 'IN' || upper === 'IN_EMPTY') displayType = t('labelIn');
+    else if (upper === 'LEAKAGE') displayType = t('leakageReturn');
+    else if (upper === 'LOST') displayType = t('cylinderLost');
+    else if (upper === 'ADJUSTMENT') displayType = t('balanceAdjustment');
 
-    const balanceLabel = t.runningBalance === 0 
+    const balanceLabel = txn.runningBalance === 0 
       ? '0' 
-      : (t.runningBalance > 0 
-          ? `${t.runningBalance} Receive` 
-          : `${Math.abs(t.runningBalance)} Give`
-        );
+      : `${Math.abs(txn.runningBalance)} ${txn.runningBalance > 0 ? t('toReceiveSuffix') : t('toGiveSuffix')}`;
 
     return [
-      t.bsDate,
+      txn.bsDate,
       displayType,
       inQty,
       outQty,
       balanceLabel,
-      t.remark || ''
+      txn.remark || ''
     ];
   });
 
   autoTable(doc, {
     startY: 118,
-    head: [['Date (BS)', 'Type', 'IN', 'OUT', 'Balance', 'Remarks']],
+    head: [[t('dateBs'), t('type'), t('labelIn'), t('labelOut'), t('running'), t('remarks')]],
     body: tableRows,
     theme: 'grid',
     styles: { font: mainFont },
@@ -221,13 +211,13 @@ export async function generateCustomerLedgerPDF(
       doc.setFont(mainFont, 'normal');
       doc.setTextColor(150);
       doc.text(
-        `Page ${data.pageNumber}`,
+        `${t('page')} ${data.pageNumber}`,
         doc.internal.pageSize.getWidth() / 2,
         doc.internal.pageSize.getHeight() - 10,
         { align: 'center' }
       );
       doc.text(
-        'Computer generated ledger. Powered by PGS Cylinder Ledger.',
+        t('computerGeneratedLedger'),
         14,
         doc.internal.pageSize.getHeight() - 10
       );
@@ -241,6 +231,7 @@ export async function generateCustomerLedgerPDF(
  * Generates a PDF of the Customer List (Summary report).
  */
 export async function generateCustomerListPDF(
+  t: (key: any) => string,
   customers: any[],
   settings: Setting | null,
   options: {
@@ -268,7 +259,7 @@ export async function generateCustomerListPDF(
   doc.setFont(mainFont, 'normal');
   doc.setFontSize(9);
   doc.setTextColor(100);
-  doc.text(`${businessAddress}${businessPhone ? ` | Tel: ${businessPhone}` : ''}`, 14, 25);
+  doc.text(`${businessAddress}${businessPhone ? ` | ${t('phone')}: ${businessPhone}` : ''}`, 14, 25);
   
   doc.setDrawColor(200);
   doc.line(14, 28, 196, 28);
@@ -283,18 +274,18 @@ export async function generateCustomerListPDF(
     doc.setFontSize(10);
     doc.setFont(mainFont, 'normal');
     doc.setTextColor(80);
-    doc.text(`Filter Applied: ${options.filterLabel}`, 14, 43);
+    doc.text(`${t('filterApplied')}: ${options.filterLabel}`, 14, 43);
   }
 
   doc.setFontSize(9);
   doc.setTextColor(100);
-  doc.text(`Report Generated: ${adToBs(getCurrentADDate())} BS`, 140, 38);
+  doc.text(`${t('reportGenerated')}: ${adToBs(getCurrentADDate())} BS`, 140, 38);
 
   const tableRows = customers.map((c) => {
     const bal = c.balance || 0;
     const balanceLabel = bal === 0 
-      ? 'Settled' 
-      : (bal > 0 ? `${bal} To Receive` : `${Math.abs(bal)} To Give`);
+      ? t('settled') 
+      : `${Math.abs(bal)} ${bal > 0 ? t('toReceiveSuffix') : t('toGiveSuffix')}`;
     
     return [
       c.name,
@@ -306,7 +297,7 @@ export async function generateCustomerListPDF(
 
   autoTable(doc, {
     startY: 48,
-    head: [['Customer Name', 'Phone Number', 'Address', 'Current Balance']],
+    head: [[t('name'), t('phone'), t('address'), t('netBalance')]],
     body: tableRows,
     theme: 'grid',
     styles: { font: mainFont },
@@ -334,7 +325,7 @@ export async function generateCustomerListPDF(
       doc.setFont(mainFont, 'normal');
       doc.setTextColor(150);
       doc.text(
-        `Page ${data.pageNumber} | PGS Cylinder Ledger System`,
+        `${t('page')} ${data.pageNumber} | PGS Cylinder Ledger System`,
         doc.internal.pageSize.getWidth() / 2,
         doc.internal.pageSize.getHeight() - 10,
         { align: 'center' }

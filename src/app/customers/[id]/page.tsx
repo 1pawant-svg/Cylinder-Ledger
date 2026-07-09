@@ -20,12 +20,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { getCurrentADDate, adToBs, bsToAd, toMillis, BS_MONTHS, getBSYears } from "@/lib/date-utils";
-import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/lib/i18n-context";
 import { useFirestore } from "@/firebase";
 import { getSettings } from "@/lib/services/settings-service";
 import { generateCustomerLedgerPDF, sharePDF } from "@/lib/services/pdf-service";
-import { TransactionType, Transaction, Setting } from "@/lib/types";
-import { useI18n } from "@/lib/i18n-context";
+import { TransactionType, Setting } from "@/lib/types";
 
 const getTransactionColor = (type: TransactionType) => {
   const t = type.toUpperCase();
@@ -56,7 +55,7 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
   const { id } = React.use(params);
   const router = useRouter();
   const { toast } = useToast();
-  const { t, language } = useI18n();
+  const { t } = useI18n();
   const db = useFirestore();
   const { 
     customers, 
@@ -223,6 +222,7 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
       const closingBalance = openingBalance + totalOut - totalIn;
 
       const doc = await generateCustomerLedgerPDF(
+        t,
         customer, 
         displayTxns, 
         settings, 
